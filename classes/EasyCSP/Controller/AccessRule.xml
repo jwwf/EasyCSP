@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Controller.AccessRule">
+<Description><![CDATA[
+Describes a single access rule, such as chain name ('allow', 'deny', or some custom
+rule chain), order within the chain (governing rule precedence), a %List structure
+containing the actions to which this rule applies, and which user(s) the rule affects.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>
+
+Rules are divided into chains. At this writing, only two chains are defined: "allow" and "deny".
+Thus, if a rule exactly fits the conditions presented, an action will be explicitly either allowed
+or denied. TODO: allow rule-entrainment (JUMP-TO).
+Give each rule a unique id so it can occupy a unique spot in a collection of rules]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63587,64791.571511</TimeChanged>
+<TimeCreated>63461,47193.580122</TimeCreated>
+
+<Property name="actions">
+<Type>%List</Type>
+</Property>
+
+<Property name="users">
+<Type>%List</Type>
+</Property>
+
+<Method name="%OnNew">
+<FormalSpec>actions:%List,users:%List</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+		
+	if '$listvalid(actions) {
+		if $get(actions) '= "" {
+			set actions = $CHANGE(actions, ",", $mvfm)
+			set actions = $mvoconvs(actions, "MCT") ; title case each action
+			set ..actions = $listfromstring(actions,$mvfm)  // if the caller just passed a string then make it a single-element list
+		} else {
+			quit 0
+		}
+	} else {
+	set ..actions = actions
+	}
+	
+	if '$listvalid(users) {
+		if $get(users) '= "" {
+			set ..users = $listbuild(users)  // if the caller just passed a string then make it a single-element list 
+		} else {
+			quit 0
+		}
+	}
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

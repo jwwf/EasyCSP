@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Models.Role">
+<Description><![CDATA[
+<p>
+Role types to which a user may be assigned. The key is the name of the role. The role level
+is an arbitrary number from 1 (common user) onward. Set the site-owner (OWNER) role to a
+very large number (999999). (This will be done by the FIRST.RUN installation routine.) Take
+care not to set OWNER's status (roleIsActive) to 0. If this happens the DBA will have to
+change the value at the command line. (Using the MV EDIT command would be the fastest way
+to correct that accident.)
+</p>
+
+<p>
+A role is only active and eligible to be used if the <property>roleIsActive</property> is
+set to 1. This is useful to retire groups of apps without having to change the code.
+</p>]]></Description>
+<Super>%Persistent,EasyCSP.MVModel.Base</Super>
+<TimeChanged>63615,70811.511807</TimeChanged>
+<TimeCreated>63532,54831.669545</TimeCreated>
+
+<Parameter name="MVFILENAME">
+<Default>ROLE</Default>
+</Parameter>
+
+<Parameter name="MVREPOPULATE">
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="MVGLOBAL">
+<Type>%String</Type>
+<Default>ROLE</Default>
+</Parameter>
+
+<Parameter name="MVAUTOLOCK">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCLEARDICT">
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="MVCREATE">
+<Type>BOOLEAN</Type>
+<Default>1</Default>
+</Parameter>
+
+<Index name="indexRoleId">
+<IdKey>1</IdKey>
+<Properties>roleId</Properties>
+<Unique>1</Unique>
+</Index>
+
+<Property name="roleId">
+<Description>
+The name of the role</Description>
+<Type>%String</Type>
+<Required>1</Required>
+<SqlFieldName>role_id</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="0"/>
+<Parameter name="MVHEADING" value="Role ID"/>
+<Parameter name="MVNAME" value="ROLE_ID"/>
+</Property>
+
+<Property name="roleDescription">
+<Description>
+The description of the role</Description>
+<Type>%Integer</Type>
+<Required>1</Required>
+<SqlFieldName>role_description</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="1"/>
+<Parameter name="MVHEADING" value="Role Description"/>
+<Parameter name="MVNAME" value="DESCRIPTION"/>
+</Property>
+
+<Property name="roleLevel">
+<Description>
+The role level (0 = no privileges, 1 = common user, etc)</Description>
+<Type>%Integer</Type>
+<Required>1</Required>
+<SqlFieldName>role_level</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="2"/>
+<Parameter name="MVHEADING" value="Role Level"/>
+<Parameter name="MVNAME" value="LEVEL"/>
+</Property>
+
+<Property name="roleIsActive">
+<Description>
+Set to 1 to make this role active</Description>
+<Type>%Boolean</Type>
+<Required>1</Required>
+<SqlFieldName>active</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="3"/>
+<Parameter name="MVHEADING" value="Active"/>
+<Parameter name="MVNAME" value="IS_ACTIVE"/>
+</Property>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^ROLE</DataLocation>
+<DefaultData>RoleDefaultData</DefaultData>
+<IdLocation>^C.ROLE</IdLocation>
+<IndexLocation>^I.ROLE</IndexLocation>
+<StreamLocation>^S.ROLE</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="RoleDefaultData">
+<Value name="1">
+<Value>roleDescription</Value>
+</Value>
+<Value name="2">
+<Value>roleLevel</Value>
+</Value>
+<Value name="3">
+<Value>roleIsActive</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

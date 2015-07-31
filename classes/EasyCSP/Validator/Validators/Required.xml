@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Validator.Validators.Required">
+<Description><![CDATA[
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>
+The attribute can not be empty.]]></Description>
+<Super>EasyCSP.Validator.Base</Super>
+<TimeChanged>63473,80165.972375</TimeChanged>
+<TimeCreated>63459,74395.872813</TimeCreated>
+
+<Parameter name="message">
+<Default>This field is required.</Default>
+</Parameter>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>value</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+		q:$g(value)="" 0
+		q 1
+]]></Implementation>
+</Method>
+</Class>
+</Export>

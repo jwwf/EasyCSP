@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.UnitTest">
+<Super>%RegisteredObject</Super>
+<TimeChanged>63547,29182.26676</TimeChanged>
+<TimeCreated>63544,30990.514124</TimeCreated>
+
+<Method name="testControlGroup">
+<Implementation><![CDATA[
+	set model = ##class(Models.UserShadow).%New()
+	set outerEnclosureOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do outerEnclosureOptions.set("style","margin: 5px 0;")
+	do outerEnclosureOptions.set("class", "inline row stretched")
+
+	set labelEnclosureHtmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do labelEnclosureHtmlOptions.set("style","font-size: 13px;")
+	do labelEnclosureHtmlOptions.set("class", "two")
+
+	set inputenclosureHtmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do inputenclosureHtmlOptions.set("class", "seven")
+
+	set inputTagHtmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do inputTagHtmlOptions.set("type", "password")
+
+	set sc = $CLASSMETHOD("EasyCSP.Web.ControlGroup","addControlGroup",model,"password",1,1,outerEnclosureOptions,labelEnclosureHtmlOptions,inputenclosureHtmlOptions,inputTagHtmlOptions)
+	do sc.Rewind() while (sc.AtEnd = 0) { set len = 128 w sc.Read(.len) } do sc.Rewind()
+]]></Implementation>
+</Method>
+
+<Method name="testXData">
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+	set headerXDataId = "HeaderContent"
+	do ..readXData(headerXDataId)
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="readXData">
+<FormalSpec>id</FormalSpec>
+<Implementation><![CDATA[
+	set headerDef = ##class(%Dictionary.CompiledXData).%OpenId($classname()_"||"_id)
+	set headerStream = headerDef.Data
+	
+	if '$isobject(headerStream) {
+		do %EasyCSPApp.addContent("Site.Login.cls: "_id_" stream failed to open.")
+		quit 0
+	}
+	
+	set status=##class(%XML.TextReader).ParseStream(headerStream,.textreader)
+	
+	if $$$ISERR(status) {
+		write "Site.Login.cls: Could not parse "_id_" stream."
+		quit 0
+	}
+	
+	while textreader.Read() {
+		write textreader.Value,!
+	}
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<XData name="HeaderContent">
+<Data><![CDATA[
+<root><![CDATA[
+<div id="wizard-help-wrapper" class="help-overlay">
+    <a href="#" onClick="helpwindow('wizard-help-wrapper');"></a>
+    <div id="home-graph-help" class="help-window">
+        <div class="close-help"><a href="#" onClick="helpwindow('wizard-help-wrapper');
+                $('#email').focus();"></a></div>
+        <div class="fleft" style="clear: both">
+            <h1 style="color: #ffffff;">Sign In or Register a New Account</h1>
+        </div>
+
+        <div class="fleft" style="clear: both; margin-top: 20px">
+            <p>
+                If you have previously registered, please enter either your login name or your email address
+                in the "Email Address" blank and then fill in your password below that. If you don't
+                have a user ID or you aren't registered, click the "I am a New User" button at the
+                bottom of the page to create an account.
+            </p>
+            <p style="color: red">All fields are required</p>
+        </div>
+    </div>
+</div>
+
+<br />
+
+<ul class="inline row stretched">
+    <li class="nine">
+    <center><h2 id="formHeading">Log in or Register</h2></center>
+    <p>Welcome to Trapeze Mobile Ticketing! If you have registered already, enter your user name or email address and your password to sign in. If you
+        aren't registered yet, you can create a login by clicking the "I am a new user" button at the bottom of the page.</p>
+    <br />
+</li>
+</ul>
+]]]]><![CDATA[>
+</root>
+]]></Data>
+</XData>
+</Class>
+</Export>

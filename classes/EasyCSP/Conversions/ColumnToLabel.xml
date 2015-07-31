@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.ColumnToLabel">
+<Description><![CDATA[
+Make a camel-cased name from an input string. Capital letters are used when
+a ligature character (for example, @,.,_,-,$,%) is found in the string. Thus,
+"CAMEL_CASE.STRING" becomes "Camel Case String". This is especially useful
+for turning SQL column names into labels for input forms or report column headings.
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Language>mvbasic</Language>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63475,73170.426811</TimeChanged>
+<TimeCreated>63459,78545.495535</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>InputString:%String=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    If $get(InputString) = "" Then Return ""
+    
+    ReturnValue = InputString
+    
+    * Filter out everything but the dingbat characters. These indicate where to break with a space and capitalise the next word.
+    IllegalCharacters = " " : oconv(oconv(InputString,'MC/A'), 'MC/N') ; * take out the letters and numbers leaving only dingbats and the space character
+    IllegalCharacters.length = Len( IllegalCharacters )
+    Replacements = Str( @fm, IllegalCharacters.length )
+    
+    * Convert all the dingbats to attribute marks then operate on the entire dynamic array at once.
+    Convert IllegalCharacters To Replacements In ReturnValue
+    ReturnValue = OConvS( ReturnValue, "MCT" ) ; * Remove any leading or trailing separators
+    
+    ReturnValue = Trim( ReturnValue, @fm )
+    
+    Convert @fm To " " In ReturnValue
+    
+    Return ReturnValue
+]]></Implementation>
+</Method>
+</Class>
+</Export>

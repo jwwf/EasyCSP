@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:34">
+<Class name="EasyCSP.Web.index">
+<Description><![CDATA[
+<p>
+<b>Please do not change this page</b>. The only purpose for this page is to
+provide an entry-point into the framework system.
+</p?]]></Description>
+<Super>%CSP.Page</Super>
+<TimeChanged>63751,39783.563577</TimeChanged>
+<TimeCreated>63478,70396.854843</TimeCreated>
+
+<Method name="OnPage">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	k %EasyCSPExcecption
+	/********************************** remove this and uncomment onprehttpd after debugging ***********************/
+	s haserror = 0
+	try {
+		set %EasyCSPApp = ##class(EasyCSP.Web.Application).%New()
+	} catch mvcException {
+		s %EasyCSPExcecption = mvcException
+		set haserror = 1
+		q
+	}
+	
+	set %EasyCSPApp.Debugging = haserror ; you may change this to debug your custom classes
+	set %EasyCSPApp.indexName = $classname()_".cls" // this is a class, not a .csp
+	
+	/********************************** end of "remove this and uncomment onprehttpd after debugging" ***********************/
+	
+	if $get(%EasyCSPException)["Exception" {
+		do %EasyCSPApp.init("site/error")
+		do %EasyCSPApp.controller.run()
+		quit $$$OK
+	} else {
+		try {
+			do %EasyCSPApp.controller.run()
+		} catch mvcException {
+			s:$get(%EasyCSPException)="" %EasyCSPException = mvcException
+		}
+		
+		if $get(%EasyCSPException)["Exception" {
+			do %EasyCSPApp.init("site/error")
+			do %EasyCSPApp.controller.run()
+		}
+	}
+	
+	/*
+	// Tell the app that headers have been sent and it's now time to render a page
+	set %EasyCSPApp.pageState = "page"
+	// for debugging
+	w "<pre>",!
+	w "CGI Data:",!
+	d %EasyCSPApp.webEnvironment.cgiData.dump()
+	w !!,"-------------------------------------------------------------------------",!!
+	w "Request Data:",!
+	d %EasyCSPApp.webEnvironment.requestData.dump()
+	w !!,"-------------------------------------------------------------------------",!!
+	w "Session Data:",!
+	d %EasyCSPApp.webEnvironment.sessionData.dump()
+	
+	w "</pre>",!
+	q $$$OK
+	*/
+	
+	
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="OnPreHTTP">
+<Description><![CDATA[
+<p>
+Event handler for <b>PreHTTP</b> event: this is invoked before
+the HTTP headers for a CSP page have been sent.  All changes to the
+<class>%CSP.Response</class> class, such as adding cookies, HTTP headers,
+setting the content type etc. must be made from within the OnPreHTTP() method.
+Also changes to the state of the CSP application such as changing
+%session.EndSession or %session.AppTimeout must be made within the OnPreHTTP() method.
+It is prefered that changes to %session.Preserve are also made in the OnPreHTTP() method
+as this is more efficient, although it is supported in any section of the page.
+Return <b>0</b> to prevent <method>OnPage</method> from being called.
+</p>
+
+<p>In the EasyCSP, use the OnPreHTTP event to set up the framework application.
+If the app is created, a clone of it must be preserved in %EasyCSPApp. This is
+because the only useful programmer-accessible parts of CSP service at this stage of invocation
+are OnPreHTTP() and OnPage(). The app must parse the route, create an instance of the
+controller object that handles that route and the controller may only process the
+before{Action} event handler.
+</p>
+
+<p>
+The same %EasyCSPApp process private global will be picked back up when CSP
+processes the OnPage() event.]]></Description>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Boolean</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[
+	/* uncomment after debugging. The app needs to run THIS way.
+	s haserror = 0
+	try {
+		set %EasyCSPApp = ##class(EasyCSP.Web.Application).%New()
+	} catch mvcException {
+		s %EasyCSPExcecption = mvcException
+		set haserror = 1
+		q
+	}
+	set %EasyCSPApp.Debugging = haserror ; you may change this to debug your custom classes
+	*/
+	quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

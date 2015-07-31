@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Environment">
+<Description><![CDATA[
+<p>
+Holds environment variables offered by the web server in a transient process-private
+global that the modules called by AppManager can see. This allows for a single method of access
+regardless of the original structure, regardless of whether originally it was an array,
+a collection, a specialized structure, etc.
+</p>
+<p>
+Unless a lower-level class extends %CSP.Page, it can not access %request or %response.
+This is rarely practical when leveraging existing code to work with a web framework. The
+web framework exposes these environment attributes so that existing classes and routines
+may access the web environment without having to be recoded or recompiled
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%CSP.Page,EasyCSP.Core.Component</Super>
+<TimeChanged>63678,75977.279935</TimeChanged>
+<TimeCreated>63458,84877.36169</TimeCreated>
+
+<Property name="uploadedContent">
+<Type>%CSP.Stream</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="cgiData">
+<Type>EasyCSP.Core.ParameterList</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="requestData">
+<Type>EasyCSP.Core.ParameterList</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="sessionData">
+<Type>EasyCSP.Core.ParameterList</Type>
+<Transient>1</Transient>
+</Property>
+
+<Method name="%OnNew">
+<ProcedureBlock>0</ProcedureBlock>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+    try {
+	    set ..cgiData = ##class(EasyCSP.Core.ParameterList).%New()
+	    set ..requestData = ##class(EasyCSP.Core.ParameterList).%New()
+	    set ..sessionData = ##class(EasyCSP.Core.ParameterList).%New()
+	    
+	// ***********************************************************************************************
+	// *  MVB routines can't see "%request" because they're not extending the %CSP class.
+	// *  Make basic variable information available to MVBasic by copying contents to the Data
+	// *  property of this object. Obviously, this object must be instantiated before any MVB routine
+	// *  is run. Properly, that should happen in the app controller.
+	// ***********************************************************************************************/
+	
+    do ..requestData.set("pid", $J)
+    
+    // First retrieve the request data.
+    
+    set nextVar = $order( %request.Data(""))
+    
+    while nextVar '= "" {
+        
+        set nextValue = $order(%request.Data(nextVar,""))
+        
+        s values = ""
+        while nextValue '= "" {
+	        s values = values_$lb(%request.Data(nextVar,nextValue))
+	        s nextValue = $order(%request.Data(nextVar,nextValue))
+        }
+        
+        if $listValid(values) do ..requestData.set(nextVar,$listToString(values,$mvfm))
+    
+    	set nextVar = $order( %request.Data(nextVar))
+       
+    }
+        
+	do ..requestData.set("ContentType", %request.ContentType)
+	do ..requestData.set("PageName", %request.PageName)
+	do ..requestData.set("RequestId", %request.RequestId) ; * not implemented until after 2010
+	do ..requestData.set("URL", %request.URL)
+	do ..requestData.set("URLPrefix",%request.URLPrefix)
+	do ..requestData.set("UserAgent", %request.UserAgent)
+        
+	// * If a file was uploaded, make it available to the content-handling modules
+    If $isobject( %request.Content ) {
+        set ..uploadedContent = %request.Content
+    }
+    
+    //*
+    //* Then retrieve the raw CGI data. Some of these (such as request method, accept-language and accept-charset) have direct impact 
+    //* on the type of output the application will generate. Other values are extremely useful, such as cookie contents for continued
+    //* authorised access.
+    //*
+    
+    set nextVar = $order( %request.CgiEnvs(""))
+    
+    while nextVar '= "" {
+        
+	    d ..cgiData.set(nextVar,%request.CgiEnvs(nextVar))
+        
+    	set nextVar = $order( %request.CgiEnvs(nextVar))
+    }
+    
+    //*
+    //* Capture the session data here
+    //*
+    
+    set nextVar = $order( %session.Data(""))
+    
+    while nextVar '= "" {
+        
+        set nextValue = $order(%session.Data(nextVar,""))
+        
+        s values = ""
+        while nextValue '= "" {
+	        s values = values_$lb(%session.Data(nextVar,nextValue))
+	        s nextValue = $order(%session.Data(nextVar,nextValue))
+        }
+        if $listValid(values) do ..sessionData.set(nextVar,values)
+        
+    	set nextVar = $order(%session.Data(nextVar))
+    }
+        
+    } catch theException {
+		write theException.Name
+		write theException.Code
+    	// write theException.Description
+    	write theException.Location
+    }
+    
+    quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="setSession">
+<FormalSpec>name,value</FormalSpec>
+<Implementation><![CDATA[
+	do ..sessionData.set(name,value)
+	set %session.Data(name) = value
+]]></Implementation>
+</Method>
+</Class>
+</Export>

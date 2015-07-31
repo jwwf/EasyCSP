@@ -1,0 +1,1187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.MVModel.Base">
+<Description><![CDATA[
+<p>MV file abstraction layers.  This provides careful locking, data integrity options, and
+a Read(L)(N)(U) syntax that will be comfortable for MV, VB, C#, and PHP programmers
+alike.  Use this class to extend classes that describe physical multivalue files.  This helps
+keep your physical file classes clean and neat.  It also provides a single point of maintenance
+for all read and write operations.  It provides complete debugging and tracing, so if you're
+trying to trace a data problem, you can figure out exactly which programs are reading or
+writing at any particular moment.</p>
+
+<p>This abstraction contains analogues for the Pick READ, READL, READU, WRITE, WRITEU, and
+RELEASE commands.  The added value this abstraction provides when it extends your file class
+is the careful control of file handles, file properties, and record properties.  You also get
+a ReadN (read with no-wait) function that will return immediately (setting error thread globals)
+if another process has a lock on the desired record.  This benefits PHANTOM processes that must
+service communications calls that cannot wait for locks due to protocol time restraints.</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Abstract>1</Abstract>
+<CompileAfter>EasyCSP.Model.Base</CompileAfter>
+<Language>mvbasic</Language>
+<Super>EasyCSP.Model.Base,%MV.Adaptor</Super>
+<TimeChanged>63751,52263.001169</TimeChanged>
+<TimeCreated>63535,38294.153422</TimeCreated>
+<LegacyInstanceContext>1</LegacyInstanceContext>
+
+<Property name="CanWrite">
+<Description>
+Flags to control write and delete</Description>
+<Type>%Boolean</Type>
+<Final>1</Final>
+<InitialExpression>1</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Property name="WriteAllowed">
+<Type>%Boolean</Type>
+<InitialExpression>1</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Method name="WriteAllowedGet">
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[    Return @ME->CanWrite
+]]></Implementation>
+</Method>
+
+<Method name="WriteAllowedSet">
+<Language>mvbasic</Language>
+<ReturnType>%Status</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[    Return "%SYSTEM.Status"->Error( 11, "Use a new object to change ReadOnly status of this file." )
+]]></Implementation>
+</Method>
+
+<Property name="DictHandle">
+<Description>
+File handle for the DICT portion of the file</Description>
+<Type>%MV.File</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="DictIsOpen">
+<Description>
+A separate boolean flag for showing whether the DICT has been opened</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Property name="DictRecord">
+<Description>
+The contents of a record when it comes from the DICT of the file</Description>
+<Type>%String</Type>
+<Transient>1</Transient>
+<Parameter name="MAXLEN" value="3641144"/>
+</Property>
+
+<Property name="FileHandle">
+<Description>
+A local copy of the global file handle</Description>
+<Type>%MV.File</Type>
+<Final>1</Final>
+<Transient>1</Transient>
+</Property>
+
+<Property name="FileName">
+<Description>
+A local copy of the file name. This is a workaround for generic MV files that don't
+extend MVModelBase. The programmer will have to set the file name manually</Description>
+<Type>%String</Type>
+<Final>1</Final>
+<Transient>1</Transient>
+</Property>
+
+<Property name="IsOpen">
+<Description>
+Boolean: Indicates whether the file was successfully opened</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Property name="IsSequential">
+<Description>
+Indicates the file was opened with a sequential method</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Property name="Key">
+<Description>
+The the key to the record currently in hand. If the Key property is set, this will attempt to
+locate and set the %Persistent primary key. If the object is read using one of the MV Read()
+functions Key is set but the primary key propery isn't set automatically. This attempts to
+reconcile the two views of the same object.</Description>
+<Type>%String</Type>
+<Transient>1</Transient>
+</Property>
+
+<Method name="KeyGet">
+<Language>cache</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	quit:i%Key'="" i%Key
+	set id = ..getPrimaryKey() ; get the name of the pk
+	if id '= "" {
+		set pkName = id.Name
+		set i%Key = $property(,pkName)
+	}
+	quit i%Key
+]]></Implementation>
+</Method>
+
+<Method name="KeySet">
+<FormalSpec>value:%String</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set id = ..getPrimaryKey() ; get the name of the pk
+	set:id'="" $property(,id.Name) = $property(,"Key")
+	set i%Key = value
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Property name="Record">
+<Description>
+The record currently in hand.</Description>
+<Type>%String</Type>
+<Transient>1</Transient>
+<Parameter name="MAXLEN" value="3641144"/>
+</Property>
+
+<Property name="RetryCount">
+<Description><![CDATA[
+How long should a Read(L)(U) wait on a lock (in seconds)? <b>Use the ReadN() method to return immediately
+from a read where a record is locked and you don't want to wait.</b> Don't use 0 as that is a special flag
+meaning "use the default from the configuration file".]]></Description>
+<Type>%Integer</Type>
+<InitialExpression>0</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Property name="SuppressLockMessages">
+<Description>
+Read/Write operations: Suppress Lock Messages if locks are encountered</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<UDLText name="T">
+<Content><![CDATA[/*                                       Lock types for read operations                                                      */
+]]></Content>
+</UDLText>
+
+<Parameter name="LocktypeNone">
+<Description>
+Lock types for Read operations</Description>
+<Type>%Integer</Type>
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="LocktypeIntent">
+<Type>%Integer</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="LocktypeNoWait">
+<Type>%Integer</Type>
+<Default>2</Default>
+</Parameter>
+
+<Parameter name="LocktypeUpdate">
+<Type>%Integer</Type>
+<Default>3</Default>
+</Parameter>
+
+<UDLText name="T">
+<Content><![CDATA[/*                                            Error Codes for Open(Seq) operations                                           */
+]]></Content>
+</UDLText>
+
+<Parameter name="OpenErrorsNoFilename">
+<Description>
+Error Code for FileOpen - No file name was supplied</Description>
+<Type>%Integer</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="OpenErrorsNotAFile">
+<Type>%Integer</Type>
+<Default>2</Default>
+</Parameter>
+
+<Parameter name="ISelectNotAFile">
+<Type>%Integer</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="ReadErrorNonexistant">
+<Description>
+Error codes for Read operations</Description>
+<Type>%Integer</Type>
+<Default>-1</Default>
+</Parameter>
+
+<Parameter name="ReadErrorNoItemID">
+<Type>%Integer</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="ReadErrorInvalidFileHandle">
+<Type>%Integer</Type>
+<Default>2</Default>
+</Parameter>
+
+<Parameter name="ReadErrorUserAbort">
+<Type>%Integer</Type>
+<Default>3</Default>
+</Parameter>
+
+<Parameter name="ReadErrorNoWaitReturn">
+<Type>%Integer</Type>
+<Default>4</Default>
+</Parameter>
+
+<Parameter name="ReadErrorSystem">
+<Type>%Integer</Type>
+<Default>5</Default>
+</Parameter>
+
+<Parameter name="ReadErrorSequentialEOF">
+<Type>%Integer</Type>
+<Default>6</Default>
+</Parameter>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+<p>Call the New method from your file class to set object properties and open the DATA
+portion of the file automatically.  If the <b>ReadOnly</b> argument is set TRUE then
+the subclass won't write the contents of @ME->Record back to the file, even if the
+@ME->hasChanged property is TRUE.  Obviously, if you use the legacy Pick/MV/U2
+WRITE statement in your Basic program, this object won't be called and can't protect you.</p>
+<p>
+The <i>FileName</i> argument exists to support opening of legacy or sequential files that don't extend MVModel.Base
+directly. This is mainly used for email attachments when the file class isn't or can't be known.
+</p>]]></Description>
+<Final>1</Final>
+<FormalSpec>WorkSilently:%Boolean=0,ReadOnly:%Boolean=0,FileName:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    @ME->ClearConditions()
+    
+    @ME->CanWrite = ( ReadOnly = @false )
+    @ME->SuppressLockMessages = WorkSilently
+    
+    if $get(FileName) = "" then 
+    	@ME->FileName =  @ME->%GetParameter("MVFILENAME")
+    end else
+    	@ME->FileName = FileName
+    end
+
+* set up properties for this particular instance
+    @ME->DictIsOpen = @false
+    @ME->IsOpen = @false
+    @ME->Key = ""
+    @ME->Record = ""
+    
+    @ME->FileOpen("DATA")
+    
+    IF FILEINFO( @ME->FileHandle, 0 ) = 0 THEN 
+        @ME->SetCondition( -1, @ME->FileName : " failed to open." )
+        Return "%SYSTEM.Status"->OK() ; * live to report the error but don't set the open flag
+    END
+    
+    @ME->IsOpen = @true ; * the file opened
+    @ME->setIsNewRecord(@true)
+    
+    Return ##super() ; * MV setup is done. Now finish the standard model.
+]]></Implementation>
+</Method>
+
+<Method name="Close">
+<Description>
+Generalized close; when in doubt, close both DICT and DATA portions.  The common Close() routine
+doesn't generate an error if a file hasn't been opened previously so it hurts nothing.</Description>
+<Implementation><![CDATA[
+    
+    @ME->CloseDict()
+    @ME->CloseData()
+]]></Implementation>
+</Method>
+
+<Method name="CloseData">
+<Description>
+Close the data portion of the file</Description>
+<Implementation><![CDATA[
+    If @ME->IsSequential = @false Then
+        @ME->FileClose( @ME->dataLevel )
+    End Else
+        @ME->FileCloseSeq()
+    End
+    
+    @ME->IsOpen = @false
+]]></Implementation>
+</Method>
+
+<Method name="CloseDict">
+<Description>
+Close the data portion of the file</Description>
+<Implementation><![CDATA[
+    @ME->FileClose( @ME->dictLevel )
+    @ME->DictIsOpen = @false
+]]></Implementation>
+</Method>
+
+<Method name="Delete">
+<Description><![CDATA[
+Public method to delete the record named by the key in "@ME->Key".  A different key
+from the one in @ME->Key is specified, that record will be deleted  If the file
+was opened (nominally) ReadOnly from the subclass, the Delete method will just return
+quietly.]]></Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If @ME->CanWrite = @false Then Return ; * if write isn't allowed then just return
+    
+    If NewKey <> "" Then
+        @ME->Key = NewKey
+    End
+    
+    IF @ME->Key = "" THEN
+        @ME->SetCondition( -1, "There is no key currently set within the " : @ME->FileName : " file.  DELETE will not be performed." )
+        RETURN
+    END
+    
+    DELETE @ME->FileHandle, @ME->Key
+    
+    @ME->NewRecord() ; * clear object key and record values
+]]></Implementation>
+</Method>
+
+<Method name="DeleteDict">
+<Description><![CDATA[
+Public method to delete the DICT record named by the key in "@ME->Key". If a different key
+from the one in @ME->Key is specified, that record will be deleted.  If the file
+was opened (nominally) ReadOnly from the subclass, the Delete method will just return
+quietly.  The DICT will have to have been opened first using the @ME->OpenDict method.  If
+the DICT was not explicitly opened, this method will just return quietly.]]></Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If @ME->DictIsOpen = @false Then Return
+    If @ME->CanWrite = @false Then Return ; * if write isn't allowed then just return
+    
+    If NewKey <> "" then
+        @ME->Key = NewKey
+    End
+    
+    IF @ME->Key = "" THEN
+        @ME->SetCondition( -1, "There is no key currently set within the " : @ME->FileName : " file.  DELETE will not be performed." )
+        RETURN
+    END
+    
+    DELETE @ME->DictHandle, @ME->Key
+    @ME->NewRecord()
+]]></Implementation>
+</Method>
+
+<Method name="NewRecord">
+<Description>
+Prepare a new record or nil-out an old one</Description>
+<Implementation><![CDATA[    @ME->Record = ""
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+Method attributesToRecord() [ Private ]
+{
+	attributes = @ME->getAttributes()
+	
+	idx = ""
+	rec = @ME->Record
+	
+	Loop
+		idx = attributes->Next(idx)
+	while idx <> "" do
+		atb = attributes->GetAt(idx)
+		amc = atb->order
+		if amc = 0 then
+			@ME->Key = atb->value
+		end else
+			if rec<amc> <> atb->value then
+				rec<amc> = atb->value
+				@ME->hasChanged = @true
+			end
+		end
+	repeat
+		
+	@ME->Record = rec
+}
+*/
+]]></Content>
+</UDLText>
+
+<Method name="OpenMV">
+<Description><![CDATA[
+Open the DATA level of a file.  This is called automatically from @ME->Setup().]]></Description>
+<Final>1</Final>
+<Private>1</Private>
+<Implementation><![CDATA[
+    
+    If %MVBCommon->ThisProcessIsAPhantom = @true Then ; * restrict phantom access to the file system
+        If $Get( %MVBConfiguration ) = "" Then %MVBConfiguration = "MVBooster.Configuration"->%New()
+        %MVBConfiguration->CheckForbiddenFileAccess( @ME->FileName )
+        IF STATUS() <> @ME->successful THEN RETURN
+    End
+    
+    @ME->FileHandle = @ME->FileOpen( @ME->dataLevel )
+    
+    IF FileInfo( @ME->FileHandle, 0 ) = 0 THEN 
+        @ME->SetCondition( -1, @ME->FileName : " failed to open." )
+    END
+    
+    IF @ME->hasConditions() = 0 THEN @ME->IsOpen = @true
+]]></Implementation>
+</Method>
+
+<Method name="OpenDict">
+<Description><![CDATA[
+Open the DICT level of a file.  This method may be called from the subclass (not private)
+since the DICT is not opened automatically from @ME->Setup().]]></Description>
+<Implementation><![CDATA[
+  
+    If %MVBCommon->ThisProcessIsAPhantom = @true Then ; * restrict phantom access to the file system
+    
+	    %MVBConfiguration->CheckForbiddenFileAccess( @ME->FileName )
+	    IF STATUS() <> @ME->successful Then
+	        RETURN
+	    End
+        
+    End
+    
+    @ME->FileOpen( @ME->dictLevel )
+    
+    IF FileInfo( @ME->DictHandle, 0 ) = 0 THEN 
+        @ME->SetCondition( -1, "DICT " : @ME->FileName : " failed to open.", @ME->Identity )
+    END
+    
+    IF @ME->hasConditions = 0 THEN @ME->DictIsOpen = @true
+]]></Implementation>
+</Method>
+
+<Method name="PerformARead">
+<Description>
+A private method that performs all read operations.  Each public Read{x} function specifies
+the lock type.</Description>
+<FormalSpec>LockType:%Integer,FromDict:%Boolean=0</FormalSpec>
+<Private>1</Private>
+<Implementation><![CDATA[
+      
+    Record = ""
+             
+    Try
+        @ME->GetARecord(LockType, FromDict)
+    Catch TheTrap
+                
+        TrapType = Field( $Get( TheTrap ), "@", 2 ) ; * instance of what kind of exception?
+        
+        If TrapType <> "EasyCSP.Core.Exception" Then
+        
+            Try
+                Desc = @ME->FileName : "::PerformARead() caught a Cache exception type " : DQuote( TrapType )
+                Desc< -1 > = "Name: " : TheTrap->Name
+                Desc< -1 > = "Code: " : TheTrap->Code
+                Desc< -1 > = "Loc:  " : TheTrap->Location
+                Throw "EasyCSP.Core.Exception"->%New( Desc, 99999, @ME->getCaller() : "::PerformARead()", "A system exception was caught while attempting to read " : @ME->Key : " from " : @ME->FileName )
+            Catch TheRethrow
+                assign -1 To STATUS()
+                return
+            End Try
+        
+        End
+        
+        Return
+    
+    End Try
+    
+    @ME->hasChanged = @false
+]]></Implementation>
+</Method>
+
+<Method name="DictRead">
+<Description><![CDATA[
+Read a record from the DICT portion of the file.  @ME->Key is assumed.  Locks are never used.]]></Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If NewKey <> "" then
+        @ME->Key = NewKey
+    End
+    
+    @ME->PerformARead( @ME->%GetParameter( "LocktypeNone" ), @true )
+]]></Implementation>
+</Method>
+
+<Method name="DictReadL">
+<Description>
+Do a straight Pick read; wait for locks using the common MVBooster Read function. Set an intent lock on the record.
+The same Key and Record properties are used.  If you have valuable contents in either, preserve them.  </Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If NewKey <> "" then
+        @ME->Key = NewKey
+    End
+    
+    @ME->PerformARead( @ME->%GetParameter( "LocktypeIntent" ), @true )
+]]></Implementation>
+</Method>
+
+<Method name="DictReadN">
+<Description><![CDATA[
+Do a straight Pick read from the DICT of the file.  Do NOT wait for locks using the common MVBooster Read lock-waiting function. Set no lock on the record.
+If another process has the intended record locked (thus this thread can't read it), the standard MVBooster error thread-globals
+will reflect that the read was not successful.  The Status() function will contain a non-zero value (that is, not equal to
+MVBooster.Common->successful.]]></Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If NewKey <> "" then
+        @ME->Key = NewKey
+    End
+    
+    @ME->PerformARead( @ME->%GetParameter( "LocktypeNoWait" ), @true )
+]]></Implementation>
+</Method>
+
+<Method name="DictReadU">
+<Description><![CDATA[
+Read a record from the DICT portion of the file.  @ME->Key is assumed.  If the read is successful, an update lock is
+set.  Else, the Status() function will not equal MVBooster.Common->successful and the standard MVBooster error thread-
+globals will have a complete description of the failure.]]></Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If NewKey <> "" then
+        @ME->Key = NewKey
+    End
+    
+    @ME->PerformARead( @ME->%GetParameter( "LocktypeUpdate" ), @true )
+]]></Implementation>
+</Method>
+
+<Method name="DictRelease">
+<Description>
+Release all record locks on the DICT of the file.</Description>
+<Implementation><![CDATA[    RELEASE @ME->DictHandle
+]]></Implementation>
+</Method>
+
+<Method name="DictReleaseRecord">
+<Description>
+Release only the lock in the DICT of the file on the record specified by the current key.</Description>
+<Implementation><![CDATA[    RELEASE @ME->DictHandle, @ME->Key
+]]></Implementation>
+</Method>
+
+<Method name="DictWrite">
+<Description>
+Write the currently-held record contents to the DICT at the current key.</Description>
+<Implementation><![CDATA[
+    If @ME->CanWrite = @false Then Return ; * if write isn't allowed then just return
+    IF @ME->hasChanged = @false THEN RETURN ; * don't write unless it's absolutely necessary
+    WRITE @ME->Record TO @ME->DictHandle, @ME->Key
+    @ME->hasChanged = @false
+]]></Implementation>
+</Method>
+
+<Method name="Read">
+<Description>
+Do a straight Pick read; wait for locks using the common MVBooster Read function. Do not lock the record.</Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If NewKey <> "" then
+        @ME->Key = NewKey
+    End
+    
+    *pkName = @ME->getPrimaryKey()
+    *if pkName <> "" then @ME->setAttribute(pkName,NewKey)
+        
+    @ME->PerformARead( @ME->%GetParameter( "LocktypeNone" ) )
+]]></Implementation>
+</Method>
+
+<Method name="ReadL">
+<Description>
+Do a straight Pick read; wait for locks using the common MVBooster Read function. Set an intent lock on the record.</Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If NewKey <> "" then
+        @ME->Key = NewKey
+    End
+    
+    @ME->PerformARead( @ME->%GetParameter( "LocktypeIntent" ) )
+]]></Implementation>
+</Method>
+
+<Method name="ReadN">
+<Description>
+Do a straight Pick read; do NOT wait for locks using the common MVBooster Read function. Set no lock on the record.</Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If NewKey <> "" then
+        @ME->Key = NewKey
+    End
+    
+    @ME->PerformARead( @ME->%GetParameter( "LocktypeNoWait" ) )
+]]></Implementation>
+</Method>
+
+<Method name="ReadU">
+<Description>
+Do a straight Pick read; wait for locks using the common MVBooster Read function. Set an update lock on the record.</Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[
+    
+    If NewKey <> "" then
+        @ME->Key = NewKey
+    End
+    
+    @ME->PerformARead( @ME->%GetParameter( "LocktypeUpdate" ) )
+]]></Implementation>
+</Method>
+
+<Method name="Release">
+<Description>
+Release all record locks on a file.</Description>
+<Implementation><![CDATA[    RELEASE @ME->FileHandle
+]]></Implementation>
+</Method>
+
+<Method name="ReleaseRecord">
+<Description>
+Release only the lock in the file on the record specified by the current key.</Description>
+<Implementation><![CDATA[    RELEASE @ME->FileHandle, @ME->Key
+]]></Implementation>
+</Method>
+
+<Method name="Select">
+<Description><![CDATA[
+SELECT from the file.  If the <b>ListNumber</b> is empty or 0 then this performs a
+a straight Pick BASIC SELECT.  If ListNumber contains a value from 1 to 9, that list
+is filled.]]></Description>
+<FormalSpec>ListNumber:%Integer=0,UseDict:%Boolean=0</FormalSpec>
+<Implementation><![CDATA[
+    If Not( ListNumber Matches "1N0N" ) Then ListNumber = 0
+    
+    If UseDict = @true Then
+        Handle = @ME->DictHandle
+    End Else
+        Handle = @ME->FileHandle
+    End
+    
+    If ListNumber = 0 Then
+        Select Handle
+    End Else
+        Select Handle TO ListNumber
+    End
+]]></Implementation>
+</Method>
+
+<Method name="SelectV">
+<Description>
+Perform a Pick Basic SELECT and return the list in a string variable.  Check the Basic Status() function
+or the standard MVBooster thread globals to see if an error occurred.</Description>
+<FormalSpec>UseDict:%Boolean=0</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    
+    If UseDict = @true Then
+        Handle = @ME->DictHandle
+    End Else
+        Handle = @ME->FileHandle
+    End
+    
+    SelectV Handle To RtnList ON ERROR
+        @ME->SetCondition( 320, "An error occurred whilst selecting records from the " : @ME->FileName : " file.", @ME->Identity : "::SelectV" )
+        RETURN ""
+    END
+
+    Return RtnList
+]]></Implementation>
+</Method>
+
+<Method name="SSelect">
+<Description>
+Perform a Pick Basic SSELECT and return the list in a string variable.  Check the Basic Status() function
+or the standard MVBooster thread globals to see if an error occurred.</Description>
+<FormalSpec>ListNumber:%Integer=0,UseDict:%Boolean=0</FormalSpec>
+<Implementation><![CDATA[
+    
+    If UseDict = @true Then
+        Handle = @ME->DictHandle
+    End Else
+        Handle = @ME->FileHandle
+    End
+    
+    If ListNumber = 0 Then
+        SSelect Handle
+    End Else
+        SSelect Handle TO ListNumber
+    End
+]]></Implementation>
+</Method>
+
+<Method name="SSelectV">
+<Description>
+Perform a Pick Basic SSELECTV and return the list in a string variable.  Check the Basic Status() function
+or the standard MVBooster thread globals to see if an error occurred.</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    SSelectV @ME->FileHandle To RtnList ON ERROR
+        @ME->SetCondition( 320, "An error occurred whilst selecting records from the " : @ME->FileName : " file." )
+        RETURN ""
+    END
+    
+    Return RtnList
+]]></Implementation>
+</Method>
+
+<Method name="Write">
+<Description><![CDATA[
+<p>Write the currently-held record contents to the file at the current key. Per a conversation with Eric at
+InterSystems Support:  don't mind the complaints in Studio about syntax checking.  This compiles fine.  Studio
+doesn't know which flavor of MV one might be using so the syntax checker complains a bit about the "ON ERROR" ...
+"END THEN" ... "END ELSE" ... "END structure.  This has been tested and works under fire.  The premise is to
+catch and report things like catastrophic disk/file errors without taking down a phantom, allowing a phantom
+to perform other work (if possible) and to keep running.</p>
+<p>  As with all MVBooster processes, the STATUS() function
+is set to a non-zero value and the %MVBError(x) thread variables have descriptive values when an error occurs.
+The Trace object will log errors to the appropriate place so the programmer will be able to go directly to an
+offending program or bit of hardware to correct a problem.</p>
+<p>One can use the WriteU() method in this class or set <b>LeaveLock</b> = @true to perform a WRITEU()
+(which writes the record but leaves record locks in place) instead of a Write()
+(which automatically releases record locks).</p>]]></Description>
+<FormalSpec>NewKey:%String="",LeaveLock:%Boolean=0</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+    If NewKey <> "" Then ; * default key can be overridden here
+        @ME->Key = NewKey
+    End
+    
+    If @ME->Key = "" Then
+        @ME->SetCondition( -1, "Specify a key before calling Write()", @ME->%ClassName(0) : "::Write()" )
+        Return
+    End
+    
+    If @ME->CanWrite = @false Then Return ; * if write isn't allowed then just return
+    
+    *@ME->attributesToRecord() ; * copy the model's property values. The model superclass maintains the properties.
+    IF (@ME->hasChanged = @false) and (@ME->getIsNewRecord() = @false) THEN RETURN ; * don't write unless it's absolutely necessary
+    
+    if @ME->hasMethod("beforeSave") then @ME->beforeSave()
+
+    Try
+    
+        If LeaveLock = @false Then
+    
+             WRITE @ME->Record TO @ME->FileHandle, @ME->Key ON ERROR
+                @ME->SetCondition( status(), 'Error on write.', @ME->Identity )
+             End Then
+                @ME->ClearConditions()
+             End Else
+                @ME->SetCondition( status(), 'Error on write.', @ME->Identity )
+             End
+             
+         End Else
+    
+             WRITEU @ME->Record TO @ME->FileHandle, @ME->Key ON ERROR
+                @ME->SetCondition( status(), 'Error on write.', @ME->Identity )
+             End Then
+                @ME->ClearConditions()
+             End Else
+                @ME->SetCondition( status(), 'Error on write.', @ME->Identity )
+             End
+         End
+     
+    Catch
+        @ME->SetCondition( 400, 'Error on write.', @ME->Identity )
+    End Try
+         
+    if @ME->hasConditions() = 0 Then
+    	@ME->hasChanged = @false
+    	if @ME->hasMethod("afterSave") then @ME->afterSave()
+    end
+    
+    Return not(@ME->hasConditions())
+]]></Implementation>
+</Method>
+
+<Method name="WriteU">
+<Description>
+Counterpart to MV WRITEU:  write a record that has been locked but leave the lock in place.</Description>
+<FormalSpec>NewKey:%String=""</FormalSpec>
+<Implementation><![CDATA[    @ME->Write( NewKey, @true ) ; * reuse Write but leave the lock in place
+]]></Implementation>
+</Method>
+
+<Method name="GetARecord">
+<Description><![CDATA[
+Read a record from the file and update properties as appropriate.  This is the routine that deals with locks
+and retries.  It is only called from within a file object (marked Private).  Errors are logged (or printed) via
+the Trace object.  If you set @ME->Debugging or %MVBExtendedDebugging to true in your program, you will have
+a complete trace of file activity including normal read activity, lock waits, errors, etc. <br /> <br />
+If the objects file handle belongs to a sequential file, this method automatically detects that and proceeds to
+a binary-safe read.  Thus, GetARecord() can be used to read such things as images or sound files from a directory
+type file accessible from MV.  (For instance, if you wanted to control a CSP or Zen process from within a classic
+MV set of programs, you could leverage legacy business logic pretty easily.)<br /> <br />
+The RetryCount parameter has a special meaning if it is equal to 0.  That indicates the configuration record from
+the control file should be read up and its value used.  This makes the method very flexible on a situation-by-situation
+basis where a programmer can control reactions for various files, accounts, users, etc.]]></Description>
+<FormalSpec>LockType:%Integer=0,FromDict:%Boolean=0,RetryCount:%Integer=0</FormalSpec>
+<Private>1</Private>
+<Implementation><![CDATA[
+
+    TheFileName = @ME->FileName
+    
+* This method can read from either DICT or DATA.  Collect the right handle.
+
+    Key = @ME->Key
+        
+    If FromDict = @false Then
+		if not(@ME->IsOpen) Then @ME->OpenMV()
+		FileHandle = @ME->FileHandle
+		@ME->Record = ""
+    End Else
+        FileHandle = @ME->DictHandle
+    	if not(@ME->IsOpen) Then @ME->OpenDict()
+        @ME->DictRecord = ""
+    End
+
+    IF $Get( FileHandle ) = "" THEN
+        @ME->SetCondition( @ME->%GetParameter( "ReadErrorInvalidFileHandle" ), "Invalid file handle" )
+        Return
+    END
+
+    IF FILEINFO( FileHandle, 0 ) = 0 THEN
+        @ME->SetCondition( @ME->%GetParameter( "ReadErrorInvalidFileHandle" ), "Invalid file handle" )
+        Return
+    END
+
+    STATUS TheFile.Status FROM FileHandle Else
+        @ME->SetCondition( @ME->%GetParameter( "ReadErrorInvalidFileHandle" ), 'Unable to status ' : VocName )
+        Return
+    End
+
+    VocName = FileInfo( FileHandle, 1 )
+
+    Pathname = TheFile.Status< 20 >
+    FileType = TheFile.Status< 21 >
+      
+    If @ME->Debugging = @true Then
+    
+        If @ME->IsSequential = @false Then
+            Line = @ME->Identity : " reading " : TheFileName : " (" : Pathname : "), key = '" : @ME->Key : "', LockType " : LockType
+        End Else
+            Line = @ME->Identity : " reading sequential file " : TheFileName
+        End
+               
+    End
+
+    Nagging = 0
+    RetryCount = "EasyCSP.Configuration.Settings"->getSetting("readRetryCount") ; * retrieve a copy from the object property
+    If RetryCount = 0 Then RetryCount = 5 ; * Let's be optimistic in this example: make just five extra attempts.  Adjust for your installation.
+    TempRecord = ""
+
+    LOOP
+        Nagging += 1
+    UNTIL Nagging > RetryCount DO
+
+        IF LockType = @ME->%GetParameter( "LocktypeUpdate" ) THEN
+
+            READU TempRecord FROM FileHandle, @ME->Key ON ERROR
+
+                RC = STATUS()             ; * hold value for step-debugging
+                @ME->SetCondition( @ME->%GetParameter( "ReadErrorSystem" ), "The system reported a read error, code " : RC )
+                EXIT
+
+            END LOCKED
+
+                IsMyLock = RECORDLOCKED( FileHandle, @ME->Key )
+                LockHolder = Status() ; * save the PID
+                IF IsMyLock > 0 THEN EXIT        ; * my lock anyway
+
+                IF @ME->LockWait( FileHandle, LockHolder ) = @true THEN
+                    @ME->SetCondition( @ME->%GetParameter( "ReadErrorUserAbort" ), "User aborted the wait countdown" )
+                    EXIT
+                END ELSE
+                    SLEEP 2
+                END
+
+            END THEN
+
+                @ME->ClearConditions()
+                
+                If FromDict = @true Then
+                    @ME->DictRecord = TempRecord
+                End Else
+                    @ME->Record = TempRecord
+                End
+                
+                EXIT
+
+            END ELSE
+        
+                @ME->SetCondition( @ME->%GetParameter( "ReadErrorNonexistant" ), "Record doesn't exist.  This is not necessarily an error." )
+                EXIT
+                
+            End ; * if update locking
+
+        End Else ; * the record isn't to be locked, but we'll place a temporary hold on it
+
+            READL TempRecord FROM FileHandle, @ME->Key ON ERROR
+
+                RC = STATUS()             ; * hold value for step-debugging
+                @ME->SetCondition( @ME->%GetParameter( "ReadErrorSystem" ), "The system reported a read error, code " : RC )
+                EXIT
+
+            End LOCKED
+
+                IsMyLock = RECORDLOCKED( FileHandle, @ME->Key )
+                LockHolder = Status() ; * save the PID
+                IF IsMyLock > 0 THEN EXIT        ; * my lock anyway
+
+                IF LockType = @ME->%GetParameter( "LocktypeNoWait" ) THEN
+                    @ME->SetCondition( @ME->%GetParameter( "ReadErrorNoWaitReturn" ), "Record is already locked by someone else and you requested not to wait." )
+                    EXIT
+                End
+
+                IF @ME->LockWait( @ME->FileHandle, LockHolder ) = @true THEN
+                    @ME->SetCondition( @ME->%GetParameter( "ReadErrorUserAbort" ), "User aborted the wait countdown" )
+                    EXIT
+                End ELSE
+                    SLEEP 2
+                End
+
+            End Then
+            
+                @ME->ClearConditions()
+            
+                If FromDict = @true Then
+                    @ME->DictRecord = TempRecord
+                End Else
+                    @ME->Record = TempRecord
+                End
+                
+                Exit
+                
+            End Else
+            
+                @ME->SetCondition( @ME->%GetParameter( "ReadErrorNonexistant" ), "Record doesn't exist.  This is not necessarily an error." )
+                Exit
+                
+            End ; * ReadL block
+            
+        End
+    *
+    Repeat
+    
+    if @ME->hasConditions() = 0 then
+    	@ME->loadModelMV()
+    end
+
+    IF LockType = @ME->%GetParameter( "LocktypeNone" ) THEN
+        If FromDict = @true Then
+            Release @ME->DictHandle, @ME->Key
+        End Else
+            Release @ME->FileHandle, @ME->Key
+        End
+    End
+
+    Return
+]]></Implementation>
+</Method>
+
+<Method name="loadModelMV">
+<Description>
+After an OpenID or MV Read, cycle through the object properties and load
+the values into the model attributes.</Description>
+<Language>cache</Language>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+		
+	set key = ..attributes.Next("")
+	while key '= "" {
+		set atb = ..attributes.GetAt(key)
+		set propertyName = atb.name
+		set order = atb.order
+		
+		if order > 0 {
+			set value = $piece(..Record, $MVFM, order) ; attribute-for-attribute
+			try {
+				set $PROPERTY($THIS, propertyName) = value
+				//set atb.value = $property($this,propertyName)
+			} catch {
+				write "<pre>Could not set property ",propertyName,!,"</pre>",!
+				continue
+			}
+			set atb.value = value
+		} else {
+				//write "<pre>Set altkey ",propertyName, " value ",..Key,!,"</pre>",!
+			try {
+				set:..Key="" ..Key = $property($THIS,propertyName)
+				set:..Key'="" $PROPERTY($THIS, propertyName) = ..Key
+				set atb.value = ..Key
+				if (..Key '="") & ($Property($THIS, propertyName) = "") set $Property($THIS,propertyName) = ..Key
+			} catch {
+				//write "<pre>Could not set key ",propertyName,!,"</pre>",!
+				continue
+			}
+		}
+		
+		do ..attributes.SetAt(atb,key)
+		set key = ..attributes.Next(key)
+	}
+	
+	set i%isNewRecord = 0 // This is not a new record; it came from the database.
+	set ..scenario = "old"
+	
+	/*
+	w "<pre>",!
+	d $System.OBJ.Dump(atb)
+	w "</pre>",!
+	
+	w "<pre>",!
+	d $System.OBJ.Dump($THIS)
+	w !!,"..Record: ",..Record,!
+	w "</pre>",!
+	*/
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="LockWait">
+<Description>
+This method used to return a boolean to indicate when a user touched a key to stop
+waiting.  This functionality is removed for Cache temporarily -- TODO.  Cache does
+not (perhaps yet) support the U2 UVBasic PRINTERR command.</Description>
+<FormalSpec>PID:%Numeric</FormalSpec>
+<Private>1</Private>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+    
+    Read %MVPIDTab->Record From %MVPIDTab->FileHandle, PID Else
+        %MVBTrace->WriteEntry( Pathname : " has a record lock held by PID " : PID : " but MVPIDTab info cannot be referenced." )
+        Return @false
+    End
+    
+    Message = "Waiting for a lock to be released by user " : %MVPIDTab->User
+    Message< -1 > = "In file: " : @ME->FileHandle->%Filename
+    Message< -1 > = "Process ID: " : PID
+    Message< -1 > = "Terminal " : %MVPIDTab->Terminal : ", port " : %MVPIDTab->Port
+        
+    RETURN @false
+]]></Implementation>
+</Method>
+
+<Method name="FileClose">
+<Description>
+Uniform File-Close routine; removes the handle from common storage</Description>
+<FormalSpec>DictOrData:%String="DATA"</FormalSpec>
+<Private>1</Private>
+<Implementation><![CDATA[
+            
+    @ME->ClearConditions()
+
+* The cache flag is used to prevent local VOC entries from being cached. This is so the home VOC
+* pointer doesn't get overwritten and lost.
+
+    If DictOrData = @ME->dictLevel THEN DictFlag = @ME->dictLevel ELSE DictFlag = @ME->dataLevel
+    
+    TargetName = TRIM( DictOrData : "_" : @ME->FileName )
+    
+    If DictOrData = @ME->dataLevel Then
+        Close @ME->FileHandle
+        @ME->FileHandle = ""
+    End Else
+        Close @ME->DictHandle
+        @ME->DictHandle = ""
+    End
+        
+    Return
+]]></Implementation>
+</Method>
+
+<Method name="FileOpen">
+<Description>
+Uniform File-Open routine; keeps track of opened files in a process-global associative array</Description>
+<FormalSpec>DictOrData:%String="DATA",FileName:%String=""</FormalSpec>
+<Private>1</Private>
+<Implementation><![CDATA[
+    @ME->ClearConditions()
+    
+
+* The cache flag is used to prevent local VOC entries from being cached. This is so the home VOC
+* pointer doesn't get overwritten and lost.
+
+    If @ME->FileName = "VOC" THEN CacheFlag = @false ELSE CacheFlag = @true
+    If DictOrData = @ME->dictLevel THEN DictFlag = "DICT" ELSE DictFlag = @ME->dataLevel
+
+    TargetName = TRIM( DictOrData : "_" : @ME->FileName )
+    fhFilename = ""
+*
+* Attempt the OPEN.  If the file is accessible, return the result code
+* as is.  If it's not, set the value to non-zero and report the error.
+
+* Patch to work around runtime bug that doesn't recognize "DATA" as a valid keyword (WRC 746016)
+    If DictFlag <> "DICT" Then DictFlag = ""
+* End of workaround for WRC 746016
+
+    OPEN DictFlag, @ME->FileName TO fhFilename Then
+    
+        ASSIGN @ME->successful TO STATUS()
+        
+    END ELSE
+        @ME->SetCondition( @ME->%GetParameter( "OpenErrorsNotAFile" ), @ME->FileName : " is not a file." )
+        Return
+    END
+    
+    If DictFlag = @ME->dictLevel Then
+        @ME->DictHandle = fhFilename
+    End Else
+        @ME->FileHandle = fhFilename
+    End
+        
+    Return
+]]></Implementation>
+</Method>
+</Class>
+</Export>

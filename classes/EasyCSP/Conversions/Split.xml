@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.Split">
+<Description><![CDATA[
+Emulate the javascript/PHP array split/explode function with an added feature
+for dealing with HTTP form data. To group items as the array key only, set
+<var>splitOnEquals</var> to false (0). The default is to split var=val strings
+into array key => value pairs.]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63631,32535.746918</TimeChanged>
+<TimeCreated>63631,32508.800045</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[inString:%String="",delimiter:%String="&",splitOnEquals:%Boolean=1]]></FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	
+	if $get(inString)="" quit ""
+	if $get(delimiter) = "" set delimiter = "&" // use the web default
+	
+	set rtn = ##class(%ArrayOfObjects).%New()
+	set work = $listFromString(inString, delimiter)
+	set ll = $listLength(work)
+	set idx = ""
+	
+	for idx = 1:1:ll {
+		set substr = $listGet(work,idx)
+		if splitOnEquals {
+			set var = $piece(substr, "=", 1)
+			set val = $piece(substr, "=", 2)
+			do rtn.SetAt(val, var)
+		} else {
+			do rtn.SetAt("", substr)
+		}
+		
+	}
+	
+	quit rtn
+]]></Implementation>
+</Method>
+</Class>
+</Export>

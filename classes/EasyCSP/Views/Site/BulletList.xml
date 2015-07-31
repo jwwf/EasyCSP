@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Site.BulletList">
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63764,38606.645508</TimeChanged>
+<TimeCreated>63764,29809.328268</TimeCreated>
+
+<Method name="run">
+<Implementation><![CDATA[
+	set ..pageTitle = "Quick List of EasyCSP Features"
+	do ..addContent(##class(EasyCSP.Web.CHTML).routeLink("Return to the index","site/index"))
+		do ..xDataToContent("bulletList")
+		quit 1
+]]></Implementation>
+</Method>
+
+<XData name="bulletList">
+<MimeType>text/html</MimeType>
+<Data><![CDATA[
+<span>
+	<h2>Short Description of EasyCSP</h2>
+	
+	<ul>
+	<li>
+	Extends existing Cache code with little disturbance. Rapid development cycle to bring legacy character applications to the web without the need for external tools.
+	</li>
+	<li>
+	Designed for Software As Service (SAS) sites; single database having many customers with strong walls between, a single presentation framework that can automatically select look and feel based on customer, a single application framework supporting many types of business logic.
+	</li>
+	<li>
+	Rapid application design through reduced coding. Much of the presentation relies on proper use of DocuMatic and completeness of property attributes.
+	</li>
+	<li>
+	Simple, rule-based validation. Validation is accomplished through drop-ins. Instead of writing separate getters, setters, and validators, data integrity is checked each time a model attribute value is changed.
+	</li>
+	<li>
+	Simple, rule-based access to pages and processes. As with validation, access is controlled by drop-ins. Access can be granted or denied to whole groups or a single user.
+	</li>
+	<li>
+	Separation of custom, site-specific code and framework code. Overriding or adding rules or validation can be accomplished by writing a similar drop-in with the same name then adding it to the same-named package in the local data namespace.
+	</li>
+	<li>
+	Easy extension of framework capabilities by adding drop-in code. There is no need to modify framework code. The framework operates with object factories so custom objects will be sought and selected first then stock objects will be selected if no override can be found.
+	</li>
+	<li>
+	Exceptions are handled then displayed to an error page that describes the problem and how to fix it. Simple annoyances such as unassigned variables no longer need to result in a blank web page.
+	</li>
+	<li>
+	Site look and feel is accomplished through layout classes. Layouts can be selected on the fly for a group or company, or for an individual user based on user credentials. For instance, if you are providing software as a service, you may have a layout for each company you support, each with custom logos, colors, buttons, etc. To implement, use your own CSS then clone-and-modify one of the EasyCSP layout classes or create your own layout CSS and class.
+	</li>
+	<li>
+	Script inclusion is handled mostly in the layouts. A process will have only the scripting it needs. Views may also add custom scripting in addition to that loaded in the layout.
+	</li>
+	<li>
+	Script librarying is handled in one class that can also be overridden. Stock scripts such as jQuery, jQueryUI, etc can be registered once then included in a layout as needed.
+	</li>
+	<li>
+	Form and page generation is reduced to providing lists of model attributes to a control generator. Validation can be accomplished either on the client side (using jQueryUI validator) or at the server using model attribute validation. A mix is typical.
+	</li>
+	<li>
+	Validation errors are reflected to the UI so the user may correct input errors. Both form-wide and individual input error reporting is supported (the default is both).
+	</li>
+	<li>
+	Simplified validation error detection in the model. At the simplest implementation, the controller can call modelName.hasErrors() and request the form – with input intact plus errors highlighted – be re-rendered then can stop there without changing data in the %Persistent class. %Persistent data for a given attribute is not changed until all new input passes validation. There is no need to write separate getters, setters, and validators.
+	</li>
+	<li>
+	The typical Caché programmer will not need to be expert with HTML. The framework will build valid HTML 5 each and every time without the need for the Cache programmer to understand nuances of HTML attributes. Input type is selected automatically by the HTML control-group generator and handled with jQuery-UI. Jquery-UI validation is loaded automatically for specific types such as email addresses, etc.
+	</li>
+	<li>
+	Strict model-controller-view design. This makes for very simple extension or overriding of stock EasyCSP classes. Allows for strict organization of code: business rules in controllers, data validation and storage through models, and greatly reduced coding of UI components in the views.
+	</li>
+	<li>
+	Leveraging of existing code by extending %Persistent classes with one of the EasyCSP model classes: EasyCSP.Model.Base for traditional %Persistent classes and EasyCSP.MVModel.Base for MV %Persistents.
+	</li>
+	<li>
+	Use of Xdata segments is supported for visual boilerplate or long passages of static HTML.
+	</li>
+	<li>
+	Contains a default user registration and user validation process. This can be overridden as well by the creation of a custom login process. For added security, user demographic and user status and security information are in separate tables. Passwords are stored as AES encrypted strings.
+	</li>
+	<li>
+	Security is further enhanced by the fact that actual process names, class names, and the like are never exposed in the URL. Process control is handled through a route manager that automatically selects the proper controller and view based on customs, security rules, etc.
+	</li>
+	<li>
+	Security is further enhanced by the fact that actual process names, class names, and the like are never exposed in the URL. Process control is handled through a route manager that automatically selects the proper controller and view based on customs, security rules, etc.
+	</li>
+	<li>
+	Project managers will appreciate the strict use of libraries for consistent coding as well as the use of class documentation for UI presentation. This also relieves a great deal of coding burden from the programmer. Consistency is the likely the most attractive feature of EasyCSP.
+	</li>
+	<li>
+	Programmers will appreciate the low learning-curve as well as the ease of extending EasyCSP features. Custom rules for security, validation, layout, and presentation can be accomplished in minutes instead of days.
+	</li>
+	</ul>
+
+	</span>
+]]></Data>
+</XData>
+</Class>
+</Export>

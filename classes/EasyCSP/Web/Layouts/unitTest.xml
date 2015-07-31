@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Layouts.unitTest">
+<Super>%RegisteredObject</Super>
+<TimeChanged>63567,64547.258128</TimeChanged>
+<TimeCreated>63567,42291.513924</TimeCreated>
+
+<Method name="layout">
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+
+    set controller=##class(EasyCSP.Controllers.Site).%New()
+    set user=##class(Models.User).%New()
+    set data = ##class(EasyCSP.Core.ParameterList).%New()
+    d data.set("controller", controller)
+    d data.set("user", user)
+    set layout = ##class(EasyCSP.Views.Layouts.Site).%New(data)
+    d layout.run()
+    
+    set page = layout.render()
+    while (page.AtEnd = 0) {
+	    set len = 4096
+	    write page.Read(len)
+    }
+]]></Implementation>
+</Method>
+</Class>
+</Export>

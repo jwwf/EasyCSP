@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.Join">
+<Description>
+Emulate the Javascript/PHP join function. Supply an %ArrayOfObjects and the
+delimiter. The return will be a delimited string.</Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63631,27403.75797</TimeChanged>
+<TimeCreated>63631,27403.75797</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[inArray:%ArrayOfObjects="",delimiter:%String="&"]]></FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	
+	if $get(inArray)'["Array" quit ""
+	if $get(delimiter) = "" set delimiter = "&" // use the web default
+	
+	set rtn = ""
+	set idx = ""
+	
+	for  {
+		set idx = inArray.Next(idx)
+		quit:idx=""
+		set rtn = rtn_$listBuild(idx_"="_inArray.GetAt(idx))
+	}
+	
+	quit $listToString(rtn, delimiter)
+]]></Implementation>
+</Method>
+</Class>
+</Export>

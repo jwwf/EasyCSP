@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.Tokenize">
+<Description><![CDATA[
+Take a sentence or command line and split it into a dynamic array
+structure. Each node will contain one token, unless more than one word is surrounded
+by quotes. Thus, the string<br /><code>The "quick brown" fox jumps over the "lazy
+dog's" back.</code><br />
+becomes<br />
+The<br />
+quick brown<br />
+fox<br />
+jumps<br />
+over<br />
+the<br />
+lazy dog's<br />
+back<br />
+<br />
+A dynamic array can be turned into a Cache list structure with $ListFromString() using $MVAM as the delimiter.
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Language>mvbasic</Language>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63624,68812.408766</TimeChanged>
+<TimeCreated>63459,79021.754793</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>value:%String="",DequoteLiterals:%Boolean=1</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+
+* Set input environment from an English sentence
+*
+*  This function takes a sentence and intelligently breaks it down
+*  into its components.  Words within quotes are group together
+*  as an attribute.
+*
+
+   Delimiters = '"' : @vm : "'" : @vm : '\'
+   Sentence = value
+
+   Result = ""                          ; * step 1 - properly isolate tokens and strings
+   Idx = 1
+
+   LOOP
+      OneCharacter = Sentence[ Idx, 1 ]
+   UNTIL OneCharacter = "" DO
+
+      BEGIN CASE
+
+         CASE OneCharacter MATCHES "'" : @vm : '"' : @vm : '\'
+            IF Sentence[ Idx + 1, 1 ] = OneCharacter THEN
+               Result< -1 > = OneCharacter : OneCharacter
+               Idx += 1
+            END ELSE
+               EndOfAttribute = INDEX( Sentence[ Idx + 1, 99999 ], OneCharacter, 1 )
+               Result< -1 > = Sentence[ Idx , EndOfAttribute + 1 ]
+               Idx += EndOfAttribute
+            end
+
+         CASE OneCharacter = ' '
+            Result := @fm
+
+         CASE @true
+            Result := OneCharacter
+
+      END CASE
+
+      Idx += 1
+
+   REPEAT
+
+   Result = TRIM( Result, @fm )          ; * remove extraneous fields
+
+   IF DequoteLiterals THEN
+
+      FinalResult = ""
+      IF Result <> "" THEN
+         LOOP
+            REMOVE Token FROM Result SETTING MoreTokens
+            IF Token[ 1, 1] MATCHES Delimiters THEN
+               IF Token[ 1, 1 ] = Token[ LEN( Token ), 1 ] THEN
+                  Token = Token[ 2, LEN( Token ) - 2 ]
+               END
+            END
+            FinalResult< -1 > = Token
+         WHILE MoreTokens DO REPEAT
+      END
+
+   END ELSE
+      FinalResult = Result
+   END
+
+   RETURN( FinalResult )                 ; * temp
+]]></Implementation>
+</Method>
+</Class>
+</Export>

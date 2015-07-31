@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Client.Scripts">
+<Description>
+Manages the output of scripts into a page.
+TODO: script rendering for posLoad and posBody</Description>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63763,78489.292231</TimeChanged>
+<TimeCreated>63482,26517.887201</TimeCreated>
+
+<Parameter name="posHead">
+<Type>%Integer</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="posBegin">
+<Type>%Integer</Type>
+<Default>2</Default>
+</Parameter>
+
+<Parameter name="posEnd">
+<Type>%Integer</Type>
+<Default>2</Default>
+</Parameter>
+
+<Parameter name="posLoad">
+<Type>%Integer</Type>
+<Default>4</Default>
+</Parameter>
+
+<Parameter name="posReady">
+<Type>%Integer</Type>
+<Default>5</Default>
+</Parameter>
+
+<Property name="enableJavaScript">
+<Type>%Boolean</Type>
+<InitialExpression>1</InitialExpression>
+</Property>
+
+<Property name="scriptMap">
+<Type>EasyCSP.Core.ParameterList</Type>
+</Property>
+
+<Property name="packages">
+<Type>EasyCSP.Web.Client.baseJS</Type>
+</Property>
+
+<Property name="corePackages">
+<Description>
+A default set of core packages is automatically loaded before the
+framework begins rendering content. Much of the UI depends on
+jQuery and an assortment of plugins. </Description>
+<Type>%String</Type>
+<Collection>array</Collection>
+</Property>
+
+<Property name="scripts">
+<Type>%ArrayOfDataTypes</Type>
+<Collection>array</Collection>
+</Property>
+
+<Property name="scriptsRendered">
+<Type>%List</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="scriptFiles">
+<Type>%ArrayOfDataTypes</Type>
+</Property>
+
+<Property name="scriptFilesRendered">
+<Type>%List</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="hasScripts">
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+</Property>
+
+<Property name="coreScriptBaseUrl">
+<Type>%String</Type>
+<InitialExpression>"js"</InitialExpression>
+</Property>
+
+<Property name="coreScripts">
+<Description><![CDATA[
+name => package]]></Description>
+<Type>EasyCSP.Core.ParameterList</Type>
+</Property>
+
+<Property name="coreScriptsRendered">
+<Type>%List</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="coreScriptposition">
+<Type>%Integer</Type>
+<InitialExpression>1</InitialExpression>
+</Property>
+
+<Property name="defaultScriptFileposition">
+<Type>%Integer</Type>
+<InitialExpression>1</InitialExpression>
+</Property>
+
+<Property name="defaultScriptposition">
+<Type>%Integer</Type>
+<InitialExpression>2</InitialExpression>
+</Property>
+
+<Property name="baseURL">
+<Type>%String</Type>
+<Private>1</Private>
+</Property>
+
+<Method name="%OnNew">
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	d ..reset()
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="reset">
+<Implementation><![CDATA[
+	set ..hasScripts = 0
+	set ..coreScripts = ##class(EasyCSP.Core.ParameterList).%New()
+	set ..coreScriptsRendered = ""
+	set corePackages = ##class(EasyCSP.Web.Client.baseJS).%New(0)
+	set ..packages = corePackages.init()
+	set ..scriptFiles = ##class(%ArrayOfDataTypes).%New() 
+	set ..scripts = ##class(%ArrayOfDataTypes).%New()
+]]></Implementation>
+</Method>
+
+<Method name="renderScripts">
+<FormalSpec>position:%Integer=0</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	set output = ##class(%GlobalCharacterStream).%New()
+	
+	if +$get(position) = 0 quit output
+	
+	if '..scripts.IsDefined(position) quit output
+	
+	set queue = ..scripts.GetAt(position)
+	
+	set key = queue.Next("")
+	while key '= "" {
+		set scriptObject = queue.GetAt(key)
+		do output.MoveToEnd()
+		do output.CopyFrom(scriptObject.scriptText)
+		set key = queue.Next(key)
+	}
+	
+	quit output
+]]></Implementation>
+</Method>
+
+<Method name="renderCoreScripts">
+<Description>
+Render tags for every script registered in ..coreScripts. Resolves
+dependencies and ensure those are loaded ahead of scripts that need them.</Description>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	// w "<pre>",!
+	set output = ##class(%GlobalCharacterStream).%New()
+	set all = ..coreScripts.getAll()
+	quit:$get(all)="" output
+	
+	set rendered = "" ; track script tags already rendered for dependencies
+	
+	set id = all.Next("")
+	while id '= "" {
+		// w "renderCoreScripts: ",id,!
+		if $listFind(..coreScriptsRendered,id)=0 {
+			set def = ..coreScripts.get(id)
+			do output.MoveToEnd()
+			do output.CopyFrom(..renderScriptsInternal(id,def))
+		}
+
+		set id = all.Next(id)
+	}
+	
+	 //w "rendered: ",$listToString(..coreScriptsRendered,","),!
+	
+	 //w "</pre>",!
+	
+	quit output
+]]></Implementation>
+</Method>
+
+<Method name="renderScriptsInternal">
+<Description>
+Perform the final rendering of a script file tag</Description>
+<FormalSpec>id:%String="",def:EasyCSP.Core.ParameterList=""</FormalSpec>
+<Private>1</Private>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+    
+    set rtn = ##class(%GlobalCharacterStream).%New()
+    
+    quit:$get(id)="" rtn
+    quit:$listFind(..coreScriptsRendered,id)>0 rtn
+    quit:$get(def)'["ParameterList" rtn
+    
+	set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+    
+    set js = def.get("js")
+    
+    set dep = def.get("depends")
+    
+    
+    // Sidestep to load dependencies first. Recurse following the line of recession to the most-super of superscripts.
+    if dep '= "" {
+        
+        // Dependencies should be a list. If it comes up as a string, force to a list.
+        if '$isobject(dep) {
+            set depList = $listFromString($zstrip(dep,"*W"),",")
+        } else {
+            set depList = dep
+        }
+        
+        set ll = $listLength(depList)
+        for idx = 1:1:ll {
+            set did = $listGet(depList,idx)
+	        // w "dependency: ",did,!
+            set ddef = ..coreScripts.get(did)
+            set:ddef="" ddef = ..scriptFiles.get(ddef)
+            do:ddef'="" rtn.CopyFrom(..renderScriptsInternal(did,ddef))
+        }
+    }
+        
+    set url = ..coreScriptBaseUrl_"/"_js
+    //w "adding ",url,!!
+	do rtn.WriteLine(##class(EasyCSP.Web.CHTML).scriptFile(url,htmlOptions))
+	set ..coreScriptsRendered = ..coreScriptsRendered _ $listBuild(id)
+    
+    do rtn.Rewind()
+    quit rtn
+]]></Implementation>
+</Method>
+
+<Method name="registerCoreScript">
+<Description><![CDATA[
+Uses the package matrix in BaseJS to load scripts that are supplied
+or added to the framework. The <property>packages</property> is an
+instance of BaseJS. If a package is found to have a dependency, the
+dependency is loaded into coreScripts ahead of the requested package.
+The heading script-tags are rendered and output in <method>renderCoreScripts</method>.]]></Description>
+<FormalSpec>name:%String</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	quit:..coreScripts.isset(name) 0 ; already loaded
+	
+	//d ..packages.dump()
+	
+	if ..packages.isset(name) {
+		set package = ..packages.get(name)
+	} else {
+		quit 0 ; not a known core package name
+	}
+	
+	if $get(package) '= "" {
+		
+		set dep = package.get("depends")
+		
+			if dep '= "" {
+				set depList = $listFromString(dep,",")
+				set ll = $listLength(depList)
+				for idx = 1:1:ll {
+					do ..registerCoreScript($listGet(depList,idx))
+				}
+			}
+		
+		do ..coreScripts.set(name, package)
+		set ..hasScripts = 1
+	}
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="registerScript">
+<FormalSpec>id:%String="",script:%GlobalCharacterStream,position:%String=""</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(position) = "" set position = ..defaultScriptposition
+	if $get(script) '[ "GlobalCharacterStream" {
+		do ..SetCondition(-1, "The script formal parameter must be a %GlobalCharacterStream. Nothing added to output.")
+		quit 0
+	}
+	
+	if $get(htmlOptions) '[ "Core.ParameterList" set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	set ..hasScripts = 1 ; there is script text available
+	
+	set scriptDef = ##class(EasyCSP.Web.Client.ScriptDefinition).%New()
+	set scriptDef.id = id
+	
+	do scriptDef.scriptText.CopyFrom(script)
+	
+	if ..scripts.IsDefined(position) {
+		set queue = ..scripts.GetAt(position)
+	} else {
+		set queue = ##class(%ArrayOfDataTypes).%New()
+	}
+	
+	set slot = queue.Count() + 1
+	do queue.SetAt(scriptDef, slot)
+	
+	do ..scripts.SetAt(queue, position)
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="registerScriptFile">
+<Description><![CDATA[
+Cause a link to a script to be created. Pass in a unique id for this script. This will be used
+to keep from emitting the script more than once. <variable>url</variable> should have the url
+stem <i>below</i> the default site script folder. <variable>position</variable> indicates whether
+the script url should be emitted within the head section of the document or at the end of the body.]]></Description>
+<FormalSpec>id:%String="",url:%String="",position:%String=1</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(id)="" quit 0	
+	if $get(url)="" quit 0
+	if $get(position) = "" set position = ..defaultScriptposition
+	
+	if $listFind(..coreScriptsRendered, id) > 0 quit 1
+		
+	if ..scriptFiles.IsDefined(position) {
+		set queue = ..scriptFiles.GetAt(position)
+	} else {
+		set queue = ##class(%ArrayOfDataTypes).%New() 
+	}
+		
+	do queue.SetAt(url, id)
+	
+	do ..scriptFiles.SetAt(queue, position)
+	set ..coreScriptsRendered = ..coreScriptsRendered _ $listBuild(id)
+	
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="renderScriptFiles">
+<Description><![CDATA[
+For the indicated page position (head or at the end of the body), emit links for
+scripts that were registered via <method>registerScriptFiles</method>.]]></Description>
+<FormalSpec>position:%Integer=0</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	set output = ##class(%GlobalCharacterStream).%New()
+	
+	if +$get(position) = 0 set position = ..defaultScriptFileposition
+	
+	// Is there any scripting at this page position?
+	if ..scriptFiles.IsDefined(position) {
+		set queue = ..scriptFiles.GetAt(position)
+	} else {
+		quit output
+	}
+	
+	if queue.Count() = 0 quit output
+		
+	set id = ""
+	for {
+		set id = queue.Next(id)
+		quit:id=""
+
+		set url = ..coreScriptBaseUrl_"/"_queue.GetAt(id)
+
+		do output.WriteLine(##class(EasyCSP.Web.CHTML).scriptFile(url))
+		set ..coreScriptsRendered = ..coreScriptsRendered _ $listBuild(id)
+		
+	}
+	
+	quit output
+]]></Implementation>
+</Method>
+</Class>
+</Export>

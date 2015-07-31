@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Site.Error">
+<Description><![CDATA[
+<p>Display errors rather than crashing the app with a blank screen.</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63764,34969.596615</TimeChanged>
+<TimeCreated>63587,31236.327935</TimeCreated>
+
+<Method name="run">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	
+	if $get(%EasyCSPException) [ "Exception" {
+		
+		
+	    do ..addContent("            <div class=""errorSummary"">")
+		if $get(%EasyCSPException) [ "Core.Exception" {
+			// This is a framework-caught exception. Dump the extended properties.
+			set ..pageTitle = "Framework Exception"
+			do ..dumpFrameworkException()
+		} else { 
+			// This is s system exception
+			set ..pageTitle = "Cache System Exception"
+			do ..dumpSystemException()
+		}
+		
+	    do ..addContent("            </div>")
+	}
+			
+	if $isobject(%EasyCSPApp) {
+		do ..addContent("<h2>CGI Data</h2>")
+		do ..addStreamContent(%EasyCSPApp.cgiData.dumpAsStream())
+		do ..addContent("<h2>Request Data</h2>")
+		do ..addStreamContent(%EasyCSPApp.requestData.dumpAsStream())
+		do ..addContent("<h2>Session Data</h2>")
+		do ..addStreamContent(%EasyCSPApp.sessionData.dumpAsStream())
+	}
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="dumpFrameworkException">
+<Private>1</Private>
+<Implementation><![CDATA[
+	do ..addContent("<p class=""errorLegend"">A framework exception occurred whilst processing the request:</p>")
+	do ..addContent("<br /><br />")
+	do ..addContent("<pre>")
+	
+	
+	if %EasyCSPException.HasInnerException {
+		do ..addContent("Inner exception details:")
+		do ..addContent("Name: "_%EasyCSPException.InnerException.Name)
+		do ..addContent("Code: "_%EasyCSPException.InnerException.Code)
+			
+		set desc = $listFromString(%EasyCSPException.InnerException.Data,$MVAM)
+		set ll = $listLength(desc)
+		for d = 1:1:ll {
+			do ..addContent("Data "_d_": "_$listGet(desc,d))
+		}
+		
+		do ..addContent("Loc:  "_%EasyCSPException.InnerException.Location)
+		
+	}
+
+	do ..addContent("Exception details:")
+	do ..addContent("Name: "_%EasyCSPException.ExceptionName)
+	do ..addContent("Code: "_%EasyCSPException.ExceptionCode)
+	
+	set desc = $listFromString(%EasyCSPException.Description,$MVAM)
+	set ll = $listLength(desc)
+	for d = 1:1:ll {
+		do ..addContent("Data "_d_": "_$listGet(desc,d))
+	}
+		
+		do ..addContent("Loc:  "_%EasyCSPException.ProgramLocation)
+		
+		do ..addContent("</pre>")
+					
+		do ..addContent("<table>")
+		do ..addContent("<legend>Traceback</legend>")
+		set ex = $listFromString(%EasyCSPException.Traceback,$mvfm)
+		set ll = $listLength(ex) - 1
+		for idx = 1:1:ll {
+			do ..addContent("<tr><td width=""3%"" style=""text-align: right top;"">"_idx_"</td><td>&nbsp;&nbsp;"_$listGet(ex,idx,"")_"</td></tr>")
+		}
+		do ..addContent("</table>")
+		
+		set %EasyCSPException = "" ; remove oref
+]]></Implementation>
+</Method>
+
+<Method name="dumpSystemException">
+<Private>1</Private>
+<Implementation><![CDATA[
+	do ..addContent("<p class=""errorLegend"">")
+	do ..addContent("<br /><br />")
+	    
+	if $ZERROR="" {
+		do ..addContent("A system exception occurred whilst processing the request:")
+	} else {
+		do ..addContent($ECODE_": "_$ZERROR)
+	}
+	
+	do ..addContent("</p>")
+	
+	do ..addContent("<pre>")
+		
+	do ..addContent("Exception details:")
+	do ..addContent("Name: "_%EasyCSPException.Name)
+	do ..addContent("Code: "_%EasyCSPException.Code)
+	//do ..addContent("Desc: "_%SYSTEM.Status.GetErrorText(%EasyCSPException.AsStatus))
+	do ..addContent("Data: "_%EasyCSPException.Data)
+	do ..addContent("InEx: "_%EasyCSPException.InnerException)
+	do ..addContent("Loc:  "_%EasyCSPException.Location)
+	
+	do ..addContent("</pre>")
+				
+	do ..addContent("<table>")
+	do ..addContent("<legend>Traceback</legend>")
+
+    set Traceback = ""
+    set start = $STACK(-1) - 1
+    FOR loop=start:-1:0 {
+		do ..addContent("<tr><td width=""3%"" style=""text-align: right top;"">"_loop_"</td><td>&nbsp;&nbsp;"_$STACK(loop,"PLACE") _ ": " _ $STACK(loop,"MCODE")_"</td></tr>")
+	}
+	do ..addContent("</table>")
+		
+	set %EasyCSPException = "" ; remove oref
+			
+	quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

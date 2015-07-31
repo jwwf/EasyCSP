@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Layouts.Base">
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63764,28697.031121</TimeChanged>
+<TimeCreated>63542,38710.0489</TimeCreated>
+
+<Property name="bodyStream">
+<Type>%GlobalCharacterStream</Type>
+<Final>1</Final>
+<Private>1</Private>
+</Property>
+
+<Property name="bodyOpen">
+<Type>%Boolean</Type>
+<Final>1</Final>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="breadcrumbs">
+<Type>%String</Type>
+<Collection>array</Collection>
+</Property>
+
+<Property name="data">
+<Type>EasyCSP.Core.ParameterList</Type>
+<Final>1</Final>
+<Private>1</Private>
+</Property>
+
+<Property name="headOpen">
+<Type>%Boolean</Type>
+<Final>1</Final>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="headStream">
+<Type>%GlobalCharacterStream</Type>
+<Final>1</Final>
+<Private>1</Private>
+</Property>
+
+<Property name="pageTitle">
+<Type>%String</Type>
+</Property>
+
+<Property name="scripting">
+<Type>EasyCSP.Web.Client.Scripts</Type>
+</Property>
+
+<Property name="view">
+<Type>EasyCSP.Views.Base</Type>
+</Property>
+
+<Parameter name="docType">
+<Description>
+Default to html 5</Description>
+<Type>%String</Type>
+<Default><![CDATA[<!DOCTYPE html>]]></Default>
+</Parameter>
+
+<Parameter name="htmlTag">
+<Type>%String</Type>
+<Default><![CDATA[<html class="no-js" lang="en">]]></Default>
+</Parameter>
+
+<Method name="%OnNew">
+<FormalSpec>data:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	do ..headStream.Clear()
+	do ..bodyStream.Clear()
+	
+	set ..scripting = ##class(EasyCSP.Web.Client.Scripts).%New()
+	set ..data = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	do:..instanceOf(data, "Core.ParameterList") ..data.copyFrom(.data)
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="addBodyContent">
+<Final>1</Final>
+<FormalSpec>data:%String</FormalSpec>
+<Implementation><![CDATA[
+	if '..bodyOpen {
+		do ..beginBodyContent()
+	}
+	
+	do ..bodyStream.WriteLine(data)
+]]></Implementation>
+</Method>
+
+<Method name="addBodyStreamContent">
+<Final>1</Final>
+<FormalSpec>data:%GlobalCharacterStream</FormalSpec>
+<Implementation><![CDATA[
+	if '..bodyOpen {
+		do ..beginBodyContent()
+	}
+	
+	do ..bodyStream.MoveToEnd()
+	do ..bodyStream.CopyFrom(data)
+]]></Implementation>
+</Method>
+
+<Method name="addHeadContent">
+<Final>1</Final>
+<FormalSpec>data:%String</FormalSpec>
+<Implementation><![CDATA[
+	if '..headOpen {
+		do ..beginHeadContent()
+	}
+		do ..headStream.WriteLine(data)
+]]></Implementation>
+</Method>
+
+<Method name="addHeadStreamContent">
+<Final>1</Final>
+<FormalSpec>data:%GlobalCharacterStream</FormalSpec>
+<Implementation><![CDATA[
+	do ..headStream.MoveToEnd()
+	do ..headStream.CopyFrom(data)
+]]></Implementation>
+</Method>
+
+<Method name="beginBodyContent">
+<Description>
+Create a new output headStream if one doesn't exist. Do not disturb existing
+page output if such has already been added to the headStream.</Description>
+<FormalSpec>htmlOptions:EasyCSP.Core.ParameterList</FormalSpec>
+<Implementation><![CDATA[
+	if '..instanceOf(..bodyStream, "GlobalCharacterStream") {
+		set ..bodyStream = ##class(%GlobalCharacterStream).%New() ; * build the body of the page in here
+		set ..bodyStream.LineTerminator = ..crlf
+	}
+	
+	do ..bodyStream.MoveToEnd()
+	
+	do ..bodyStream.WriteLine(##class(EasyCSP.Web.CHTML).tag("body", htmlOptions, 0, 0))
+	
+	set ..bodyOpen = 1
+]]></Implementation>
+</Method>
+
+<Method name="beginHeadContent">
+<Description>
+Create a new output headStream if one doesn't exist. Do not disturb existing
+page output if such has already been added to the headStream.</Description>
+<Implementation><![CDATA[
+	if '..instanceOf(..headStream, "GlobalCharacterStream") {
+		set ..headStream = ##class(%GlobalCharacterStream).%New() ; * build the body of the page in here
+		set ..headStream.LineTerminator = ..crlf
+	}
+	
+	do ..headStream.WriteLine(##class(EasyCSP.Web.CHTML).tag("head", "", 0, 0))
+	
+	set ..headOpen = 1
+]]></Implementation>
+</Method>
+
+<Method name="endBodyContent">
+<Description><![CDATA[
+Closes the <body> tag and rewinds the stream to the beginning]]></Description>
+<Implementation><![CDATA[
+	quit:..bodyOpen=0
+	do ..bodyStream.MoveToEnd()
+	do ..bodyStream.CopyFrom(..scripting.renderScripts(##class(EasyCSP.Web.Client.Scripts).%GetParameter("posEnd")))
+	
+	//do $System.OBJ.Dump(..view.clientScripts.scriptFiles)
+	do ..bodyStream.MoveToEnd()
+	
+	if $isObject(..view.clientScripts) {
+		set bodyScripts = ..view.clientScripts.renderScriptFiles(##class(EasyCSP.Web.Client.Scripts).%GetParameter("posEnd"))
+		do:bodyScripts.Size>0 ..bodyStream.CopyFrom(bodyScripts)
+	}
+	do ..bodyStream.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("body"))
+	do ..bodyStream.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("html"))
+	do ..bodyStream.Rewind()
+	set ..bodyOpen = 0
+]]></Implementation>
+</Method>
+
+<Method name="endHeadContent">
+<Implementation><![CDATA[
+	try {
+		quit:..headOpen=0
+		do ..headStream.MoveToEnd()
+		do ..headStream.CopyFrom(..scripting.renderCoreScripts())
+		do ..headStream.MoveToEnd()
+		do ..headStream.CopyFrom(..scripting.renderScripts(##class(EasyCSP.Web.Client.Scripts).%GetParameter("posHead")))
+		do ..headStream.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("head"))
+		
+		do ..headStream.Rewind()
+		set ..headOpen = 0
+	} catch theException {
+		throw theException
+	}
+]]></Implementation>
+</Method>
+
+<Method name="render">
+<Description>
+TODO - don't forget to render scripts (head, body, end)</Description>
+<Final>1</Final>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	set page = ##class(%GlobalCharacterStream).%New()
+	
+	if ..headOpen {
+		do ..endHeadContent()
+	}
+	
+	if ..bodyOpen {
+		do ..endBodyContent()
+	}
+	
+	do page.WriteLine(..#docType)
+	do page.WriteLine(..#htmlTag)
+	do page.CopyFrom(..headStream)
+	
+	do page.MoveToEnd()
+	do page.CopyFrom(..bodyStream)
+	
+	do page.Rewind()
+	
+	quit page
+]]></Implementation>
+</Method>
+</Class>
+</Export>

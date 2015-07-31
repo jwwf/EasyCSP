@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Site.Closed">
+<Description>
+This page is displayed when a new user successfully registers with the system. The
+page will contain a link to click to activate the new account. The user will not be
+allowed to log in until activation has been done.</Description>
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63660,32406.452847</TimeChanged>
+<TimeCreated>63600,37797.465482</TimeCreated>
+
+<Method name="run">
+<Implementation><![CDATA[
+	set ..pageTitle = "Site is Closed"
+	do ..addContent("<p>The site is currently closed for maintenance. We are working as quickly as possible to resolve any issues. Please try your request again later.</p>")
+]]></Implementation>
+</Method>
+</Class>
+</Export>

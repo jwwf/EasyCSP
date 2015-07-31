@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Validator.Base">
+<Description><![CDATA[
+<p>Abstract class that positively identifies a validation rule as a validator object.
+All classes that extend the base rule must adhere to two restrictions: first, the
+code that performs the validation must be contained in a class method called "run";
+and second, each such class must also contain a parameter called "message". The
+message parameter is used to create error messages that may displayed in the GUI
+CRUD form.</p>
+
+<p>Each extended class performs exactly one specific type of entry validation -- the run() method. The
+result must return a %Boolean value of either 0 or 1 (fail or pass). The model class
+calls validation by default on new, save, insert, and update. This behavior can be
+be extended in the model by doing two things: first, name the scenario the name that the
+application will be using (any string value except the empty string); and second add
+or modify a rule to the set of validation rules in the attribute definition that
+covers the new scenario.</p>
+
+<p>Rule classes are always called statically. An object of validation rule is never instantiated.
+This means that all methods in a rule class must be ClassMethods and properties will
+not available.</p>
+
+<p>
+Each validator must also contain a parameter called "message" (lower-case, as shown here).
+When validation doesn't pass (0 is returned) by the run() method the model's next job is
+to get the value of this parameter.
+</p>
+
+<p>
+Both the error message and the run method are abstracted in this base class. This prevents
+the app from crashing due to a poorly-constructed validator.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Abstract>1</Abstract>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63599,61767.697887</TimeChanged>
+<TimeCreated>63462,41050.085167</TimeCreated>
+
+<Parameter name="message">
+<Type>%String</Type>
+<Default>Please override this message by adding a "message" parameter to your validation class.</Default>
+</Parameter>
+
+<Method name="run">
+<Description>
+Each child class of this base rule must override this ClassMethod.</Description>
+<Abstract>1</Abstract>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[		q 1
+]]></Implementation>
+</Method>
+</Class>
+</Export>

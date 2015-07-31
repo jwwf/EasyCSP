@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Models.Entity">
+<Description>
+Contracted customers, for example Las Vegas, Frederick County, etc</Description>
+<Super>%Persistent,EasyCSP.MVModel.Base</Super>
+<TimeChanged>63612,74345.3207</TimeChanged>
+<TimeCreated>63532,36792.941482</TimeCreated>
+
+<Index name="indexcity">
+<Data>city</Data>
+<Properties>city</Properties>
+</Index>
+
+<Index name="indexcountry">
+<Data>country</Data>
+<Properties>country</Properties>
+</Index>
+
+<Index name="indexstate">
+<Data>state</Data>
+<Properties>state</Properties>
+</Index>
+
+<Index name="indexEntityName">
+<Data>entityName</Data>
+<Properties>entityName</Properties>
+</Index>
+
+<Parameter name="MVFILENAME">
+<Default>ENTITY</Default>
+</Parameter>
+
+<Parameter name="MVGLOBAL">
+<Type>%String</Type>
+<Default>^ENTITY</Default>
+</Parameter>
+
+<Parameter name="MVAUTOLOCK">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCLEARDICT">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCREATE">
+<Type>BOOLEAN</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="MVREPOPULATE">
+<Default>1</Default>
+</Parameter>
+
+<Property name="entityName">
+<Description>
+The name of the entity, company, or group</Description>
+<Type>%String</Type>
+<SqlFieldName>entity_name</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="1"/>
+<Parameter name="MVHEADING" value="Entity Name"/>
+<Parameter name="MVNAME" value="NAME"/>
+<Parameter name="MVWIDTH" value="25"/>
+</Property>
+
+<Property name="streetAddress">
+<Description>
+The street address.</Description>
+<Type>%String</Type>
+<Collection>list</Collection>
+<SqlFieldName>street_address</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="2"/>
+<Parameter name="MVHEADING" value="Address"/>
+<Parameter name="MVNAME" value="ADDRESS"/>
+<Parameter name="MVWIDTH" value="40"/>
+</Property>
+
+<Property name="city">
+<Description>
+City name</Description>
+<Type>%String</Type>
+<SqlFieldName>city</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="3"/>
+<Parameter name="MVHEADING" value="City"/>
+<Parameter name="MVNAME" value="CITY"/>
+<Parameter name="MVWIDTH" value="40"/>
+</Property>
+
+<Property name="state">
+<Description>
+State or province - two-letter abbreviation</Description>
+<Type>%String</Type>
+<SqlFieldName>state</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="4"/>
+<Parameter name="MVHEADING" value="ST/PR"/>
+<Parameter name="MVNAME" value="STATE"/>
+<Parameter name="MVWIDTH" value="2"/>
+</Property>
+
+<Property name="postCode">
+<Description>
+Zip or post code</Description>
+<Type>%String</Type>
+<SqlFieldName>post_code</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="5"/>
+<Parameter name="MVHEADING" value="Post Code"/>
+<Parameter name="MVNAME" value="POST_CODE"/>
+<Parameter name="MVWIDTH" value="10"/>
+</Property>
+
+<Property name="country">
+<Description>
+Country</Description>
+<Type>%String</Type>
+<SqlFieldName>country</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="6"/>
+<Parameter name="MVHEADING" value="Country"/>
+<Parameter name="MVNAME" value="COUNTRY"/>
+<Parameter name="MVWIDTH" value="3"/>
+</Property>
+
+<Property name="telephone">
+<Description>
+Telephone number (no punctuation)</Description>
+<Type>%String</Type>
+<Collection>list</Collection>
+<SqlFieldName>telephone</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="7"/>
+<Parameter name="MVHEADING" value="Telephone"/>
+<Parameter name="MVNAME" value="TELEPHONE"/>
+<Parameter name="MVWIDTH" value="20"/>
+</Property>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^ENTITY</DataLocation>
+<DefaultData>EntityDefaultData</DefaultData>
+<IdLocation>^C.ENTITY</IdLocation>
+<IndexLocation>^I.ENTITY</IndexLocation>
+<StreamLocation>^S.ENTITY</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="EntityDefaultData">
+<Value name="1">
+<Value>entityName</Value>
+</Value>
+<Value name="2">
+<Value>streetAddress</Value>
+</Value>
+<Value name="3">
+<Value>city</Value>
+</Value>
+<Value name="4">
+<Value>state</Value>
+</Value>
+<Value name="5">
+<Value>postCode</Value>
+</Value>
+<Value name="6">
+<Value>country</Value>
+</Value>
+<Value name="7">
+<Value>telephone</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

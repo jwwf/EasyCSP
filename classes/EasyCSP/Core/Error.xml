@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Core.Error">
+<Description><![CDATA[
+Provides a container for reporting object or processing errors to the UI
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63537,75203.149374</TimeChanged>
+<TimeCreated>63468,48091.410665</TimeCreated>
+
+<Property name="code">
+<Type>%String</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="message">
+<Type>%String</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="occurredIn">
+<Type>%String</Type>
+<Transient>1</Transient>
+</Property>
+
+<Method name="%OnNew">
+<FormalSpec>code:%String="",message:%String="",occurredIn:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+		q:$get(code)="" ##class(%SYSTEM.Status).Error(2, "Specify the attribute to report on.")
+		q:$get(message)="" ##class(%SYSTEM.Status).Error(3, "Specify the error message.")
+		
+		s ..code = code
+		s ..message = message
+		
+		if $find(occurredIn,$char(253),1) > 0 {
+			set occurredIn = $piece(occurredIn,$char(253), 2) _ ", line " _ $piece(occurredIn,$char(253),3)
+		}
+		
+		s ..occurredIn = occurredIn
+		
+		q $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

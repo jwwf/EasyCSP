@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Site.Index">
+<Description>
+This is the default site index page. The end-user should override this page by adding
+class Views.Site.Index in their local namespace.</Description>
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63764,33133.056897</TimeChanged>
+<TimeCreated>63611,64237.315372</TimeCreated>
+
+<Property name="pageTitle">
+<Type>%String</Type>
+<InitialExpression>"EasyCSP Home Page"</InitialExpression>
+</Property>
+
+<Method name="run">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set ..pageTitle = "EasyCSP Home"
+	do ..xDataToContent("HTML")
+	do ..addContent(##class(EasyCSP.Web.CHTML).tag("p", "", "Here's a "_##class(EasyCSP.Web.CHTML).routeLink("bullet list", "site/bulletList")_" of EasyCSP features.",1))
+	do ..addContent(##class(EasyCSP.Web.CHTML).tag("p", "", "Proceed to a "_##class(EasyCSP.Web.CHTML).routeLink("brief overview", "site/bulletList")_" of EasyCSP features.",1))
+	do ..addContent(##class(EasyCSP.Web.CHTML).routeLink("Log Out", "site/logout"))
+	quit 1
+]]></Implementation>
+</Method>
+
+<XData name="HTML">
+<Description>
+Default newly-installed site boilerplate</Description>
+<MimeType>text/html</MimeType>
+<Data><![CDATA[
+<span>
+	<p>
+	Welcome to your new installation of EasyCSP, the first native MVC framework
+	and rapid development tool for Cache that competes feature-for-feature with LAMP frameworks like
+	Cake or Yii. EasyCSP is built with the Cache programmer in mind. It is highly 
+	organized and structured, removes the need to be adept with HTML or Javascript,
+	speeds coding for the web by allowing the programmer to call generator functions
+	to produce attractive and easy-to-debug web code pages.
+	</p>
+	
+	<p>
+	&nbsp;
+	</p>
+	<p>
+	Everything in EasyCSP is built to allow override or extension. That includes models, controllers,
+	validation rules, access rules and all. Rules and validations are done through tiny plug-ins. Objects
+	are created through object factories so the instant a new class is added it is ready to use on the
+	very next view. For example, you may first want to override this
+	page by creating a new Views.Site.Index.cls class in your own namespace. This page
+	should not be changed. You can override any class by creating the same
+	package.(package.)classname.cls in your namespace. Thus, each namespace
+	can have its own custom look-and-feel or its own business rules.
+	</p>
+	
+	<p>
+	&nbsp;
+	</p>
+	
+	</span>
+]]></Data>
+</XData>
+</Class>
+</Export>

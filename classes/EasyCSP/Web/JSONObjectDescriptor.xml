@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.JSONObjectDescriptor">
+<Description>
+Stackable descriptor for an object (or array) currently being parsed by the CJSON
+decoder.</Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63702,46955.38154</TimeChanged>
+<TimeCreated>63702,46847.720565</TimeCreated>
+
+<Property name="name">
+<Type>%String</Type>
+</Property>
+
+<Property name="object">
+<Type>%RegisteredObject</Type>
+</Property>
+
+<Property name="parent">
+<Type>%String</Type>
+</Property>
+</Class>
+</Export>

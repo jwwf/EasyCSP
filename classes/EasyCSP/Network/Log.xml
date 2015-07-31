@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Network.Log">
+<Description>
+Log communications connections. This is a simple Cache global.</Description>
+<Super>%Persistent</Super>
+<TimeChanged>63749,47600.343864</TimeChanged>
+<TimeCreated>63614,79585.766467</TimeCreated>
+
+<Property name="date">
+<Description>
+Date in Cache internal format</Description>
+<Type>%Date</Type>
+<SqlFieldName>date</SqlFieldName>
+</Property>
+
+<Property name="time">
+<Description>
+Time in Cache internal format</Description>
+<Type>%Time</Type>
+<SqlFieldName>time</SqlFieldName>
+</Property>
+
+<Property name="caller">
+<Description>
+The name of the class making the log entry</Description>
+<Type>%String</Type>
+<SqlFieldName>caller</SqlFieldName>
+</Property>
+
+<Property name="source">
+<Description>
+Source: "http", "smtp", or such like. The web UI logs as "http" always.</Description>
+<Type>%String</Type>
+<InitialExpression>"http"</InitialExpression>
+<SqlFieldName>source</SqlFieldName>
+</Property>
+
+<Property name="requestData">
+<Description>
+If the source is "http" this contains a copy of the request parameters</Description>
+<Type>%String</Type>
+<Collection>array</Collection>
+<SqlFieldName>request</SqlFieldName>
+<SqlListType>SUBNODE</SqlListType>
+<Parameter name="MAXLEN" value="3641144"/>
+</Property>
+
+<Property name="cgiData">
+<Description>
+If the source is "http" this contains a copy of the CGI environment</Description>
+<Type>%String</Type>
+<Collection>array</Collection>
+<SqlFieldName>environment</SqlFieldName>
+<SqlListType>SUBNODE</SqlListType>
+<Parameter name="MAXLEN" value="3641144"/>
+</Property>
+
+<Property name="sessionData">
+<Description>
+If the source is "http" this contains a copy of the session parameters</Description>
+<Type>%String</Type>
+<Collection>array</Collection>
+<SqlFieldName>session</SqlFieldName>
+<SqlListType>SUBNODE</SqlListType>
+<Parameter name="MAXLEN" value="3641144"/>
+</Property>
+
+<Property name="response">
+<Description>
+Outbound response from the framework.</Description>
+<Type>%GlobalCharacterStream</Type>
+<SqlFieldName>response</SqlFieldName>
+</Property>
+
+<Property name="traceText">
+<Description>
+Any other tracing or notes to have the system log</Description>
+<Type>%String</Type>
+<SqlFieldName>trace</SqlFieldName>
+</Property>
+
+<Property name="processId">
+<Description>
+Process</Description>
+<Type>%String</Type>
+<SqlFieldName>process_id</SqlFieldName>
+</Property>
+
+<Property name="traceDate">
+<Description>
+Date of the transaction</Description>
+<Type>%Integer</Type>
+<SqlFieldName>trace_date</SqlFieldName>
+</Property>
+
+<Property name="traceTime">
+<Description>
+Time of the transaction</Description>
+<Type>%Integer</Type>
+<SqlFieldName>trace_time</SqlFieldName>
+</Property>
+
+<Property name="traceStack">
+<Description>
+Stack track in case of a trap</Description>
+<Type>%String</Type>
+<Collection>array</Collection>
+<SqlFieldName>trace_stack</SqlFieldName>
+<SqlListType>SUBNODE</SqlListType>
+<Parameter name="MAXLEN" value="32000000"/>
+</Property>
+
+<Method name="newEntry">
+<Description><![CDATA[
+<p>
+Add a new entry to the networking log. It can be a dump of the HTTP or SMTP environment (if
+one of these components is making the entry) or it can be a program note in "traceText".
+</p>
+<p>
+One possible query would be:<br />
+select nl.caller,nl.trace,nl."date",nl."time",nl.source,nlr.element_key,nlr.request from EasyCSP_Network.Log nl
+left join EasyCSP_Network.Log_request nlr on nlr.Log = nl.ID
+</p>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>source:%String="http",response:%GlobalCharacterStream,traceText:%String=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set log = ##class(EasyCSP.Network.Log).%New()
+	
+	set log.caller = ..getCaller()
+	set log.date = $p($h,",",1)
+	set log.time = $p($h,",",2)
+	set log.processId = $j
+	
+	if source = "http" {
+		set log.cgiData = ..serializeParms(%EasyCSPApp.requestData)
+		set log.requestData = ..serializeParms(%EasyCSPApp.requestData)
+		set log.sessionData = ..serializeParms(%EasyCSPApp.sessionData)
+	}
+
+	if $get(response) [ "Stream" {
+		do log.response.CopyFrom(response)
+	} else {
+		if response '= "" {
+			do log.response.Write(response)
+		}
+	}
+	
+	set log.traceText = $get(traceText)
+	
+	set sc = log.%Save()
+	
+	if $$$ISERR(sc) {
+		set rtn = $SYSTEM.Status.GetErrorText(sc)
+	} else {
+		set rtn = log.%Id()
+	}
+	
+	quit rtn
+]]></Implementation>
+</Method>
+
+<Method name="getCaller">
+<ClassMethod>1</ClassMethod>
+<Language>mvbasic</Language>
+<Private>1</Private>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	Stack = system(49)
+	return Stack< DCount(Stack, @fm ) - 2 >
+]]></Implementation>
+</Method>
+
+<Method name="serializeParms">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>source:EasyCSP.Core.ParameterList</FormalSpec>
+<Private>1</Private>
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[
+	set prop = ##class(%ArrayOfDataTypes).%New()
+	set parameters = source.getAll()
+	set idx = parameters.Next("")
+	while idx '= "" {
+		set val = parameters.GetAt(idx)
+		do prop.SetAt(val,idx)
+		set idx = parameters.Next(idx)
+	}
+	quit prop
+]]></Implementation>
+</Method>
+
+<Method name="saveSnap">
+<Description><![CDATA[
+<p>
+If an abnormal end occurs, trap the error condition and the stack then save the
+contents into the session record. This greatly simplifies debugging by pointing
+the programmer directly to the erroring line of code directly.
+</p>]]></Description>
+<Implementation><![CDATA[
+    
+    FOR loop=1:1:$STACK(-1) { 
+    	set ctr = ..traceStack.Count() + 1
+    	set trace = "Context "_loop_", type: "_$STACK(loop) _ " -- Location: " _ $STACK(loop,"PLACE")_ " -- Code: " _ $STACK(loop,"MCODE")
+        do ..traceStack.SetAt(trace, ctr)
+    }
+]]></Implementation>
+</Method>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^EasyCSP.Network.LogD</DataLocation>
+<DefaultData>LogDefaultData</DefaultData>
+<IdLocation>^EasyCSP.Network.LogD</IdLocation>
+<IndexLocation>^EasyCSP.Network.LogI</IndexLocation>
+<StreamLocation>^EasyCSP.Network.LogS</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="LogDefaultData">
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+<Value name="2">
+<Value>date</Value>
+</Value>
+<Value name="3">
+<Value>time</Value>
+</Value>
+<Value name="4">
+<Value>caller</Value>
+</Value>
+<Value name="5">
+<Value>source</Value>
+</Value>
+<Value name="6">
+<Value>response</Value>
+</Value>
+<Value name="7">
+<Value>traceText</Value>
+</Value>
+<Value name="8">
+<Value>processId</Value>
+</Value>
+<Value name="9">
+<Value>traceDate</Value>
+</Value>
+<Value name="10">
+<Value>traceTime</Value>
+</Value>
+</Data>
+<Data name="cgiData">
+<Attribute>cgiData</Attribute>
+<Structure>subnode</Structure>
+<Subscript>"cgiData"</Subscript>
+</Data>
+<Data name="requestData">
+<Attribute>requestData</Attribute>
+<Structure>subnode</Structure>
+<Subscript>"requestData"</Subscript>
+</Data>
+<Data name="sessionData">
+<Attribute>sessionData</Attribute>
+<Structure>subnode</Structure>
+<Subscript>"sessionData"</Subscript>
+</Data>
+<Data name="traceStack">
+<Attribute>traceStack</Attribute>
+<Structure>subnode</Structure>
+<Subscript>"traceStack"</Subscript>
+</Data>
+</Storage>
+</Class>
+</Export>

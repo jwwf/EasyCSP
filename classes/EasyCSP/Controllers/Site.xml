@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Controllers.Site">
+<Description><![CDATA[
+Starting set of actions. This is the page controller called if the route is empty 
+(meaning the top of the site). Login and redirection after logout are also handled here.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>EasyCSP.Controller.Base</Super>
+<TimeChanged>63764,32870.195984</TimeChanged>
+<TimeCreated>63460,66127.990758</TimeCreated>
+
+<Property name="layout">
+<Type>%String</Type>
+<Final>1</Final>
+<InitialExpression>"Site"</InitialExpression>
+</Property>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+Method afterConstruct() as %Boolean
+{
+	quit 1
+} 
+*/
+]]></Content>
+</UDLText>
+
+<Method name="accessRules">
+<Description>
+The afterConstruct event will be run by the application automatically immediately
+after the desired controller has been instantiated. Minimally, the access rules for
+each action should be set up. That is, each user-facing view controller must set 
+access rules for each action the controller will perform.
+
+The accessRules method, if it exists, will be called automatically by the controller
+base class to add access rules to the controller's environment. Specify the actions
+as a comma-separated string of simple action names.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	// allow any user access to help screens, the forgot password screen, the reset password screen,
+	// the error display page, and the signon dialogue.
+	do ..addAccessRule("index,error,BulletList,overview", "*")
+	
+	// Allow only logged in users sign off.
+	do ..addAccessRule("logout,create,update", "@")
+	
+	do ..addAccessRule("login,register,activate", "-") ; allow guests to access the login page
+	
+	
+	// Any other action is implicitly denied.
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+                         Actions
+*/
+]]></Content>
+</UDLText>
+
+<Method name="actionBeforeIndex">
+<Description><![CDATA[
+<p><strong>TODO:</strong> First, check logged-in status. If the user isn't logged in
+force the action to "login". If the user is already logged in, determine the correct
+custom index page then do an HTTP redirect to the appropriate route.</p>]]></Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="actionIndex">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	quit ..render("index")
+]]></Implementation>
+</Method>
+
+<Method name="actionError">
+<Description><![CDATA[
+<p>
+This is the landing spot for exceptions and errors. Rather than allowing the app to crash
+errors are caught by the controller base so they can be displayed.
+</p>]]></Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set ..layout = "Error"
+	set OK = ..render("Error")
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="actionActivate">
+<Description>
+If the user presents an activation token and the account (1) exists and (2) needs
+activation then remove the activation key from UserShadow and set Users status to
+"user".</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set token = %EasyCSPApp.requestData.get("activationKey")
+	set uid = %EasyCSPApp.requestData.get("uid")
+	
+	set hasError = 0
+	if (token = "") ! (uid = "") {
+		set hasError = 1
+	}
+	
+	if 'hasError {
+		set shadow = ##class(EasyCSP.Models.UserShadow).%OpenId(uid)
+		set users = ##class(EasyCSP.Models.Users).%OpenId(uid)
+		set hasError = $isobject(shadow) & $isobject(users)
+		
+		if 'hasError & (shadow.activationKey = token) {
+			set shadow.activationKey = ""
+			set shadow.status = shadow.%GetParameter("statusActive")
+			set users.lastUpdate = $p($h,",",1)
+			
+			tstart
+			set hasError = shadow.%Save()
+			set:hasError hasError = users.%Save()
+			if hasError {
+				tcommit
+			} else {
+				trollback
+				do ..SetCondition(404, "No model.")
+				set hasError = 1
+			}
+		}
+			
+		// if all goes well
+		if 'hasError {
+			set model = ..setUpLoginForm()
+			if '$isobject(model) {
+				throw ##class(EasyCSP.Core.Exception).%New("actionLogin",403,"","The requested action can not be performed .")
+			}
+			
+			set parms = ##class(EasyCSP.Core.ParameterList).%New()
+			
+			// Log in our register a user on POST
+			if %EasyCSPApp.cgiData.get("REQUEST_METHOD") = "POST" {
+				do model.setAttributes(%EasyCSPApp.requestData)
+				do model.login()
+			}
+			
+			do parms.set("model", model)
+				
+			quit ..render("Login",parms)
+		} else {
+			quit ..render("ActivateError")
+		}
+	}
+]]></Implementation>
+</Method>
+
+<Method name="actionLogin">
+<Description><![CDATA[
+<p>
+The user has requested to log in or register. The beforeLogin event has been processed and
+the route has remained "log in". Validate the user credentials and allow login upon success.
+</p>]]></Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set ..layout = "Login" ; use the same paneled page as error
+	
+	set model = ..setUpLoginForm()
+	
+	if '$isobject(model) {
+		throw ##class(EasyCSP.Core.Exception).%New("actionLogin",403,"","The requested action can not be performed .")
+	}
+	
+	// Log in our register a user on POST
+	if %EasyCSPApp.cgiData.get("REQUEST_METHOD") = "POST" {
+		do model.setAttributes(%EasyCSPApp.requestData)
+		set OK = model.login()
+		if OK {
+			quit ..render("site/index")
+		}
+	}
+	
+	set parms = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	do parms.set("model", model)
+	
+	// Is this user already logged on?
+	set uid = $mvoconv(%EasyCSPApp.sessionData.get("uid"), "MCL")
+	
+	if uid '= "" {
+		set userModel = ##class(EasyCSP.Models.Users).findByPK(uid)
+		if ..instanceOf(userModel, "Models.") {
+			set OK = ..render("site/index") ; just redirect them
+			quit 1
+		}
+	}
+		
+	set OK = ..render("Login",parms)
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="actionLogout">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set %session.EndSession = 1
+	do %EasyCSPApp.setSession("uid", "")
+	quit ..render("site/Login")
+]]></Implementation>
+</Method>
+
+<Method name="setUpLoginForm">
+<Private>1</Private>
+<ReturnType>EasyCSP.Models.LoginForm</ReturnType>
+<Implementation><![CDATA[
+	
+	set model = ""
+	set factory = ##class(EasyCSP.Model.Factory).%New(.model, "LoginForm")
+	
+	if factory.hasConditions() {
+		do ..copyConditions(factory.formatConditions())
+	}
+	
+	quit model
+]]></Implementation>
+</Method>
+
+<Method name="actionRegister">
+<Description><![CDATA[
+<p>
+The only legal way to get to this action is the request_method must be "POST". The
+jQuery script in the page changes the route to site/register if the user clicks "I am
+a new user" and fills in the form to register.
+</p>]]></Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set ..layout = "Login" ; use the same paneled page as error
+	set parms = ##class(EasyCSP.Core.ParameterList).%New()
+	set model = ""
+	
+	if %EasyCSPApp.cgiData.get("REQUEST_METHOD") '= "POST" {
+	set factory = ##class(EasyCSP.Model.Factory).%New(.model, "LoginForm")
+		do parms.set("model", model)
+		set OK = ..render("Login",parms)
+		quit 1
+	}
+	
+	set factory = ##class(EasyCSP.Model.Factory).%New(.model, "LoginForm")
+	
+	// load the model with the form data
+	do model.setAttributes(%EasyCSPApp.requestData)
+	do parms.set("model", model)
+	
+	if model.hasErrors() {
+		quit ..render("Login",parms)
+	}
+	
+	// This action is for a new registration only. If someone tries to use an
+	// email address or username that has already been taken, reject the registration
+	// and redisplay the form for correction.
+	set exists = ##class(EasyCSP.Models.Users).isUser(model.username)	
+	set:exists=0 exists = ##class(EasyCSP.Models.Users).isUser(model.email)
+	
+	if exists > 0 {
+		do model.addError("username","This user name or email address is already in use.")
+		set OK = ..render("Login", parms)
+		quit 1
+	}
+	
+	set OK = model.register()
+	if 'OK {
+		set destination = "Login"
+	} else {
+		set destination = "Activate"
+	}
+	
+	do parms.set("model", model)
+	
+	set OK = ..render(destination, parms)
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="actionBulletlist">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	quit ..render("BulletList")
+]]></Implementation>
+</Method>
+
+<Method name="actionOverview">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	quit ..render("Overview")
+]]></Implementation>
+</Method>
+</Class>
+</Export>

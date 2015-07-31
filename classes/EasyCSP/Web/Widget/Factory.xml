@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Widget.Factory">
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63583,23514.005323</TimeChanged>
+<TimeCreated>63541,70601.472608</TimeCreated>
+
+<Method name="create">
+<Description>
+Pass in the class name of the widget to create. This function will first look in the local namespace
+for a "Web." package. If the class is not located there then the "EasyCSP.Web" package is searched
+next. Return 0 if the class can not be located or can not be instantiate. If the result is 1 then
+the "widget" parameter will have an instatiated widget object in it.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[&widget,className:%String="",parameters:EasyCSP.Core.ParameterList="",htmlOptions:EasyCSP.Core.ParameterList=""]]></FormalSpec>
+<ReturnType>EasyCSP.Web.Widget.Base</ReturnType>
+<Implementation><![CDATA[
+	set widget = "" ; kill an existing oref
+	quit:$get(className)="" ""
+	
+	
+	set def = ##class(%Dictionary.ClassDefinition).%OpenId(className)
+	if '$IsObject(def) {
+		set def = ##class(%Dictionary.ClassDefinition).%OpenId("EasyCSP.Web.Widget"_className)
+		if '$IsObject(def) {
+			quit ""
+		}
+	}
+	
+	set hasErr = 0
+	try {
+		set widget = $METHOD(def.Name, parameters, htmlOptions)
+	} catch {
+		set hasErr = 1
+	}
+	
+	quit hasErr
+]]></Implementation>
+</Method>
+</Class>
+</Export>

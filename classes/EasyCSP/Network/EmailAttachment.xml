@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Network.EmailAttachment">
+<Description>
+Describe and hold the contents of an email attachment</Description>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63617,73138.556334</TimeChanged>
+<TimeCreated>63615,28812.626452</TimeCreated>
+
+<Property name="holdFile">
+<Description>
+If the attachment lives in an MV DIR-type hold file save the MV VOC name of that hold file here.</Description>
+<Type>%String</Type>
+<SqlFieldName>holdFile</SqlFieldName>
+</Property>
+
+<Property name="itemId">
+<Description>
+The key to the attachment contents.</Description>
+<Type>%String</Type>
+<SqlFieldName>itemId</SqlFieldName>
+</Property>
+
+<Property name="name">
+<Description>
+The name the attachment will be given when it is embedded in the email</Description>
+<Type>%String</Type>
+<SqlFieldName>name</SqlFieldName>
+</Property>
+
+<Property name="extension">
+<Description>
+The attachment extension. Defaults to ".txt".</Description>
+<Type>%String</Type>
+<InitialExpression>"txt"</InitialExpression>
+<SqlFieldName>extension</SqlFieldName>
+</Property>
+
+<Method name="Setextension">
+<FormalSpec>value</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    if $extract(value, 1, 1) '= "." set value = "."_value
+    set i%extension = value
+    set i%mimeType = ##class(EasyCSP.Models.MIMETypes).getType(value)
+]]></Implementation>
+</Method>
+
+<Property name="mimeType">
+<Description>
+The attachment MIME type. This is determined by using the extension as a key to the MIME types global</Description>
+<Type>%String</Type>
+<SqlFieldName>mimeType</SqlFieldName>
+</Property>
+
+<Method name="GetmimeType">
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if i%mimeType = "" quit i%mimeType
+	if i%extension '= "" {
+    	set i%mimeType = ##class(EasyCSP.Models.MIMETypes).getType(i%extension)
+	}
+	quit i%mimeType
+]]></Implementation>
+</Method>
+
+<Property name="content">
+<Description>
+The content of the attachment.</Description>
+<Type>%GlobalCharacterStream</Type>
+<SqlFieldName>content</SqlFieldName>
+</Property>
+
+<Method name="asMailMessagePart">
+<ReturnType>%Net.MIMEPart</ReturnType>
+<Implementation><![CDATA[
+	set rtn = ##class(%Net.MailMessagePart).%New()
+	
+	do rtn.TextData.CopyFrom(..content)
+	set rtn.Charset = "utf-8"
+	set rtn.ContentTransferEncoding = "base64"
+	set rtn.ContentType = ..mimeType
+	do rtn.SetHeader("Content-Disposition", "attachment; filename="""_..name_..extension_"""")
+	
+	do ..content.Rewind()
+	while (..content.AtEnd = 0) {
+		set len = 32768
+		do rtn.Body.Write(..content.Read(.len))
+	}
+	
+	quit rtn
+]]></Implementation>
+</Method>
+
+<Method name="generateBoundaryKey">
+<Language>mvbasic</Language>
+<Private>1</Private>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    RandomNumber = DTX( @ME->Now() : RND( 65535 ) )
+    InnerBoundary = "%SYSTEM.Encryption"->Base64Encode( RandomNumber : @ME->name )
+    InnerBoundaryFlag = '--' : InnerBoundary
+]]></Implementation>
+</Method>
+
+<Storage name="Default">
+<Type>%Library.CacheSerialState</Type>
+<State>EmailAttachmentState</State>
+<StreamLocation>^MVCFramewoED71.EmailAttachDE0DS</StreamLocation>
+<Data name="EmailAttachmentState">
+<Value name="1">
+<Value>holdFile</Value>
+</Value>
+<Value name="2">
+<Value>itemId</Value>
+</Value>
+<Value name="3">
+<Value>name</Value>
+</Value>
+<Value name="4">
+<Value>extension</Value>
+</Value>
+<Value name="5">
+<Value>mimeType</Value>
+</Value>
+<Value name="6">
+<Value>content</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

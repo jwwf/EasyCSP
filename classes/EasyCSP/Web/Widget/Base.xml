@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Widget.Base">
+<Abstract>1</Abstract>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63583,24997.645476</TimeChanged>
+<TimeCreated>63541,37597.083963</TimeCreated>
+
+<Property name="clientOptions">
+<Description>
+client options (validationDelay, validateOnChange, validatingCSSClass, etc</Description>
+<Type>EasyCSP.Core.ParameterList</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="errorMessageCssClass">
+<Type>%String</Type>
+</Property>
+
+<Property name="htmlOptions">
+<Description>
+options</Description>
+<Type>EasyCSP.Core.ParameterList</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="id">
+<Description>
+HTML id of this widget</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="pageSize">
+<Description>
+Page size for grids, boxes, etc</Description>
+<Type>%Integer</Type>
+<Final>1</Final>
+<InitialExpression>15</InitialExpression>
+</Property>
+
+<Property name="stream">
+<Description>
+Gather output until render</Description>
+<Type>%GlobalCharacterStream</Type>
+<Final>1</Final>
+<Private>1</Private>
+</Property>
+
+<Method name="addContent">
+<Final>1</Final>
+<FormalSpec>data:%String</FormalSpec>
+<Implementation><![CDATA[		do ..stream.WriteLine(data)
+]]></Implementation>
+</Method>
+
+<Method name="addStreamContent">
+<Final>1</Final>
+<FormalSpec>data:%GlobalCharacterStream</FormalSpec>
+<Implementation><![CDATA[
+	do ..stream.MoveToEnd()
+	do ..stream.CopyFrom(data)
+]]></Implementation>
+</Method>
+
+<Method name="render">
+<Final>1</Final>
+<FormalSpec>data:EasyCSP.Core.ParameterList</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[	quit ..stream
+]]></Implementation>
+</Method>
+
+<Method name="%OnNew">
+<FormalSpec>parameters:EasyCSP.Core.ParameterList,htmlOptions:EasyCSP.Core.ParameterList</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[
+	if $get(htmlOptions) '[ "ParameterList" quit $$$OK
+	
+	if htmlOptions.isset("id") {
+		set ..id = htmlOptions.get("id")
+		do htmlOptions.unset("id")
+	}
+	
+	set ..htmlOptions = htmlOptions
+	
+	set ..stream = ##class(%GlobalCharacterStream).%New()
+	set ..stream.LineTerminator = $char(13,10)
+	
+	if ..hasMethod("afterConstruct") do $METHOD($THIS,"afterConstruct")
+	
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="xDataToContent">
+<Description>
+If a page is carrying scripts or other data in the form of XData, call this
+method with the id of the XData section to read. The XData contents will be
+copied into the final output stream.</Description>
+<FormalSpec>id</FormalSpec>
+<Implementation><![CDATA[
+	set xDataDef = ##class(%Dictionary.CompiledXData).%OpenId($classname()_"||"_id)
+	set outputStream = xDataDef.Data
+	
+	if '$isobject(outputStream) {
+		do %EasyCSPApp.addContent("Site.Login.cls: "_id_" stream failed to open.")
+		quit 0
+	}
+	
+	set status=##class(%XML.TextReader).ParseStream(outputStream,.textreader)
+	
+	if $$$ISERR(status) {
+		do %EasyCSPApp.addContent($classname(0)_": Could not parse "_id_" stream.")
+		quit 0
+	}
+	
+	while textreader.Read() {
+		do ..addContent(textreader.Value)
+	}
+	
+	quit 1
+]]></Implementation>
+</Method>
+</Class>
+</Export>

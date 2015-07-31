@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Model.attributeError">
+<Description><![CDATA[
+Provides a container for reporting model validation errors to the UI
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63469,24916.889797</TimeChanged>
+<TimeCreated>63468,48091.410665</TimeCreated>
+
+<Property name="attribute">
+<Type>%String</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="message">
+<Type>%String</Type>
+<Transient>1</Transient>
+</Property>
+
+<Method name="%OnNew">
+<FormalSpec>attribute:%String="",message:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+		q:$get(attribute)="" ##class(%SYSTEM.Status).Error(2, "Specify the attribute to report on.")
+		q:$get(message)="" ##class(%SYSTEM.Status).Error(3, "Specify the error message.")
+		
+		s ..attribute = attribute
+		s ..message = message
+		
+		q $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

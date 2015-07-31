@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Users.Form">
+<Description><![CDATA[
+<p>
+Default user-table update view. Clone and modify, place in the local "Views.Site" package. Do
+not modify this as changes will be overwritten on package upgrade.
+</p>
+
+<p>Note: this is the ugliest page in the system. It was the first written and has a lot
+of custom twists to it. Most views do exactly one thing one way and can be generated from
+the stock view generator. As the framework evolves one of the TODOs to work off is simplify
+stuffing the parameter lists. For this iteration I left the boilerplate in an XData section
+which may be a convenient technique for future programmers to use. Doing an addContent
+line-by-line for boilerplate is prohibitively tedious and not necessary for static markup.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63763,60205.591112</TimeChanged>
+<TimeCreated>63541,31504.474773</TimeCreated>
+
+<Method name="run">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if '..data.isset("model") {
+		do ..SetCondition(404, "Please supply a data model for the login form.")
+		quit 0
+	}
+	
+	set loginModel = ..data.get("model")
+	
+	if ..instanceOf(loginModel, "LoginForm") = 0 {
+		do ..SetCondition(404,"The login data model should be an instance of a LoginForm model.")
+		quit 0
+	}
+	
+	set presentation = ..data.get("presentation")
+	
+	set url = %EasyCSPApp.getViewURL()
+	
+	if $mvoconv(url,"MCL")["create" {
+		set ..pageTitle = "New User Creation"
+		set presentation = "create"
+	} else {
+		set ..pageTitle = "Update User Record"
+		set presentation = "update"
+	}
+	
+	/* ****************************************** Login Form ************************************* */
+	
+	set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do htmlOptions.set("id", "mobile-form")
+	do htmlOptions.set("enableAjaxValidation", 0)
+	do htmlOptions.set("enctype", "multipart/form-data")
+	set formStream = ##class(EasyCSP.Web.CHTML).beginForm(url, "post", htmlOptions)
+	do ..addStreamContent(formStream)
+	
+	// the div inside the clear panel in the page
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("class", "container")
+	do htmlOptions.set("style", "float: left; width: 90%")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div",htmlOptions))
+	
+	
+	/* **************** Start the form elements. Surround the visible elements with a fieldset. *** */
+	do htmlOptions.set("style", "width: 90%;margin:0 15px;")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("fieldset",htmlOptions))
+	
+		
+	/* ************* This small inner div is for displaying error messages from the script *********** */
+	// The login page leverages a good deal of client-side validation, managed by a JQuery script. That
+	// script is added to the page-build by the login layout.
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("id", "msgs")
+	do htmlOptions.set("class", "clear errorSummary hidden")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div",htmlOptions))
+    do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div")) // end of "msgs" div
+    /* *********************************** End of msgs div ******************************************** */
+    
+    
+    /* **************** This is an inner div that displays model validation errors if there are any **** */
+    // After submission all the fields in the form are loaded into the model then validated. If any field
+    // fails to pass validation the form is redisplayed with the errors for each invalid field displayed
+    // under the blank. The data is kept in the model so the fields will be filled. (See the Web.ControlGroup
+    // class for further details.)
+    if loginModel.hasErrors()!..hasConditions() {
+		do htmlOptions.unsetAll()
+		do htmlOptions.set("id", "errors")
+		do htmlOptions.set("class", "clear errorSummary")
+		do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div",htmlOptions))
+		do:loginModel.hasErrors() ..addStreamContent(##class(EasyCSP.Web.CHTML).formErrorSummary(loginModel,2))
+		do:..hasConditions() ..addStreamContent(..formatConditions())
+	    do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div")) // end of "msgs" div
+    }
+	
+			
+	// This form relies on CSS for formatting. These optional parameter lists are being created
+	// here for demonstration. 
+	set outerEnclosureOptions = ##class(EasyCSP.Core.ParameterList).%New()	
+	set labelContainerOptions = ##class(EasyCSP.Core.ParameterList).%New()	
+	set labelOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	set inputOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	for attributeName="username","upassword","cpassword","email","firstname","lastname" {
+		do labelOptions.set("required",1)
+		if attributeName = "cpassword" do inputOptions.set("data-equals","upassword")
+		do ..addStreamContent(##class(EasyCSP.Web.ControlGroup).addControlGroup(loginModel.getAttribute(attributeName),0,outerEnclosureOptions,labelContainerOptions,labelOptions,inputOptions))
+		do htmlOptions.unset("data-equals")
+	}
+		
+	
+	/* **************************** end the inner container div ****************************** */
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div"))
+	
+	/* *********************************** Submit Button ************************************* */
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("style","float: left; width: 10%;")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div", htmlOptions))
+	
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("class", "blue")
+	do htmlOptions.set("id", "registersubmit")
+	do htmlOptions.set("name", "registersubmit")
+	do htmlOptions.set("style","float: left; margin: 20px")
+	
+	if presentation = "create" {
+		do htmlOptions.set("value","create")
+		do ..addContent(##class(EasyCSP.Web.CHTML).tag("button", htmlOptions, "Create"))
+	} else {
+		do htmlOptions.set("value","update")
+		do ..addContent(##class(EasyCSP.Web.CHTML).tag("button", htmlOptions, "Update"))
+	}
+	
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div"))
+	
+	
+	/* ***************************** end the form ******************************************** */
+	do ..addContent(##class(EasyCSP.Web.CHTML).endForm())
+		
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("fieldset"))
+	
+	do ..clientScripts.registerScriptFile("userForm", "libs/userForm.js", ..clientScripts.%GetParameter("posEnd"))
+	quit 1
+]]></Implementation>
+</Method>
+</Class>
+</Export>

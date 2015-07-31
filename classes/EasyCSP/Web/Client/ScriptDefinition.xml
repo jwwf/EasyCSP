@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Client.ScriptDefinition">
+<Description>
+Holds in-line scripts in a stream until the page is rendered. Each script is given an id by
+the caller. When adding a script to the rendering queue, please use
+the parameters in that class to ensure proper placement of the script in the page.</Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63542,69635.729697</TimeChanged>
+<TimeCreated>63542,69591.406806</TimeCreated>
+
+<Property name="id">
+<Type>%String</Type>
+</Property>
+
+<Property name="position">
+<Description>
+default to "head"</Description>
+<Type>%Integer</Type>
+<InitialExpression>1</InitialExpression>
+</Property>
+
+<Property name="scriptText">
+<Type>%GlobalCharacterStream</Type>
+</Property>
+</Class>
+</Export>

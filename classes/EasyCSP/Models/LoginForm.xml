@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Models.LoginForm">
+<Description><![CDATA[
+<p>
+Although this class extends MVModel, no data is (or no data <i>should be</i>) written to
+disk. This is a convenient way to set up a login form and perform validation without
+actually having to create a form.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<CompileAfter>EasyCSP.Core.Component,EasyCSP.Model.Base</CompileAfter>
+<Super>%Persistent,EasyCSP.MVModel.Base</Super>
+<TimeChanged>63751,52347.099983</TimeChanged>
+<TimeCreated>63550,34611.373117</TimeCreated>
+
+<Parameter name="MVFILENAME">
+<Default>LOGIN</Default>
+</Parameter>
+
+<Parameter name="MVGLOBAL">
+<Default>^LOGIN</Default>
+</Parameter>
+
+<Parameter name="MVAUTOLOCK">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCLEARDICT">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCREATE">
+<Type>BOOLEAN</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="MVREPOPULATE">
+<Default>0</Default>
+</Parameter>
+
+<Property name="rememberMe">
+<Description>
+Checkbox: if checked then the system will remember your login when you come to the login page.</Description>
+<Type>%Boolean</Type>
+<SqlFieldName>remember_me</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="1"/>
+<Parameter name="MVHEADING" value="Remember Me"/>
+<Parameter name="MVJUSTIFICATION" value="R"/>
+<Parameter name="MVNAME" value="REMEMBER_ME"/>
+<Parameter name="MVWIDTH" value="1"/>
+</Property>
+
+<Property name="username">
+<Description>
+An arbitrary user name. If you are registering this should be a different from your email address.</Description>
+<Type>%String</Type>
+<Required>1</Required>
+<SqlFieldName>user_id</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="2"/>
+<Parameter name="MVHEADING" value="User ID"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="USER_ID"/>
+<Parameter name="MVWIDTH" value="12"/>
+</Property>
+
+<Property name="email">
+<Description>
+Your email address. If this is a registration then this is the address to which an activation key will be sent.</Description>
+<Type>%String</Type>
+<SqlFieldName>email_address</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="3"/>
+<Parameter name="MVHEADING" value="Email Address"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="EMAIL_ADDRESS"/>
+<Parameter name="MVWIDTH" value="25"/>
+</Property>
+
+<Property name="upassword">
+<Description>
+Your password for this system.</Description>
+<Type>%String</Type>
+<Required>1</Required>
+<SqlFieldName>password</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="4"/>
+<Parameter name="MVHEADING" value="Password"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="PASSWORD"/>
+<Parameter name="MVWIDTH" value="12"/>
+</Property>
+
+<Property name="cpassword">
+<Description>
+Confirm your password. It must match the password you entered in the blank above.</Description>
+<Type>%String</Type>
+<SqlFieldName>confirm_password</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="5"/>
+<Parameter name="MVHEADING" value="Confirm Password"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="CONFIRM_PASSWORD"/>
+<Parameter name="MVWIDTH" value="12"/>
+</Property>
+
+<Property name="firstname">
+<Description>
+Your first name; the way you would like the system to greet you.</Description>
+<Type>%String</Type>
+<SqlFieldName>first_name</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="6"/>
+<Parameter name="MVHEADING" value="First Name"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="FIRST_NAME"/>
+<Parameter name="MVWIDTH" value="25"/>
+</Property>
+
+<Property name="lastname">
+<Description>
+Your last name.</Description>
+<Type>%String</Type>
+<SqlFieldName>last_name</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="7"/>
+<Parameter name="MVHEADING" value="Last Name"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="LAST_NAME"/>
+<Parameter name="MVWIDTH" value="25"/>
+</Property>
+
+<Method name="validationRules">
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	do ..addValidationRule("password", "Password")
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="login">
+<Description>
+Log a known user into the system. The model attributes must be loaded prior to calling
+this method.</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set finder = ""
+	if ..username '= "" set finder = ..username
+	set:finder="" finder = ..email
+	
+	set finder = $mvoconv(finder,"MCL")
+	
+	// Locate the record. The record can be located either by the user id (key) or the email address.
+	set users = %EasyCSPApp.users
+	if '$isObject(users) {
+		set users = ##class(EasyCSP.Models.Users).findByIdentifier(..username)
+		if '$isobject(users) {
+			do ..addError("username","Incorrect user name or password.")
+			quit 0
+		}
+	}
+	
+	/*
+	w "<pre>",!
+	d $System.OBJ.Dump(users)
+	w "</pre>",!
+	*/
+	
+	// Find the soft-suspend values in case they're needed.
+	set attemptsBeforeSoftSuspend = +##class(EasyCSP.Configuration.Settings).getSetting("attemptsBeforeSoftSuspend")
+	set softSuspendTime = +##class(EasyCSP.Configuration.Settings).getSetting("softSuspendTime")
+	set utcNow = ..getUniversalTime()
+	set softSuspendUntil = utcNow + (60 * softSuspendTime)
+	
+	set userKey = users.getAttributeValue("userName")
+	
+	if userKey = "" {
+		throw ##class(EasyCSP.Core.Exception).%New("login",403,"","The User Key disappeared.")
+	}
+	
+	set userShadow = %EasyCSPApp.userShadow
+	if '$isObject(userShadow) {
+		set sc = ##class(EasyCSP.Model.Factory).%New(.userShadow, "UserShadow")
+		do userShadow.Read(userKey)
+		if userShadow.hasConditions() { // not found; there's some kind of data error
+			throw ##class(EasyCSP.Core.Exception).%New("login",403,"","Shadow record missing.")
+		}
+	}
+	
+	// Encrypt the password from the web page. Does the result match what's in the shadow table?
+	set pw = userShadow.password
+	set upw = ##class(EasyCSP.Core.Encryption).encrypt(..upassword,##class(EasyCSP.Configuration.Settings).getSetting("systemSalt"))
+	if upw '= pw {
+		set failedAttempts = +userShadow.getAttributeValue("attemptsSinceLastGoodLogin") + 1
+		do userShadow.setAttribute("attemptsSinceLastGoodLogin",failedAttempts)
+		if failedAttempts > attemptsBeforeSoftSuspend {
+			do ..addError("username", "This account is temporarily suspended due to the number of failed login attempts. This will clear on its own shortly.")
+			do userShadow.setAttribute("softSuspendUntilDate", softSuspendUntil)
+			do userShadow.save()
+			quit 0
+		}
+		do ..addError("upassword", "User name or password is invalid.")
+		quit 0
+	}
+	
+	/*
+	w "<pre>",!
+	d $System.OBJ.Dump(userShadow)
+	w "</pre>",!
+	*/
+	
+	if userShadow.status '= userShadow.%GetParameter("statusActive") {
+		do ..addError("username", "This account is not active. If you feel this is in error please contact an administrator.")
+		quit 0
+	}
+	
+	set softSuspendUntilDate = userShadow.softSuspendUntilDate
+	if softSuspendUntilDate '= "" {
+		if softSuspendUntilDate > ..getUniversalTime() {
+			do ..addError("username", "This account is suspended temporarily due to too many failed logins. This will clear shortly on its own.")
+			quit 0
+		} else {
+			do userShadow.setAttribute("softSuspendUntilDate", "") ; naughty-corner time is up. 
+			do userShadow.save()
+		}
+	}
+	
+	// Otherwise, success! Clear soft impediments to login and update login stats.
+	do userShadow.setAttribute("attemptsSinceLastGoodLogin", 0)
+	do userShadow.setAttribute("lastGoodLoginDate", utcNow)
+	do userShadow.setAttribute("softSuspendUntilDate", 0)
+	do userShadow.save()
+	do userShadow.clearAll()
+	
+	
+	set %EasyCSPApp.uid = userKey
+	do %EasyCSPApp.setSession("uid", userKey)
+	
+	do ..clearAll()
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="register">
+<Description>
+Register a new user. This should be called fro</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	// the email address must be a valid format on registration. Upon login, either the user name or email address may be used
+	do ..addValidationRule("email", "Email")
+	do ..addValidationRule("username", "Required")
+	do ..addValidationRule("cpassword", "Password")
+	do ..addValidationRule("firstname", "Required")
+	do ..addValidationRule("lastname", "Required")
+	
+	//write "in register",!
+	quit:'..validate() 0 // error messages will be in the model
+	quit:..upassword'=..cpassword 0 // if the UI didn't catch the passwords not being equal
+	
+	// Map login form values into a new user and shadow record. The values have already been validated
+	// using the same rules but validation will happen again. If the rules fall out of sync for some
+	// reason, the models' business and validation rules will win.
+	set users = ""
+	set sc = ##class(EasyCSP.Model.Factory).%New(.users, "Users")
+	
+	if sc.hasConditions() {
+		do ..SetCondition(sc.formatConditions())
+		quit 0
+	}
+	
+	set shadow = ""
+	set sc = ##class(EasyCSP.Model.Factory).%New(.shadow, "UserShadow")
+	
+	set users.Key = ..username
+	do users.setAttribute("userName", ..username)
+	do users.setAttribute("emailAddress", ..email)
+	do users.setAttribute("firstName", ..firstname)
+	do users.setAttribute("surName", ..lastname)
+	
+	set shadow.Key = ..username
+	do shadow.setAttribute("password", ..upassword)
+		
+	do users.setAttribute("lastUpdateDate", ..getUniversalTime())
+	do users.setAttribute("creationDate", ..getUniversalTime())
+	set userName = $MVOCONV(users.getAttributeValue("userName"), "MCL")
+	do users.setAttribute("userName", userName) // normalize to lower case
+	do users.setAttribute("emailAddress", $MVOCONV(users.getAttributeValue("emailAddress"), "MCL")) // normalize to lower case
+	
+	// Do not set the role above "user" here. You're nobody until somebody loves you.
+
+	set shadow.Key = users.Key
+	do shadow.setAttribute("usershadowid", users.Key)
+	
+	set pkey = ##class(EasyCSP.Core.Encryption).generatePrivateKey()
+	do shadow.setAttribute("privateKey", pkey)
+	
+	set role = ##class(EasyCSP.Models.UserShadow).%GetParameter("roleUser")
+	do shadow.setAttribute("role", role)
+	
+	// Since this is an MV class, use Write() to save the records.
+	tstart // Process as one atomic transaction
+	set OK = users.Write()
+	if OK {
+		set OK = shadow.Write()
+		if 'OK {
+			do ..SetCondition("500", "An error occured creating the new login. Please try again later.")
+		} else {
+			tcommit
+		}
+	}
+	
+	if 'OK {
+		trollback
+	} else {
+		do shadow.setAttribute("password", ##class(EasyCSP.Core.Encryption).encrypt(..upassword,##class(EasyCSP.Configuration.Settings).getSetting("systemSalt")))
+		do shadow.setAttribute("activationkey", ##class(EasyCSP.Conversions.MD5String).run(shadow.getAttributeValue("password")))
+		do shadow.setAttribute("status", ##class(EasyCSP.Models.UserShadow).%GetParameter("statusNew"))
+		do shadow.Write()
+	}
+	
+	quit OK
+]]></Implementation>
+</Method>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^LOGIN</DataLocation>
+<DefaultData>LoginFormDefaultData</DefaultData>
+<IdLocation>^C.LOGIN</IdLocation>
+<IndexLocation>^I.LOGIN</IndexLocation>
+<StreamLocation>^S.LOGIN</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="LoginFormDefaultData">
+<Value name="1">
+<Value>rememberMe</Value>
+</Value>
+<Value name="2">
+<Value>username</Value>
+</Value>
+<Value name="3">
+<Value>email</Value>
+</Value>
+<Value name="4">
+<Value>upassword</Value>
+</Value>
+<Value name="5">
+<Value>cpassword</Value>
+</Value>
+<Value name="6">
+<Value>firstname</Value>
+</Value>
+<Value name="7">
+<Value>lastname</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

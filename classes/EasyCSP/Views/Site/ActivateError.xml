@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Site.ActivateError">
+<Description>
+This page is displayed when a new user successfully registers with the system. The
+page will contain a link to click to activate the new account. The user will not be
+allowed to log in until activation has been done.</Description>
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63620,35480.606146</TimeChanged>
+<TimeCreated>63620,35239.194826</TimeCreated>
+
+<Method name="run">
+<Implementation><![CDATA[
+		do ..addContent("<p>Please accept our apologies. The indicated account could not be activated at this time.</p>")
+		do:..hasConditions() ..addStreamContent(..formatConditions())
+]]></Implementation>
+</Method>
+</Class>
+</Export>

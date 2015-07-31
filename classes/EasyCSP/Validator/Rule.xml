@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Validator.Rule">
+<Description><![CDATA[
+Describes a single validation rule such as attribute name ('alpha', 'date', or some custom
+rule) for a single attribute. and a %List structure containing the validators this rule will apply.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>
+]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63596,17310.637333</TimeChanged>
+<TimeCreated>63470,9362.789436</TimeCreated>
+
+<Property name="ruleClass">
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="scenario">
+<Type>%List</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="validator">
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+<p>
+The validator is the name of a class of EasyCSP.Validator.Rule. If the
+validator is one of the validators supplied with EasyCSP, the short
+name (like "Required") can be used. If it is a custom, user-written rule then
+specify the fully-qualified class name. This class will find the rule and apply
+it if it exists. An error is returned if the rule cannot be located.
+</p>
+
+<p>
+The scenario parameter is a comma-separated string of scenarios during which
+the rule will be applied (ie, "save", "insert", etc).</p>]]></Description>
+<FormalSpec>validator:%String,scenario:%String</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+	if $get(scenario) = "" set scenario = "new,update,save"
+	set ..scenario = $listFromString(scenario, ",")
+	
+	set def = ##class(%Dictionary.ClassDefinition).%OpenId(validator)
+	if '$IsObject(def) {
+		set def = ##class(%Dictionary.ClassDefinition).%OpenId("EasyCSP.Validator.Validators."_validator)
+		if '$IsObject(def) {
+			set validator = $mvoconv(validator,"MCT") ; do a ucfirst then try again to locate the rule
+			set def = ##class(%Dictionary.ClassDefinition).%OpenId("EasyCSP.Validator.Validators."_validator)
+			if '$IsObject(def) {
+				quit $$$ERROR(2, "There is no validator named "_validator)
+			}
+		}
+		set ..ruleClass = "EasyCSP.Validator.Validators."_validator
+	} else {
+		set ..ruleClass = validator
+	}
+	
+	set ..validator = validator
+		
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="applyRule">
+<FormalSpec>value</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	if $get(value) = "" set value = "" // in case it was unassigned
+	set isValid = $CLASSMETHOD(..ruleClass,"run",value)
+	
+	quit:isValid $$$OK
+	
+	set %lastValidationMessage = $PARAMETER(..ruleClass,"message")
+	;set cos ="set %lastValidationMessage = $PARAMETER(##class("_..ruleClass_").%New(),""message"")"
+	;set cosOK = $XECUTE(cos)
+	
+	if $get(%lastValidationMessage) = "" {
+		set %lastValidationMessage = "Failed validation rule '"_..ruleClass_"'."
+	}
+	
+	quit %SYSTEM.Status.Error(1,%lastValidationMessage)
+]]></Implementation>
+</Method>
+</Class>
+</Export>

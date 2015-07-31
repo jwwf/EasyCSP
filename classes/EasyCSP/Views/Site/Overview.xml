@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Site.Overview">
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63764,32964.887055</TimeChanged>
+<TimeCreated>63764,32819.102831</TimeCreated>
+
+<Method name="run">
+<Implementation><![CDATA[
+	set ..pageTitle = "Overview of EasyCSP Architecture"
+	do ..addContent(##class(EasyCSP.Web.CHTML).routeLink("Return to the index","site/index"))
+		do ..xDataToContent("html")
+		quit 1
+]]></Implementation>
+</Method>
+
+<XData name="html">
+<MimeType>text/html</MimeType>
+<Data><![CDATA[
+<span>
+	<h2>Architecture – The Thirty-Thousand-Foot View</h2>
+	<p>
+The root of the web process starts at the site index application. The index is a short CSP page that creates and maintains a instance of the EasyCSP application. 
+Top-level error handling resides here. There is no output rendered at this level.
+</p>
+<p>&nbsp;</p>
+
+<p>
+The application examines the request, parses the route, saves the complete web environment, and then selects the controller. 
+The controller applies access rules and may elect to complete the request based on the result of the application of the 
+access rules. When a controller completes its task, the application compiles and outputs the web page. 
+</p>
+<p>&nbsp;</p>
+
+<p>
+
+Exceptions are handled gracefully at this level. If a controller, model, or view encounters a system or application exception, 
+flow is redirected to an error output page (in place of the stock CSP error page), keeping look-and-feel within the site's layout.
+</p>
+<p>&nbsp;</p>
+
+<p>
+A controller can select a layout for rendering a page based on whatever rules a given installation may choose to apply. 
+It should be noted here that controllers, models, and views are selected through object factories, thus installation-specific 
+custom code will be selected ahead of default, EasyCSP-supplied classes. The rules for overriding classes are very, very 
+simple and easy to grasp instantly. A layout is a page with various containers for output including the HTML &lt;head&gt;
+section, script inclusion, and a place for view content to reside.
+</p>
+<p>&nbsp;</p>
+
+<p>
+Business logic is contained at the controller level and is divided into types of action. An “action” is a processing request, 
+such as “give me an index page for this process”, “edit a record in a given global”, “create a new record in a given global”,
+ or perhaps “give me a report from a  table/global based on parameters I supply in a form”. All controller action 
+ methods begin with the string “action”. There are several controller events that may be used. Among these are 
+ beforeactionName(), afteractionName(), beforeRender(), and afterRender().
+</p>
+<p>&nbsp;</p>
+
+<p>
+Of course, a site may elect to extend these capabilities by extending the controller base class in the site's own namespace.
+</p>
+<p>&nbsp;</p>
+
+<p>
+During the course of an action, the selected layout will also use an object factory to select a view. A view is where user 
+input processing occurs and the “middle”, working portion of a page is built. The Caché programmer does not need specific 
+HTML knowledge; there is a generator for HTML elements that will produce valid HTML 5. By using the control-group generator, 
+web forms or displays can be generated quickly without any specific knowledge of HTML.
+</p>
+<p>&nbsp;</p>
+
+<p>
+Models are representations and extensions of a %Persistent class. Models provide validation of input and formatting of output 
+by the application of rules. Rules may be added to the framework at any moment through plug-ins and may be immediately 
+applied by adding a call to addValidationRule() in the model. Rules are identified by simple names (“Numeric”, “Email”, 
+“Password”, and such like) and are also selected through object factories. For instance, if the rule for a valid 
+password (as supplied in the framework) does not fit a installation's requirements, the programmer may add a new 
+“Password” validation rule in the user application namespace. That rule is instantly available in the user namespace.
+</p>
+<p>&nbsp;</p>
+
+<p>
+Models contain a consistent method of detecting and reporting errors, making errors consistently reportable through the 
+use of EasyCSP components, making it simple for the user to see and correct input errors. For the Caché programmer, 
+this means consistent, predictable UI interaction without the need to repeat (and in many cases, even to add) code 
+for error reporting and handling. User messaging is provided as a parameter in each validator class.
+</p>
+<p>&nbsp;</p>
+
+<p>
+For user comfort and ease-of-use, class property documentation is leveraged for tool tips on labels. Labels for inputs 
+can (by default) be automatically generated from column names or may be overridden by setting the label on an attribute manually if desired.
+</p>
+
+<p>&nbsp;</p>
+<p>
+A %Persistent class that extends EasyCSP.Model.Base or EasyCSP.MVModel.Base inherits automatic, rules-based validation and data integrity enforcement. 
+Much of the information used by the web UI generator comes from the extended model class. Column or input box labels, tooltips, and the 
+like are automatically generated but of course can be easily overridden.
+</p>
+	</span>
+]]></Data>
+</XData>
+</Class>
+</Export>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-05-05 17:33:51">
+<Routine name="RESET" type="MVI" languagemode="11" generated="1" timestamp="63632,69198"><![CDATA[
+Program Reset
+	open "SETTINGS" to settings else
+		crt "The SETTINGS file seems to be missing. Compile the EasyCSP.Configuration.Settings"
+		crt "class to create the file and populate the DICTionary. You should also re-import"
+		crt "the default settings from another installation."
+		stop "Nothing changed."
+	end
+	read siteOpen from settings, "siteOpen" else siteOpen = "Change this value to 0 to close the site for maintenance"
+	siteOpen< 2 > = 0
+	write siteOpen to settings, "siteOpen" ; * site is now closed to traffic
+	zu5 = system(1002)
+	if zu5 <> "EASYCSP" then
+		execute "LOGTO EASYCSP"
+	end
+	if system(1002) <> "EASYCSP" then
+		crt "EasyCSP must be installed in the EASYCSP namespace. Please first remove EasyCSP"
+		crt "from the incorrect namespace then install the framework"
+		crt "in its home namespace. You may then map the packages outward from there."
+		stop "Nothing changed."
+	end
+	read nspace from settings, nspace else
+		write "Home namespace" : @fm : zu5 to settings, "namespace"
+	end
+	crt "Framework System Initial Installation or Factory-Reset"
+	crt "This process will completely clear the ENTITY, USERS, and USER.SHADOW tables. It"
+	crt "will then generate a new system private key for secure transactions. If you have"
+	crt "existing users on this system they will have to re-register from scratch."
+	crt
+	crt "This is a drastic step, one that should only be performed under two circumstances:"
+	crt
+	crt "1. This is an initial installation of EasyCSP and you want to make sure the system"
+	crt "   is as clean as possible. This is the best way to start, making sure your system"
+	crt "   will be configured just for your own site."
+	crt
+	crt "2. This system has been in test mode and there exists data that should not be carried"
+	crt "   forward to the live implementation. This is a prudent step to ensure that your live"
+	crt "   system (if it is being turned up from test) is completely clean and ready for real"
+	crt "   transaction processing."
+	crt
+	crt "IF YOU REALLY, REALLY, REALLY MEAN TO DO THIS then type 'YeS' -- the whole word, in"
+	crt "matching case -- at the next prompt. There is no going back if you proceed past the"
+	crt "next prompt. YOU HAVE BEEN WARNED."
+	crt
+	crt "I know what I'm doing and I know what this means: ":
+	prompt " "
+	input goAhead
+	if goAhead <> "YeS" then stop "Nothing changed."
+	crt "Here goes...":
+	zu5 = system(1002)
+	crt "The current namespace is " : zu5 : ". Is this where the EasyCSP framework is installed? (Y/N) " :
+	loop
+		input YN,1
+		if upcase(YN) <> "Y" then
+		crt "This must be run from the namespace where the EasyCSP classes are installed. Either"
+		crt "LOGTO or zn (from COS) to the home EasyCSP namespace then run this routine again."
+		stop "Nothing changed."
+		end
+	repeat
+	execute "CLEAR.FILE USERS" capturing reply ; crt ".":
+	execute "CLEAR.FILE USER.SHADOW" capturing reply ; crt ".":
+	execute "CLEAR.FILE ENTITY" capturing reply ; crt ".":
+	execute "CLEAR.FILE ROLE" capturing reply ; crt ".":
+	execute "CLEAR.FILE USER.ENTITY.ROLE" capturing reply ; crt ".":
+	$kill ^EasyCSP.Network.LogD ; crt ".":
+	$kill ^EasyCSP.Network.LogS ; crt ".":
+	$kill ^queryOut ; crt ".":
+	$KILL ^ECSPNextId ; crt ".":
+	"EasyCSP.Core.Encryption"->%generateSystemKey()
+	crt ".":
+	entity = "EasyCSP.Models.Entity"->%New()
+	entity->Key = "site"
+	entity->setAttribute("entityName", "System Owner/Administrator")
+	entity->Write()
+	crt ".":
+	role = "EasyCSP.Models.Role"->%New()
+	role->setAttribute("roleDescription", "Site-wide super-user")
+	role->setAttribute("rolelevel", "9999999999")
+	role->setAttribute("roleisactive", 1)
+	role->Write("siteadmin")
+	crt ".":
+	crt ; crt
+	crt "Base files cleared. Please answer the following questions to stand your framework installation up."
+	crt "You MUST complete this step for your installation to be secured and set up properly."
+	crt
+	loginForm = "EasyCSP.Models.LoginForm"->%New()
+	loginForm->addValidationRule("email", "Email")
+	loginForm->addValidationRule("username", "Required")
+	loginForm->addValidationRule("upassword", "Password")
+	loginForm->addValidationRule("cpassword", "Password")
+	loginForm->addValidationRule("firstname", "Required")
+	loginForm->addValidationRule("lastname", "Required")
+	crt "You must complete this step of creating an administrative super-user. The"
+	crt "framework will not be useable until this step is successful."
+	crt
+	loop
+		attributeNames = $listBuild("username","upassword","cpassword","email","firstname","lastname")
+		ll = $listLength(attributeNames)
+		for idx = 1 to ll
+			attributeName = $listGet(attributeNames, idx)
+			changedAttribute = "EasyCSP.Console.ControlGroup"->run(loginForm->getAttribute(attributeName))
+			loginForm->setAttribute(attributeName,changedAttribute->value)
+		next
+		OK = loginForm->validate()
+		if not(OK) then
+			"EasyCSP.Console.ErrorSummary"->run(loginForm)
+		end else
+			OK = loginForm->register()
+			if OK then exit
+		end
+	repeat
+	users = "EasyCSP.Models.Users"->%New()
+	users->Read(loginForm->getAttributeValue("username"))
+	users->setAttribute("entityId", "site")
+	users->Write()
+	userShadow = "EasyCSP.Models.UserShadow"->%New()
+	userShadow->Read(loginForm->getAttributeValue("username"))
+	userShadow->setAttribute("status","EasyCSP.Models.UserShadow"->%GetParameter("statusActive"))
+	userShadow->setAttribute("activationkey", "")
+	userShadow->Write()
+	userEntityRole = "EasyCSP.Models.UserEntityRole"->%New()
+	userEntityRole->setAttribute("userid",loginForm->getAttributeValue("username"))
+	userEntityRole->setAttribute("entityId", "site")
+	userEntityRole->setAttribute("roleId", "siteadmin")
+	userEntityRole->Write(userEntityRole->NextID())
+	crt
+	crt "Basic system settings. To leave these as they are, just hit <enter> and"
+	crt "the current value will be preserved."
+	settingsToSkip = "systemSalt,siteOpen,namespace"
+	convert "," to @fm in settingsToSkip
+	select settings
+	loop while readNext setting do
+		find setting IN settingsToSkip setting amc then continue
+		read item from settings, setting else continue
+		crt setting: ": " :item<1>
+		oldValue = item<2>
+		crt "Old value: " : dquote(oldValue) : ". New value: " :
+		input newValue
+		if newValue = "" then continue
+		if newValue <> oldValue then
+			item<2> = newValue
+			write item to settings, setting
+		end
+	repeat
+	crt ; crt
+	crt "Process complete. Open the site up to visitors now? (Y/N): "
+	input YN,1:
+	YN = upcase(YN[1,1])
+	if YN = "Y" then 
+		writeV "1" to settings, "siteOpen", 2
+		crt "You may now log in via the web as " : loginForm->getAttributeValue("userName")
+	end else
+		crt "The site remains closed for traffic. You may open it at any time by changing"
+		crt "attribute 2 of SETTINGS, siteOpen to '1'."
+	end
+	crt
+end
+]]></Routine>
+</Export>

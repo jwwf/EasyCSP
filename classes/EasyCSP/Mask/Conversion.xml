@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Mask.Conversion">
+<Description>
+Strips all but alphabetic characters from a string. See the MVBasic reference
+manual for conversion types. </Description>
+<Language>mvbasic</Language>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63475,42085.215737</TimeChanged>
+<TimeCreated>63474,49296.22538</TimeCreated>
+
+<Parameter name="cacheDateOffset">
+<Description>
+Epoch starting day offsets from the MV internal date.</Description>
+<Default>46385</Default>
+</Parameter>
+
+<Parameter name="unixDateOffset">
+<Default>-732</Default>
+</Parameter>
+
+<Parameter name="assumeCacheDates">
+<Description>
+change this to 0 for MV</Description>
+<Default>1</Default>
+</Parameter>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+///  Pick conversion codes that are used all over the MVB suite
+*/
+]]></Content>
+</UDLText>
+
+<Parameter name="dateToInternal">
+<Description>
+uses the static MVDateDifference to arrive at the date in the Cache epoch if the asCache parameter is TRUE.</Description>
+<Type>%String</Type>
+<Default>DI</Default>
+</Parameter>
+
+<Parameter name="dateExternalY4">
+<Description>
+external date with 4-digit year</Description>
+<Type>%String</Type>
+<Default>D4</Default>
+</Parameter>
+
+<Parameter name="dateExternalY4Slash">
+<Description>
+external date with 4-digit year with slashes</Description>
+<Type>%String</Type>
+<Default>D4/</Default>
+</Parameter>
+
+<Parameter name="dateExternalY2">
+<Description>
+external date with 2-digit year</Description>
+<Type>%String</Type>
+<Default>D2</Default>
+</Parameter>
+
+<Parameter name="dateExternalY2Slash">
+<Description>
+external date with 2-digit year with slashes</Description>
+<Type>%String</Type>
+<Default>D2/</Default>
+</Parameter>
+
+<Parameter name="dateYearPart2">
+<Type>%String</Type>
+<Default>DY2</Default>
+</Parameter>
+
+<Parameter name="dateYearPart4">
+<Description>
+Return the four-digit year of the input date</Description>
+<Type>%String</Type>
+<Default>DY4</Default>
+</Parameter>
+
+<Parameter name="dateMonthPartNumeric">
+<Description>
+Return the month part as a two-digit numeric</Description>
+<Type>%String</Type>
+<Default>DM</Default>
+</Parameter>
+
+<Parameter name="dateMonthPartAlphaFullUpper">
+<Description>
+Return the month part of a date as uppercase (JANUARY, FEBRUARY,...)</Description>
+<Type>%String</Type>
+<Default>DMA</Default>
+</Parameter>
+
+<Parameter name="dateMonthPartAlphaFullLower">
+<Description>
+Return the month part of a date as lowercase (January, February,...)</Description>
+<Type>%String</Type>
+<Default>DMAL</Default>
+</Parameter>
+
+<Parameter name="dateMonthPartAlphaShortUpper">
+<Description>
+Return the three-character abbreviation for the month in uppercase (JAN, FEB,...)</Description>
+<Type>%String</Type>
+<Default>DMB</Default>
+</Parameter>
+
+<Parameter name="dateMonthPartAlphaShortLower">
+<Description>
+Return the three-character abbreviation for the month in uppercase (Jan, Feb,...)</Description>
+<Type>%String</Type>
+<Default>DMBL</Default>
+</Parameter>
+
+<Parameter name="dateDayPart">
+<Description>
+Return the day of the month as two-digit integer.</Description>
+<Type>%String</Type>
+<Default>DD</Default>
+</Parameter>
+
+<Parameter name="dateChineseZodiacAnimalUpper">
+<Description>
+Return the Chinese zodiac sign in uppercase for the input date. NOTE: This does not respect the lunar year; rather, the sidereal.</Description>
+<Type>%String</Type>
+<Default>DYA</Default>
+</Parameter>
+
+<Parameter name="dateChineseZodiacAnimalLower">
+<Description>
+Return the Chinese zodiac sign in lowercase for the input date. NOTE: This does not respect the lunar year; rather, the sidereal.</Description>
+<Type>%String</Type>
+<Default>DYAL</Default>
+</Parameter>
+
+<Parameter name="dateJulian">
+<Description>
+Return the rayday</Description>
+<Type>%String</Type>
+<Default>DJ</Default>
+</Parameter>
+
+<Parameter name="dateQuarterNumeric">
+<Description>
+Return the quarter of the year (1-4)</Description>
+<Type>%String</Type>
+<Default>DQ</Default>
+</Parameter>
+
+<Parameter name="dateSeasonUpper">
+<Description>
+Return the season in upper case (WINTER, SUMMER, etc)</Description>
+<Type>%String</Type>
+<Default>DQA</Default>
+</Parameter>
+
+<Parameter name="dateSeasonLower">
+<Description>
+Return the season in lower case (Winter, Summer, etc)</Description>
+<Type>%String</Type>
+<Default>DQAL</Default>
+</Parameter>
+
+<Parameter name="allbutalpha">
+<Description>
+Return all characters except alphas</Description>
+<Type>%String</Type>
+<Default>MC/A</Default>
+</Parameter>
+
+<Parameter name="allbutnumeric">
+<Description>
+Return all characters except numerics</Description>
+<Type>%String</Type>
+<Default>MC/N</Default>
+</Parameter>
+
+<Parameter name="alphaonly">
+<Description>
+Return only alpha characters</Description>
+<Type>%String</Type>
+<Default>MCA</Default>
+</Parameter>
+
+<Parameter name="alphanumericOnly">
+<Description>
+Return only alphanumeric characters (removing all the symbols)</Description>
+<Type>%String</Type>
+<Default>MCB</Default>
+</Parameter>
+
+<Parameter name="printableOnly">
+<Description>
+Return the input string with all non-printable characters substituted with a dot "."</Description>
+<Type>%String</Type>
+<Default>MCP</Default>
+</Parameter>
+
+<Parameter name="soundex">
+<Description>
+S (Soundex) conversion - returns the four-character Soundex representation of the input string</Description>
+<Type>%String</Type>
+<Default>S</Default>
+</Parameter>
+
+<Parameter name="symbolsOnly">
+<Description>
+Return only the symbols in a string, stripping alphanumeric characters</Description>
+<Type>%String</Type>
+<Default>MC/B</Default>
+</Parameter>
+
+<Parameter name="decmimaltohex">
+<Description>
+Convert decimal a value to an equivalent hex value</Description>
+<Type>%String</Type>
+<Default>MCDX</Default>
+</Parameter>
+
+<Parameter name="displayinhex">
+<Description>
+Break out the provided string into its hexadecimal representation.</Description>
+<Type>%String</Type>
+<Default>MX0C</Default>
+</Parameter>
+
+<Parameter name="hextodecimal">
+<Description>
+Convert a hexadecimal value to its equivalent decimal value.</Description>
+<Type>%String</Type>
+<Default>MCXD</Default>
+</Parameter>
+
+<Parameter name="lowercase">
+<Description>
+Convert a string to its lowercase equivalent.</Description>
+<Type>%String</Type>
+<Default>MCL</Default>
+</Parameter>
+
+<Parameter name="numericonly">
+<Description>
+Return only the numeric characters in a string.</Description>
+<Type>%String</Type>
+<Default>MCN</Default>
+</Parameter>
+
+<Parameter name="hhmm">
+<Description>
+Time - hours and minutes</Description>
+<Type>%String</Type>
+<Default>MT</Default>
+</Parameter>
+
+<Parameter name="hhmmss">
+<Description>
+Time - hours, minutes, and seconds</Description>
+<Type>%String</Type>
+<Default>MTS</Default>
+</Parameter>
+
+<Parameter name="titlecase">
+<Description>
+Convert a string to its titlecase equivalent</Description>
+<Type>%String</Type>
+<Default>MCT</Default>
+</Parameter>
+
+<Parameter name="uppercase">
+<Description>
+Convert a string to its uppercase equivalent</Description>
+<Type>%String</Type>
+<Default>MCU</Default>
+</Parameter>
+
+<Parameter name="asCache">
+<Description>
+Specify the epoch for reckoning dates.</Description>
+<Type>%String</Type>
+<Default>cache</Default>
+</Parameter>
+
+<Parameter name="asMV">
+<Type>%String</Type>
+<Default>mv</Default>
+</Parameter>
+
+<Parameter name="asUnix">
+<Type>%String</Type>
+<Default>unix</Default>
+</Parameter>
+
+<Method name="run">
+<Description><![CDATA[
+<p>Pass in a value to be converted and the parameter-name of the mask.
+The default direction for dates and string conversions is "internal to display" or "O".
+The programmer may choose "display to internal" by specifying "I" for the direction.</p>
+
+<p>*nix, MV, and Cache reckon dates from completely different starting day. Use the class
+parameter "asUnix", "asMV", or "asCache" when converting a day for both input and output,
+specified in the "epoch" method parameter. All dates are reckoned internally as MV but
+the appropriate offset will be applied in both directions.</p>
+
+If an invalid mask is supplied (please use the class parameters and that shouldn't happen)
+then the value is returned unchanged.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>value="",mask:%String="",direction="O",epoch:%String="asCache"</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	
+		if $get(value) = "" then return value
+		if $get(mask) = "" then return value
+		if $get(direction) = "" then direction = "I" ; * default to input/to-internal direction
+		direction = upcase(direction[1,1])
+		if index(direction, "IO",1) = 0 then return value ; * the converter wants to know exactly when to convert and in which direction
+		
+		isValidMask = @ME->%GetParameter(mask)
+		if $get(isValidMask) = "" then return value ; * unknown type of conversion; just return the original value
+		
+		target = value ; * preserve through date conversions
+		returnValue = ""
+		
+		conv = upcase(mask)
+		isDate = @false
+		if conv[1,1] = "D" then ; * Reckon offset.
+		
+			isDate = @true
+			
+			begin case
+						
+			case epoch = @ME->%GetParameter("asCache") or epoch = "" ; * assume dates are cache.
+				If direction = "O" then target -= @ME->%GetParameter("cacheDateOffset")
+				
+			case epoch = @ME->%GetParameter("asUnix")
+				If direction = "O" then target -= @ME->%GetParameter("unixDateOffset")
+								
+			end case
+			
+		end
+		
+		* MV and Cache reckon time identically. Unix does not.
+		if conv[1,2] = "MT" and  epoch = @ME->%GetParameter("asUnix") then
+			target -= system(99)
+		end
+		
+		if direction = "I" then ; * convert to internal
+		
+			val = iConv(target, conv)
+			
+			begin case
+						
+			case epoch = @ME->%GetParameter("asCache") or epoch = "" ; * assume dates are cache.
+				val += @ME->%GetParameter("cacheDateOffset")
+				
+			case epoch = @ME->%GetParameter("asUnix")
+				val += @ME->%GetParameter("unixDateOffset")
+								
+			end case
+			
+			return val
+		
+		end else ; * convert to display
+		
+			return oconv(target, conv)
+		
+		end
+]]></Implementation>
+</Method>
+</Class>
+</Export>

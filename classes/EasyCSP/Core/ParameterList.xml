@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Core.ParameterList">
+<Description><![CDATA[
+This class is temporary storage for passing parameters for actions and action events
+in the core to action and event processors. This somewhat emulates the parameter
+passing mechanism in Yii.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63595,66381.630623</TimeChanged>
+<TimeCreated>63539,31108.330524</TimeCreated>
+
+<Property name="parameters">
+<Type>%ArrayOfDataTypes</Type>
+<Private>1</Private>
+</Property>
+
+<Method name="copyFrom">
+<FormalSpec><![CDATA[&oldParms:EasyCSP.Core.ParameterList]]></FormalSpec>
+<Implementation><![CDATA[
+	//do ..dump(oldParms)
+	
+	if $get(oldParms) '[ "ParameterList" quit
+	set fromKeys = oldParms.keys()
+	set key = fromKeys.Next("")
+	while key '= "" {
+		set fk = fromKeys.GetAt(key)
+		//w fk," = "
+		set value = oldParms.get(fk)
+		//w value,!
+		do ..parameters.SetAt(value, fk)
+		set key = fromKeys.Next(key)
+	}
+	
+	quit
+]]></Implementation>
+</Method>
+
+<Method name="dump">
+<Implementation><![CDATA[
+	set idx = ..parameters.Next("")
+	while idx '= "" {
+		set val = ..parameters.GetAt(idx)
+		write idx,":",!
+		if $isobject(val) {
+			zwrite val
+		} else {
+			write val
+		}
+		write !!
+		set idx = ..parameters.Next(idx)
+	}
+]]></Implementation>
+</Method>
+
+<Method name="dumpAsStream">
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	set stream = ##class(%GlobalCharacterStream).%New()
+	
+	do stream.WriteLine("<table>")
+	
+	set idx = ..parameters.Next("")
+	while idx '= "" {
+		set val = ..parameters.GetAt(idx)
+		do stream.WriteLine("<tr>")
+		do stream.WriteLine("<td>"_idx_"</td>")
+		do stream.Write("<td>")
+		if $isobject(val) {
+			do stream.Write("[object]")
+		} else {
+			do stream.Write(val)
+		}
+		do stream.Write("</td>")
+		do stream.WriteLine("</tr>")
+		set idx = ..parameters.Next(idx)
+	}
+	
+	do stream.WriteLine("</table>")
+	
+	quit stream
+]]></Implementation>
+</Method>
+
+<Method name="get">
+<FormalSpec>name:%String</FormalSpec>
+<ReturnType>%RegisteredObject</ReturnType>
+<Implementation><![CDATA[
+		quit:$get(name)="" ""
+		quit:'..parameters.IsDefined(name) ""
+		quit ..parameters.GetAt(name)
+]]></Implementation>
+</Method>
+
+<Method name="getAll">
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[	quit ..parameters
+]]></Implementation>
+</Method>
+
+<Method name="instanceOf">
+<FormalSpec>name,class</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if '..isset(name) quit 0
+	if ..parameters.GetObjectIdAt(name) [ class quit 1 else  quit 0
+]]></Implementation>
+</Method>
+
+<Method name="isset">
+<FormalSpec>name:%String</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	quit:$get(name)="" 0
+	quit ..parameters.IsDefined(name)
+]]></Implementation>
+</Method>
+
+<Method name="keys">
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[
+	set rtn = ##class(%ArrayOfDataTypes).%New()
+	
+	quit:..parameters.Count()=0 rtn
+	set count = 1
+	set nextKey = ..parameters.Next("")
+	while $get(nextKey) '= "" {
+		do rtn.SetAt(nextKey, rtn.Count() + 1)
+		set nextKey = ..parameters.Next(nextKey)
+	}
+	quit rtn
+]]></Implementation>
+</Method>
+
+<Method name="length">
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[	quit ..parameters.Count()
+]]></Implementation>
+</Method>
+
+<Method name="set">
+<FormalSpec>name:%String,value</FormalSpec>
+<Implementation><![CDATA[
+		if $get(name) = "" quit
+				
+		do ..parameters.SetAt(value, name)
+]]></Implementation>
+</Method>
+
+<Method name="toString">
+<FormalSpec>contentOnly:%Boolean=1,asDynArray:%Boolean=0</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(contentOnly) <> 0 then contentOnly = 1
+	if $get(asDynArray) <> 1 then withCRLF = 1
+	
+	rtnDyn = ""
+	
+	idx = ""
+	
+	loop
+		idx = @ME->parameters->Next(idx)
+	while idx <> "" do
+		value = @ME->parameters->GetAt(idx)
+		if contentOnly then
+			rtnDyn<-1> = value
+		end else
+			rtnDyn<-1> = idx : @vm : value
+		end
+	repeat
+	
+	if NOT(asDynArray) then
+		convert @vm to ' ' in rtnDyn
+		rtnDyn = ereplace(rtnDyn, @fm, char(13):char(10))
+	end
+	
+	return rtnDyn
+]]></Implementation>
+</Method>
+
+<Method name="unset">
+<FormalSpec>name</FormalSpec>
+<Implementation><![CDATA[	do:..parameters.IsDefined(name) ..parameters.RemoveAt(name)
+]]></Implementation>
+</Method>
+
+<Method name="unsetAll">
+<Implementation><![CDATA[
+	set key = ..parameters.Next("")
+	while key '= "" {
+		do ..unset(key)
+		set key = ..parameters.Next(key)
+	}
+]]></Implementation>
+</Method>
+
+<Method name="%OnNew">
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[
+	set ..parameters = ##class(%ArrayOfDataTypes).%New()
+	Quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

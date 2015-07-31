@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Validator.Validators.CreditCardNumber">
+<Description>
+Implements the Luhn algorithm to determine whether the card number entered
+is a valid sequence</Description>
+<Super>EasyCSP.Validator.Base</Super>
+<TimeChanged>63626,73693.537364</TimeChanged>
+<TimeCreated>63595,34577.011722</TimeCreated>
+
+<Method name="run">
+<Description>
+takes the form field value and returns true on valid number</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>valueIn</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+    // accept only digits
+    set (value,saveValue) = $mvoconv(valueIn, "MCN") ; only operate on digits
+	if value = "" quit 0
+	
+	set cardLength = $length(value)
+	set cardCheck = cardLength # 2
+	
+	set combineTotal = 0, cur = 0
+	
+	for idx = 1:1:cardLength {
+		set digit = $extract(value,idx)
+		// multiply alternate digits by two
+		if (cur # 2) = cardCheck {
+			// if the multiplied digits' sum is greater than 9 then subtract 9
+			set digit = digit *2
+			set:digit>9 digit = digit - 9
+		}
+		set combineTotal = combineTotal + digit
+		set cur = cur + 1
+	}
+	
+	quit:(combineTotal#10)=0 1
+	quit 0
+]]></Implementation>
+</Method>
+</Class>
+</Export>

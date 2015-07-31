@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Models.MIMETypes">
+<Description><![CDATA[
+Translate table for typing files based on their extension. The class extends Model.Base
+but since it's a basic translate table, calling the classmethod <method>getType</method>
+is sufficient for nearly every situation.]]></Description>
+<Super>%Persistent,EasyCSP.Model.Base</Super>
+<TimeChanged>63613,78159.884617</TimeChanged>
+<TimeCreated>63613,76493.240234</TimeCreated>
+
+<Property name="key">
+<Type>%String</Type>
+<SqlFieldName>key</SqlFieldName>
+</Property>
+
+<Index name="indexKey">
+<IdKey>1</IdKey>
+<PrimaryKey>1</PrimaryKey>
+<Properties>key</Properties>
+</Index>
+
+<Property name="description">
+<Type>%String</Type>
+<SqlFieldName>description</SqlFieldName>
+</Property>
+
+<Method name="getType">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>extension:%String=".txt"</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(extension) = "" set extension = ".txt"
+	set extension = $mvoconv(extension, "MCL")
+	set rec = ##class(EasyCSP.Models.MIMETypes).%OpenId(extension)
+	if '$isobject(rec) quit "text/plain"
+	quit rec.description
+]]></Implementation>
+</Method>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^EasyCSP.Models.MIMETypesD</DataLocation>
+<DefaultData>MIMETypesDefaultData</DefaultData>
+<IdLocation>^EasyCSP.Models.MIMETypesD</IdLocation>
+<IndexLocation>^EasyCSP.Models.MIMETypesI</IndexLocation>
+<StreamLocation>^EasyCSP.Models.MIMETypesS</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="MIMETypesDefaultData">
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+<Value name="2">
+<Value>description</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

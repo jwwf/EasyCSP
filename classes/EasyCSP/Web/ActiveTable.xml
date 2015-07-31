@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.ActiveTable">
+<Description><![CDATA[
+<p>
+Using a query result in ^queryOut(<i>pid</i>), create a table with the
+listed column names and data contents. The <variable>options</variable> formal
+spec parameter is optional but if it is supplied it is an instance of a
+Core.ParameterList. Options recognized include:
+<ul>
+<li>tableId - the DOM/CSS id of the table. Defaults to "activeTable"</li>
+<li>tableClass - the CSS class to use for the table object. This defaults to "activeTable" in the stock CSS.</li>
+<li>tableHeaderRowClass</li> - the CSS class to use for the table header row. This defaults to "activeTableHeader" in the stock CSS.</li>
+<li>evenColClass - the CSS class to use for even rows. This defaults to "". This is provided as an override to the stock CSS.</li>
+<li>oddColClass - the CSS class to use for odd rows. This defaults to "". This is provided as an override to the stock CSS.</li>
+<li>evenRowClass - the CSS class to use for even rows. This defaults to "evenRow" in the stock CSS.</li>
+<li>oddRowClass - the CSS class to use for odd rows. This defaults to "oddRow" in the stock CSS.</li>
+<li>pageNumber - the current page number. This should be set by the script upon paging.</li>
+<li>pageSize - the depth of the table in rows. Paging is performed through scripting and AJAX</li>
+<li>queryId - the leftmost subnode of ^queryOut. This is used to locate the query results and is incorporated into the table id.</li>
+<li>buttonColumn - a Core.ParameterList with the configuration of the buttons to create. The default is to use
+	the stock "view, update, delete" set of buttons. See <class>EasyCSP.Web.Widgets.ButtonColumn</class> for configuration details.
+	If this node contains the string "none" then no button column will be produced.</li>
+</ul>
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63763,36919.011097</TimeChanged>
+<TimeCreated>63752,62447.598514</TimeCreated>
+
+<Parameter name="evenColClass">
+<Type>%String</Type>
+</Parameter>
+
+<Parameter name="oddColClass">
+<Type>%String</Type>
+</Parameter>
+
+<Parameter name="evenRowClass">
+<Type>%String</Type>
+<Default>evenTableRow</Default>
+</Parameter>
+
+<Parameter name="oddRowClass">
+<Type>%String</Type>
+<Default>oddTableRow</Default>
+</Parameter>
+
+<Parameter name="tableClass">
+<Type>%String</Type>
+<Default>activeTable</Default>
+</Parameter>
+
+<Parameter name="tableHeaderRowClass">
+<Type>%String</Type>
+<Default>activeTableHeader</Default>
+</Parameter>
+
+<Parameter name="pageSize">
+<Type>%Integer</Type>
+<Default>10</Default>
+</Parameter>
+
+<Method name="run">
+<Description>
+Create an active table with "pagesize" rows. Paging is done with a script that</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>options:EasyCSP.Core.ParameterList="",conversions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	// First pull out and condition options that control the table construction and data source.
+	// Everything that's left will be considered HTML options for the table and for the rows and columns.
+	//if $get(%EasyCSPApp) '= "" { // for debug - REMOVE FOR LIVE
+	set url = %EasyCSPApp.getViewURL()
+	set controllerId = %EasyCSPApp.controller.id
+	//}
+	
+	set stream = ##class(%GlobalCharacterStream).%New()
+	
+	set processId = options.get("queryId")
+	quit:processId=""
+	
+	do stream.WriteLine("<script type=""text/javascript"">")
+	do stream.WriteLine("var entryPoint = """_%EasyCSPApp.getAppUrl()_""";")
+	do stream.WriteLine("var queryId = """_processId_""";")
+	do stream.WriteLine("</script>")
+	
+	do options.unset("queryId")
+       
+    // There's no sense in doing the formatting setup and tapdance if the query has run but
+    // produced no records.
+    set rowCount = +$get(^queryOut(processId, "rowCount"))
+    set status = $get(^queryOut(processId, "status"))
+    
+    if rowCount=0 {
+	    if status = "Complete" {
+	       do stream.Write( "<p>No data to report</p>")
+     	   quit 1
+	    }
+    }
+	
+	do options.unset("queryId") // everything else sets HTML attributes
+	
+	set pageNumber = +options.get("pageNumber")
+	do options.unset("pageNumber")
+	set:pageNumber=0 pageNumber = +##class(EasyCSP.Configuration.Settings).getSetting("gridPageSize")
+	set:pageNumber=0 pageNumber = 1
+	
+	set pageSize = +options.get("pageSize")
+	do options.unset("pageSize")
+	set:pageSize=0 pageSize = +##class(EasyCSP.Configuration.Settings).getSetting("gridPageSize")
+	set:pageSize=0 pageSize = ..#pageSize
+		
+	set allOptions = ..parseOptions(options)
+	set tableOptions = allOptions.get("tableOptions")
+	set headerOptions = allOptions.get("headerOptions")
+	set rowOptions = allOptions.get("rowOptions")
+	set columnOptions = allOptions.get("columnOptions")
+	set buttonOptions = allOptions.get("buttonOptions")
+	
+	// Open the table tag. Affix the id to the table id so the query can be located on paging.
+	set tableId = tableOptions.get("id")
+	if tableId = "" set tableId = "activeTable"
+	set tableId = tableId_"_"_processId
+	do tableOptions.set("id", tableId)
+	
+    do stream.Write(##class(EasyCSP.Web.CHTML).tag("table", tableOptions, "", 0))
+        
+    // Blort out a row of column headings
+    set colHeaders = $get(^queryOut(processId, "labels"))
+    set colIds = $get(^queryOut(processId, "columns"))
+    set idColumn = $get(^queryOut(processId, "idColumn"))
+    if idColumn '= "" {
+	    set idColumnPosition = $listFind(colIds, idColumn)
+    } else {
+	    set idColumnPosition = 0
+    }
+   
+    if $mvoconv($get(buttonOptions), "MCL") '= "none"
+    {
+        do headerOptions.set("buttons", 1)
+    } else {
+        do headerOptions.set("buttons", 0)
+    }
+        
+    do stream.WriteLine(..formatColHeaders(colHeaders, headerOptions))
+    
+    set trOptions = ##class(EasyCSP.Core.ParameterList).%New()
+    
+    // Draw the first page.
+    for nextRow = 1:1:rowCount {
+        
+        // Display the detail rows
+        set rawLine = $get(^queryOut(processId,"rows",nextRow))
+        quit:'$listValid(rawLine)
+        
+        set numberOfDataCols = $listLength(rawLine)
+        
+        if (nextRow#2) = 1 {
+	        set rowClass = rowOptions.get("oddRowClass")
+        } else {
+	        set rowClass = rowOptions.get("evenRowClass")
+        }
+        
+        set id=""
+        set:idColumnPosition'=0 id = $listGet(rawLine, idColumnPosition)
+        
+        do trOptions.set("class",rowClass)
+        
+        do stream.WriteLine(##class(EasyCSP.Web.CHTML).tag("tr", trOptions, "", 0))
+        
+        for td = 1:1:numberOfDataCols {
+            s datum = $lg(rawLine, td, ".")
+            do stream.WriteLine("    "_..formatCell(datum))
+        }
+        
+        // Add a button column?
+        if $mvoconv($get(buttonOptions), "MCL") '= "none"
+        {
+	        do stream.WriteLine(##class(EasyCSP.Web.CHTML).tag("td", "", "", 0))
+	        do stream.CopyFrom(##class(EasyCSP.Web.Widget.ButtonColumn).run(id, buttonOptions))
+	        do stream.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("td"))
+        }
+        
+        do stream.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("tr"))
+        
+        quit:nextRow>=pageSize
+    }
+    
+    do stream.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("table"))
+    
+    
+	set xDataDef = ##class(%Dictionary.CompiledXData).%OpenId($classname()_"||buttonScript")
+	set outputStream = xDataDef.Data
+	
+	if '$isobject(outputStream) {
+		do stream.WriteLine($classname(0)_": buttonScript stream failed to open.")
+		quit 0
+	}
+	
+	do stream.MoveToEnd()
+	do xDataDef.Data.Rewind()
+	
+	do stream.CopyFrom(xDataDef.Data)
+    
+    quit stream
+]]></Implementation>
+</Method>
+
+<Method name="parseOptions">
+<Description>
+Take the lump of options handed in to the run() method, separate them for easy
+use, then hand them back in an array of datatypes.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>options:EasyCSP.Core.ParameterList</FormalSpec>
+<Private>1</Private>
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[
+	
+	set tableOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	set headerOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	set rowOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	set columnOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	set allOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	if options.get("tableClass") = "" {
+		do tableOptions.set("class", ..#tableClass)
+	} else {
+		set x = options.get("tableClass")
+		do:x'="" tableOptions.set("class", x)
+		do options.unset("tableClass")
+	}
+	
+	if options.get("tableHeaderRowClass") = "" {
+		do headerOptions.set("class", ..#tableHeaderRowClass)
+	} else {
+		set x = options.get("tableHeaderRowClass")
+		do:x'="" headerOptions.set("class", options.get("tableHeaderRowClass"))
+		do options.unset("tableHeaderRowClass")
+	}
+	
+	if options.get("evenRowClass") = "" {
+		do rowOptions.set("evenRowClass", ..#evenRowClass)
+	} else {
+		set x = options.get("evenRowClass")
+		do:x'="" rowOptions.set("evenRowClass", options.get("evenRowClass"))
+		do options.unset("evenRowClass")
+	}
+	
+	if options.get("oddRowClass") = "" {
+		do rowOptions.set("oddRowClass", ..#oddRowClass)
+	} else {
+		set x = options.get("oddRowClass")
+		do:x'="" rowOptions.set("oddRowClass", options.get("oddRowClass"))
+		do options.unset("oddRowClass")
+	}
+	
+	if options.get("evenColClass") = "" {
+		do columnOptions.set("evenColClass", ..#evenColClass)
+	} else {
+		set x = options.get("evenColClass")
+		do:x'="" columnOptions.set("evenColClass", options.get("evenColClass"))
+		do options.unset("evenColClass")
+	}
+	
+	if options.get("oddColClass") = "" {
+		do columnOptions.set("oddColClass", ..#oddColClass)
+	} else {
+		set x = options.get("oddColClass")
+		do:x'="" columnOptions.set("oddColClass", options.get("oddColClass"))
+		do options.unset("oddColClass")
+	}
+	
+	// Button options could either be the string "none" to eliminate a button column,
+	// &lt;empty&gt; to take the default, or it could be a Core.ParameterList of button options.
+	set buttonColumnOptions = options.get("buttonOptions")
+	
+	do allOptions.set("tableOptions", tableOptions)
+	do allOptions.set("headerOptions", headerOptions)
+	do allOptions.set("rowOptions", rowOptions)
+	do allOptions.set("columnOptions", columnOptions)
+	do allOptions.set("buttonOptions", buttonColumnOptions)
+	
+	quit allOptions
+]]></Implementation>
+</Method>
+
+<Method name="formatCell">
+<Description>
+Right justify numbers. Allow overriding the class-wide parameter for exceptions</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>datum:%String="",justifyNumbers:%Boolean=1</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	test = convert("$,.", "", datum)
+	if $get(justifyNumbers) = "" then justifyNumbers = 1
+	
+	class = ""
+	if test = oconv(test, 'MCN') Then
+		class = ' style="text-align: right;"'
+	end
+	
+	return "<td":class:">":datum:"</td>"
+]]></Implementation>
+</Method>
+
+<Method name="formatColHeaders">
+<Description>
+Prettyprint column headers</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>colHeaders:%List,headerOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(headerOptions) = "" {
+		set headerOptions = ##class(EasyCSP.Core.ParameterList).%New()
+		do headerOptions.set("class", ..%GetParameter("tableHeaderRowClass"))
+	}
+	
+	if headerOptions.get("class") = "" do headerOptions.set("class", ..%GetParameter("tableHeaderRowClass"))
+	
+	do headerOptions.unset("tableHeaderRowClass")
+	
+	if +headerOptions.get("buttons") '= 0 set colHeaders = colHeaders _ $listBuild("Actions")
+	
+	set numberOfColHeaders = $listLength(colHeaders)
+	
+	set tr = ##class(EasyCSP.Web.CHTML).tag("tr", headerOptions, "", 0) ; *"<tr>"
+	
+	for Idx = 1:1:numberOfColHeaders {
+
+		set th = ##class(EasyCSP.Web.CHTML).tag("th",  $listGet(colHeaders, Idx), $listGet(colHeaders, Idx))
+	
+		set tr = tr_th
+		
+	}
+	
+	quit tr _ ##class(EasyCSP.Web.CHTML).closeTag("tr")
+]]></Implementation>
+</Method>
+
+<Method name="formatCurrency">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>value</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return trim(fmt(value,'10R2'))
+]]></Implementation>
+</Method>
+
+<Method name="GatherStatus">
+<Description>
+This is called periodically from the web page by a script
+to check the status of a background job.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>processID</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	
+	set stat = $get(^queryOut(processID))
+	quit:stat="Complete" "Complete"
+	quit:stat="Aborted" "Aborted"
+	
+	set rowCount = +$get(^queryOut(processID, "rowCount"))
+	
+	quit "Rows found: "_rowCount
+]]></Implementation>
+</Method>
+
+<Method name="unitTest">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pid:%Integer=0</FormalSpec>
+<Implementation><![CDATA[
+	if +$get(pid) = 0 {
+		write "Supply a query process ID."
+		quit
+	}
+	
+	set options = ##class(EasyCSP.Core.ParameterList).%New()
+	do options.set("queryId", pid)
+	
+	set stream = ..run(options)
+	
+	do stream.Rewind()
+	while (stream.AtEnd = 0) {
+		set len = 2048
+		write stream.Read(len),!
+	}
+	
+	set stream = ""
+]]></Implementation>
+</Method>
+
+<XData name="confirmDeleteModal">
+<MimeType>text/html</MimeType>
+<Data><![CDATA[
+<span>
+	<div id='overlay'></div>
+<div id='modal'>
+    <div id='content'>No JavaScript Yet!</div>
+    <a href='#' id='close'>close</a>
+</div>
+	</span>
+]]></Data>
+</XData>
+
+<XData name="buttonScript">
+<MimeType>text/plain</MimeType>
+<Data><![CDATA[
+<script type="text/javascript">
+$(".activeButton").click( function() {
+	var whoClicked = $(this).attr("id");
+	identityParts = whoClicked.split("_");
+	controller = identityParts[0];
+	action = identityParts[1];
+	
+	actionCheck = action.toLowerCase()
+	
+	recordId = identityParts[2];
+	route = entryPoint+controller+"/"+action;
+	var route = route + "&id=" + recordId + "&queryId=" + queryId;
+	
+	var txt = "Deleting a record is immediate and irreversable. If you mean to delete this record then press proceed.";
+	
+	if (actionCheck == "delete") {
+		$.prompt(txt,
+		{
+			title: "Are you sure?",
+			buttons: [
+				{
+					value: true, 
+					title: "Yes, delete it.",
+					classes: ['button', 'blue', 'fleft']
+				},
+				{
+					value: false, 
+					title: "No! Don't!!",
+					classes: ['button', 'red', 'fright']
+				}
+			],
+			box: {
+				classes: "modal-content"
+				},
+			submit: function(e,v,m,f) {
+				if (v == false) {
+					$.prompt.close();
+					return false;
+				} else {
+					document.location.href = route;
+					return false;
+				}
+			}
+		});
+	} else {
+		document.location.href = route;
+	}
+});
+
+</script>
+]]></Data>
+</XData>
+</Class>
+</Export>

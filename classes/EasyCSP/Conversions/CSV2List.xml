@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.CSV2List">
+<Description><![CDATA[
+<p>Convert a flat record (comma or tab delimited) to a multivalue equivalent.</p>
+<p><b>FlatRecord</b> contains the comma-delimited record to convert from flat to
+MV.  <b>Conversions</b> contains @FM-delimited conversions to apply (one attribute
+per flat record field, may be subvalued for successive conversions).</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63480,58568.955825</TimeChanged>
+<TimeCreated>63474,30133.24891</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>FlatRecord:%String="",Conversions:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%List</ReturnType>
+<Implementation><![CDATA[
+
+    IF Unassigned( Conversions ) THEN Conversions = ""
+    
+    Result = ""
+    Idx = 1
+    
+    Loop
+        OneCharacter = FlatRecord[ Idx, 1 ]
+    Until OneCharacter = "" Do
+
+      Begin Case
+
+         Case OneCharacter = '"'
+         
+            EndOfAttribute = Index( FlatRecord[ Idx + 1, 99999 ], '"', 1 )
+            
+            If ( EndOfAttribute > 1 ) Then
+               Result := FlatRecord[ Idx + 1, EndOfAttribute - 1 ]
+            End
+            
+            Idx += EndOfAttribute
+
+         Case ( OneCharacter = ',' ) Or ( OneCharacter = Char(8) )       ; * Comma or tab
+            Result := @fm
+
+         Case @true
+            Result := OneCharacter
+
+      END CASE
+
+      Idx += 1
+
+   REPEAT
+
+*===>  Apply any ICONVerts that may have been passed in
+
+   AttributeCount = DCount( Result, @fm )
+
+   For Idx = 1 TO AttributeCount
+      If Conversions< Idx > <> "" Then Result< Idx > = IConv( Result< Idx >, Conversions< Idx > )
+   Next
+   
+   Result = $listFromString(trimS(Result),@fm)
+
+   Return Result
+]]></Implementation>
+</Method>
+</Class>
+</Export>

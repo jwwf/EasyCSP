@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Security.HostsAllow">
+<Description><![CDATA[
+An object describing a multivalue HOSTS.ALLOW file, kindasorta modeled after a  
+*nix /etc/hosts.allow file that allows this suite to perform a very primitive sort of firewalling.
+See its counterpart HOSTS.DENY.  This file is used with the TCPWrapper object to
+do some very primitive TCP/IP connection screening based on IP address/netmask
+combinations.  It certainly won't prevent DOS attacks, but it will allow programmers to
+keep terminals or devices confined to certain namespaces based on their IP addresses.<br /><br />
+The Item ID of the file is address*mask in NNN.NNN.NNN.NNN*NNN.NNN.NNN.NNN format.  This format
+just makes the file easy to view by SORT or LIST.  It's the RANK attribute that really matters.
+Rules are sorted and applied by rank, first by ALLOW then by DENY.  The first rule that works, wins.
+In the TCPWrappers object, if no rule works the default is to deny.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%Persistent,EasyCSP.MVModel.Base</Super>
+<TimeChanged>63575,76834.740292</TimeChanged>
+<TimeCreated>63535,38517.237334</TimeCreated>
+
+<Parameter name="MVAUTOLOCK">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCLEARDICT">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCREATE">
+<Type>%Boolean</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="MVREPOPULATE">
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="MVFILENAME">
+<Default>HOSTS.ALLOW</Default>
+</Parameter>
+
+<Index name="indexitemId">
+<IdKey>1</IdKey>
+<PrimaryKey>1</PrimaryKey>
+<Properties>itemId</Properties>
+</Index>
+
+<Property name="itemId">
+<Type>%String</Type>
+<SqlFieldName>item_id</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="0"/>
+<Parameter name="MVJUSTIFICATION" value="R"/>
+<Parameter name="MVNAME" value="ITEM_ID"/>
+<Parameter name="MVWIDTH" value="8"/>
+</Property>
+
+<Property name="policyName">
+<Type>%String</Type>
+<SqlFieldName>policy_name</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="1"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="POLICY_NAME"/>
+<Parameter name="MVWIDTH" value="32"/>
+</Property>
+
+<Method name="KeySet">
+<Description><![CDATA[
+<h2>Set method for the Key property</h2>
+<p>There is no default method in the MVFileAbstraction superclass; it's ok to add one here.
+Key must be a dotted-quad IP address, a separator, and a mask.  
+This subroutine will format the key for storage. </p>]]></Description>
+<FormalSpec>NewKey:%String</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+* It's ok to set the key to null on initialization but Write() will refuse to write the record without a valid key
+    If $get(NewKey) = "" then return 1
+    
+   @ME->ClearConditions()
+    
+    ValidIPAddressPatterns = "1N0N'.'1NON'.'1N0N'.'1N0N1X1N0N'.'1NON'.'1N0N'.'1N0N" ; * like 127.0.0.1/255.255.255.255
+    ValidIPAddressPatterns< 1, -1 > = "1N0N'.'1N0N'.'1N0N'.'1N0N1X1N0N"
+    
+    If Not( NewKey Matches ValidIPAddressPatterns ) Then
+        "MVBooster.Library"->SetCondition( -1, "Key must consist of an IP address and mask separated by a non-numeric character like 127.0.0.1/24", Identity )
+        Return "%SYSTEM.Status"->Error( %MVBErrorNumber, %MVBErrorDescription )
+    End
+    
+    "EasyCSP.Network.Lib"->FormatIP(IPAddress, FormattedIP, FormattedMask, HexAddress, LowIP, HexLowIP, HighIP, HexHighIP)
+    
+    If status() <> 0 Then return 0
+    
+    NewKey = FormattedIP : "*" : FormattedMask
+
+* Prevent an endless loop by setting the property directly, bypassing the Set() method
+    COS = " s i%Key = " : DQuote( NewKey )
+    $Xecute COS
+    
+    Return 1
+]]></Implementation>
+</Method>
+
+<Property name="Rank">
+<Description>
+The group membership</Description>
+<Type>%MV.Numeric</Type>
+<SqlFieldName>rank</SqlFieldName>
+<Parameter name="DESCALE" value="0"/>
+<Parameter name="MVATTRIBUTE" value="2"/>
+<Parameter name="MVNAME" value="RANK"/>
+<Parameter name="SCALE" value="0"/>
+</Property>
+
+<Property name="host">
+<Description>
+Funky properties that are really pieces of the key.  This is an example of data-shaping on the fly
+which is a little easier to do with Cache as opposed to Classic MV when you're trying to bring stuff
+out to the web or to .Net tools.</Description>
+<Type>%String</Type>
+<Calculated>1</Calculated>
+<SqlComputeCode>Set {host}=##class(EasyCSP.Security.HostsAllow).getHost({%%ID})</SqlComputeCode>
+<SqlComputed>1</SqlComputed>
+<SqlFieldName>host</SqlFieldName>
+<ReadOnly>1</ReadOnly>
+<Parameter name="MVITYPE" value="field(@ID,&apos;*&apos;,1)"/>
+<Parameter name="MVNAME" value="HOST"/>
+<Parameter name="MVTYPE" value="I"/>
+</Property>
+
+<Method name="getHost">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>itemId:%String=""</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%String</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[      quit $piece(itemId,"*",1)
+]]></Implementation>
+</Method>
+
+<Property name="mask">
+<Type>%String</Type>
+<Calculated>1</Calculated>
+<SqlComputeCode>Set {mask}=##class(EasyCSP.Security.HostsAllow).getMask({%%ID})</SqlComputeCode>
+<SqlComputed>1</SqlComputed>
+<SqlFieldName>mask</SqlFieldName>
+<ReadOnly>1</ReadOnly>
+<Parameter name="MVITYPE" value="field(@ID,&apos;*&apos;,2)"/>
+<Parameter name="MVNAME" value="MASK"/>
+<Parameter name="MVTYPE" value="I"/>
+</Property>
+
+<Method name="getMask">
+<FormalSpec>itemId:%String=""</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%String</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[      quit $piece(itemId,"*",1)
+]]></Implementation>
+</Method>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^HOSTS.ALLOW</DataLocation>
+<DefaultData>HostsAllowDefaultData</DefaultData>
+<IdLocation>^C.HOSTS.ALLOW</IdLocation>
+<IndexLocation>^I.HOSTS.ALLOW</IndexLocation>
+<StreamLocation>^S.HOSTS.ALLOW</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="HostsAllowDefaultData">
+<Structure>listnode</Structure>
+<Subscript/>
+<Value name="1">
+<Value>policyName</Value>
+</Value>
+<Value name="2">
+<Value>Rank</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

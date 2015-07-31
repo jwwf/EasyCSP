@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.UDateFromPDate">
+<Description><![CDATA[
+<p>
+Return the unix epoch equivalent of a pick date and time.  If the time isn't
+supplied, midnight (the start of the day) is assumed. (This mode will work
+for Cache.) Note: Pick dates and Cache dates are reckoned similarly but from
+a different "zero" day. Pick (hence MV) considers December 31, 1969 as the
+"zero" day. Cache usually uses December 31, 1840. The date integer reflects
+the number of days since the zero day. The difference between the two is 46,385.
+</p>
+<p>
+Unix (and all web-based) processing uses yet another zero day: December 31, 1967.
+For
+</p>
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63538,58133.997243</TimeChanged>
+<TimeCreated>63465,42521.012718</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>PickDate:%Integer=0,PickTime:%Integer=0,DateIsMV:%Boolean=0</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%BigInt</ReturnType>
+<Implementation><![CDATA[
+	
+	ASSIGN 0 to status()
+    
+    If Not( PickDate Matches "1N0N" ) Then InternalPickDate = IConv( PickDate, 'D' )
+    If Not( PickTime Matches "1N0N" ) Then InternalPickTime = IConv( PickTime, "MTS" )
+    If $Get( DateIsMV ) <> 1 then DateIsMv = 0
+    
+    If Status() <> 0 Then
+        Return 0
+    End
+    
+    if DateIsMV = @false then PickDate -= 46385 ; * A Dache date was used vs an MV date. Adjust to the Cache zero-day.
+    
+    JDate = ( PickDate - 732 ) * 86400
+    
+    Return JDate + PickTime
+]]></Implementation>
+</Method>
+</Class>
+</Export>

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.ControlGroup">
+<Description><![CDATA[
+Using a model's attributes, create a form control group consisting of a label, an
+input of some sort, and an area for attribute validation error messages.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63763,79542.012354</TimeChanged>
+<TimeCreated>63539,32874.065463</TimeCreated>
+
+<Method name="addControlGroup">
+<Description><![CDATA[
+<p>
+Place a control group for a model attribute into a web page. A control
+group is a label, an input of some sort, and a placeholder for error
+messages. If attributeName is empty, all attributes in a model will be
+used. Otherwise, attributeName is a comma-delimited list of attributes
+in a model. If an attribute named in the list doesn't exist it will be
+skipped. No error will be produced.
+</p>
+<p>
+The outer enclosure type defaults to 0 or "div". If it is set to 1 then
+the control group is rendered as an unordered list.
+</p>
+
+<p style="color: red;">TODO: Add html options for label and input div wrappers.</p>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>attribute:EasyCSP.Model.attribute,outerEnclosureIsList:%Boolean=0,outerEnclosureHtmlOptions:EasyCSP.Core.ParameterList,labelEnclosureHtmlOptions:EasyCSP.Core.ParameterList,labelHtmlOptions:EasyCSP.Core.ParameterList,inputEnclosureHtmlOptions:EasyCSP.Core.ParameterList,inputTagHtmlOptions:EasyCSP.Core.ParameterList</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	
+	set output = ##class(%GlobalCharacterStream).%New()
+	set output.LineTerminator = $char(13)_$char(10)
+	
+	quit:$get(attribute)'["ttribute" output
+	
+	// Set up the enclosure type. Each control group lives in either a div or ul envelope.
+	if +$get(outerEnclosureIsList) '= 1 set outerEnclosureIsList = 0
+	if outerEnclosureIsList { // Hatch and 185 style
+		set outerEnclosureTag = "ul"
+		set elementEnclosureTag = "li"
+	} else { // classic Yii style
+		set outerEnclosureTag = "p"
+		set elementEnclosureTag = "p"
+	}
+	
+	set finder = attribute.name
+	
+	// Ensure that the tag attribute structures are initialized.
+	if $get(outerEnclosureHtmlOptions) '[ "ParameterList" set outerEnclosureHtmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	if $get(labelEnclosureHtmlOptions) '[ "ParameterList" set labelEnclosureHtmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	if $get(labelHtmlOptions) '[ "ParameterList" set labelEnclosureHtmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	if $get(inputEnclosureHtmlOptions) '[ "ParameterList" set inputEnclosureHtmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	if $get(inputTagHtmlOptions) '[ "ParameterList" set inputTagHtmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	/*
+	w "Outer enclosure parms:",! do outerEnclosureHtmlOptions.dump()
+	w "Label enclosure parms:",! do labelEnclosureHtmlOptions.dump()
+	w "Input enclosure parms:",! do inputEnclosureHtmlOptions.dump()
+	w "Input tag parms:",! do inputTagHtmlOptions.dump()
+	*/
+	
+	// Control div/ul start
+	set parms = ##class(EasyCSP.Core.ParameterList).%New()
+	//do outerEnclosureHtmlOptions.dump()
+	do parms.copyFrom(outerEnclosureHtmlOptions)
+	do parms.set("id",finder_"ControlGroup")
+	do:parms.get("class")="" parms.set("class","controlGroup")
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).openTag(outerEnclosureTag, parms))
+	
+	/*
+	// inner div: label
+	do parms.unsetAll()
+	do parms.copyFrom(labelEnclosureHtmlOptions)
+	do parms.set("id", finder_"LabelDiv")
+	do parms.set("for", finder)
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).openTag(elementEnclosureTag, parms))
+	*/
+	
+	do parms.unsetAll()
+	do parms.copyFrom(labelHtmlOptions)
+	do:attribute.required=1 parms.set("required", 1)
+	do parms.set("id",finder_"Label")
+	if attribute.tooltip '= "" do parms.set("title", attribute.tooltip)
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).label(attribute.label,finder,parms))
+	//do output.WriteLine(##class(EasyCSP.Web.CHTML).closeTag(elementEnclosureTag))
+	// end inner label div
+	
+	/*
+	// inner div: input
+	do parms.unsetAll()
+	do parms.copyFrom(inputEnclosureHtmlOptions)
+	do parms.set("id", finder_"Div")
+	do:attribute.required=1 parms.set("required", 1)
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).openTag(elementEnclosureTag,parms))
+	*/
+		
+	// Try to guess the right input type. This should work for 95% of the cases. If one gets
+	// missed it's easy enough to do one of two things: either label or name password attributes
+	// with "pass" or "pwd" in the name
+	do parms.unsetAll()
+	do parms.copyFrom(inputTagHtmlOptions)
+	do parms.set("id", finder) ; the input field has the same name as the attribute "finder"
+	
+	// If there's a "type" argument in the input parameters then use what the programmer asked.
+	set type = parms.get("type")
+	if type = "" {
+		set type = ..guessInputType(attribute)
+	} else {
+		do parms.unset("type")
+	}
+	
+	// If the field is for dates then use the JQuery UI datepicker control
+	if type = "date" {
+		set type = "text"
+		do output.WriteLine("<script type='text/javascript'>")
+		do output.WriteLine("$(function() [")
+		do output.WriteLine("   $(""#"_finder_""").datepicker();")
+		do output.WriteLine("});")
+	}
+	
+	do:attribute.required=1 parms.set("required", 1)
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).inputField(type, finder, attribute.value,parms))
+	//do output.WriteLine(##class(EasyCSP.Web.CHTML).closeTag(elementEnclosureTag))
+	// end input
+		
+	// Optional inner div: validation error list
+	// If this is a redraw of the page and the attribute failed validation on the previous pass,
+	// then display the errors beneath the input.
+	if attribute.hasError() {
+		do parms.unsetAll()
+		do parms.set("id", finder_"ErrorDiv")
+		do parms.set("class", "errorMessage")
+		do output.WriteLine(##class(EasyCSP.Web.CHTML).openTag(elementEnclosureTag,parms))
+		
+		set err = attribute.errors.Next("")
+		while err '= "" {
+			do output.WriteLine("<p>"_attribute.errors.GetAt(err)_"</p>")
+			set err = attribute.errors.Next(err)
+		}
+		
+		do output.WriteLine(##class(EasyCSP.Web.CHTML).closeTag(elementEnclosureTag))
+	}
+	
+	// end the optional error div/ul
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).closeTag(outerEnclosureTag))
+	
+	do output.WriteLine("<p class=""controlGroupSpacer"">&nbsp;</p>")
+	
+	// ready the content for immediate use
+	do output.Rewind()
+	quit output
+]]></Implementation>
+</Method>
+
+<Method name="guessInputType">
+<Description>
+jQuery is loaded with each page. This method leverages jQuery typing and validation
+by changing the default "text" type to a type that can be managed by jQuery.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>attribute:EasyCSP.Model.attribute</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(attribute)'["ttribute" quit "text"
+	
+	set label = $MVOCONV(attribute.label, "MCL")
+	set name = $MVOCONV(attribute.name, "MCL")
+	set type = $MVOCONV(attribute.type, "MCL")
+	
+	if type [ "boolean" quit "checkbox"
+	
+	if (type["date")!(label["date") quit "date"
+	
+	if (type["time")!(label["time") quit "time"
+	
+	if (type["integer")!(type["number") quit "number"
+	
+	if type [ "string" {
+		if (label["pass")!(label["pwd")!(name["pass")!(name["pwd") quit "password"
+		if (label["email") quit "email" // jQuery type
+	}
+	
+	// default catch-all
+	quit "text"
+]]></Implementation>
+</Method>
+</Class>
+</Export>

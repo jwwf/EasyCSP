@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Controllers.Users">
+<Description><![CDATA[
+Starting set of actions. This is the page controller called if the route is empty 
+(meaning the top of the site). Login and redirection after logout are also handled here.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>EasyCSP.Controller.Base</Super>
+<TimeChanged>63763,39924.346398</TimeChanged>
+<TimeCreated>63460,66127.990758</TimeCreated>
+
+<Property name="layout">
+<Type>%String</Type>
+<Final>1</Final>
+<InitialExpression>"Site"</InitialExpression>
+</Property>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+Method afterConstruct() as %Boolean
+{
+} 
+*/
+]]></Content>
+</UDLText>
+
+<Method name="accessRules">
+<Description>
+The afterConstruct event will be run by the application automatically immediately
+after the desired controller has been instantiated. Minimally, the access rules for
+each action should be set up. That is, each user-facing view controller must set 
+access rules for each action the controller will perform.
+
+The accessRules method, if it exists, will be called automatically by the controller
+base class to add access rules to the controller's environment. Specify the actions
+as a comma-separated string of simple action names.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	// allow any user access to help screens, the forgot password screen, the reset password screen,
+	// the error display page, and the signon dialogue.
+	do ..addAccessRule("index,create,update,view", "@")
+	do ..addAccessRule("delete","!")
+	
+	// Any other action is implicitly denied.
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+                         Actions
+*/
+]]></Content>
+</UDLText>
+
+<Method name="actionCreate">
+<Description>
+Add a new user to the system</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set sc = ##class(EasyCSP.Model.Factory).%New(.model, "LoginForm")
+	if '..instanceOf( model, "LoginForm") {
+		throw ##class(EasyCSP.Core.Exception).%New("Create",404,"","Can not obtain an instance of model login form")
+		quit 0
+	}
+	set parms = ##class(EasyCSP.Core.ParameterList).%New()
+	do parms.set("model", model)
+	do parms.set("presentation", "create")
+	
+	quit ..render("Form", parms)
+]]></Implementation>
+</Method>
+
+<Method name="actionBeforeIndex">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="actionIndex">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set sc = ##class(EasyCSP.Model.Factory).%New(.model, "Users")
+	if '..instanceOf( model, "Users") {
+		throw ##class(EasyCSP.Core.Exception).%New("Users",404,"","Can not obtain an instance of model Users.")
+		quit 0
+	}
+	
+	// This query is to get the basic querying mechanism working. In the release version
+	// it should be replaced with a query that joins USERS and USER.SHADOW and is aware
+	// of business-rule restrictions.
+	set parms = ##class(EasyCSP.Core.ParameterList).%New()
+	do parms.set("model", model)
+	
+	set queryId = "" ; for debugging
+	set queryId = $classmethod(model.%ClassName(1), "search", model)
+	do parms.set("queryId", queryId)
+	
+	quit ..render("index", parms)
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="actionDelete">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set id = %EasyCSPApp.getRequestData("id")
+	set queryId = %EasyCSPApp.getRequestData("queryId")
+	
+	set parms = ##class(EasyCSP.Core.ParameterList).%New()
+	do parms.set("queryId", queryId)
+	
+	set myself = %EasyCSPApp.users ; my own user record
+	set myShadow = %EasyCSPApp.userShadow ; my own shadow record
+	
+	// If the poster isn't logged in then they have no rights.
+	if $get(myself)'["Users" {
+		quit ..render("site/login")
+	}
+	
+	if id = "" {
+		w "<pre>No id</pre>",!
+		do myself.addError("username", "No record id to delete.")
+		do parms.set("model", myself)
+		quit ..render("index")
+	}
+	
+	if (id = myself.getAttributeValue("username")) {
+		do myself.addError("username", "You can not deactivate your own record through this process.")
+		do parms.set("model", myself)
+		quit ..render("index", parms)
+	}
+	
+	set deleteModel = myself.findByPk(id)
+	if '..instanceOf(deleteModel, "Users") {
+		do myself.addError("username", "ID not found.")
+		do parms.set("model", myself)
+		quit ..render("index", parms)
+	}
+	
+	// Nobody below a site DBA rank can see anything outside their own entity or company
+	set role = myShadow.%GetParameter("roleSupervisor")
+	if +myShadow.role < role {
+		do myself.addError("username", "You don't have sufficient privileges for this operation.")
+		do parms.set("model", myself)
+		quit ..render("index", parms)
+	}
+	
+	if myself.entityId '= deleteModel.entity {
+		do myself.addError("username", "ID not found.")
+		do parms.set("model", myself)
+		quit ..render("index", parms)
+	}
+	
+	set sc = ##class(EasyCSP.Model.Factory).%New(.model, "Users")
+	if '..instanceOf( model, "Users") {
+		throw ##class(EasyCSP.Core.Exception).%New("Users",404,"","Can not obtain an instance of model Users.")
+		quit 0
+	}
+	
+	do parms.set("model", myself)
+	quit ..render("users/index", parms)
+]]></Implementation>
+</Method>
+</Class>
+</Export>

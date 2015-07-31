@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Controllers.Dashboard">
+<Description>
+Default initial landing place</Description>
+<Super>EasyCSP.Controller.Base</Super>
+<TimeChanged>63628,63691.407686</TimeChanged>
+<TimeCreated>63620,53402.269223</TimeCreated>
+
+<Method name="accessRules">
+<Description>
+The accessRules method, if it exists, will be called automatically by the controller
+base class to add access rules to the controller's environment. Specify the actions
+as a comma-separated string of simple action names.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	// allow any user access to help screens, the forgot password screen, the reset password screen,
+	// the error display page, and the signon dialogue.
+	do ..addAccessRule("index", "@")	
+	
+	// Any other action is implicitly denied.
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="actionIndex">
+<Description>
+Given the user name, their access level, and whether they're operating under a given entity,
+find an initial "home" dashboard page.</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set uid = %EasyCSPApp.uid
+	set entity = %EasyCSPApp.entity
+	
+	// Is there a dashboard for a user working within an entity/company?
+	if entity '= "" {
+		set fqcn = "Views.Dashboard."_entity_"."_uid
+		set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+			
+			// is there one inside the framework for this entity+user?
+			if '$isobject(def) {
+				set fqcn = "EasyCSP.Views.Dashboard."_entity_"."_uid
+				set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+			}
+			
+			// is there one outside the framework just for this entity?
+			if '$isobject(def) {
+				set fqcn = "Views.Dashboard."_entity
+				set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+			}
+			
+			// is there one inside the framework just for this entity?
+			if '$isobject(def) {
+				set fqcn = "Views.Dashboard."_entity
+				set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+			}
+			
+		}
+]]></Implementation>
+</Method>
+</Class>
+</Export>

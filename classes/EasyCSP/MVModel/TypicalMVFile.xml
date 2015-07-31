@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.MVModel.TypicalMVFile">
+<Description><![CDATA[
+<p>A generic MVBooster-style file class.  This class can be used to open
+and manipulate any MV file that doesn't explicitly belong to MVBooster
+already. It could be used as a skeleton to create classes for other files
+in your own environment. MVBooster.TypicalMVFile extends MVbooster.MVFileAbstraction.</p>
+<p>This mini-class allows you to open any MVFile for whch you don't have a standard MVBooser-style class definition.</p>
+<h3>Caveat:</h3>
+<p> This class offers no default properties thus can not give an exposure of the file's MV attributes as
+properties.  What it does offer, though, is the protections that MVFileAbstraction gives: managed read and write
+methods, error trapping, and debug/trace facilities. <b>Best advice</b> is to use MVBooster.CreateMVFileClass
+to create a specific file class for files that are not temporary/work/scratch files.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Language>mvbasic</Language>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63534,73924.670835</TimeChanged>
+<TimeCreated>63534,71803.439346</TimeCreated>
+
+<Method name="%OnNew">
+<Description>
+Constructor</Description>
+<FormalSpec>FileName:%String="",WorkSilently:%Boolean=0,ReadOnly:%Boolean=0</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    
+    If $Get(FileName) = "" Then
+        @ME->SetCondition( 1, "Please supply a file name to be opened" )
+    End
+    
+    Return @ME->New( FileName, WorkSilently, ReadOnly )
+]]></Implementation>
+</Method>
+</Class>
+</Export>

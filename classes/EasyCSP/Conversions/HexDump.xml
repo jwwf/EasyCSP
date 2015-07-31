@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.HexDump">
+<Description><![CDATA[
+Given a load of text in (string) "Buffer", return the contents neatly formatted
+in a hex-dump format.  Instead of crlf in between the lines, each line is
+delimited by attribute marks so that a hex-dump could be delivered as a resource
+as a result to a URI request.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63616,70821.312</TimeChanged>
+<TimeCreated>63464,77510.653593</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>Buffer:%String,asMV:%Boolean=0</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+ 	if $get(asMV) <> 1 then asMV = 0
+ 	      
+	BadCharacters = ""
+	ByteAddress = 0
+	Result = ""
+
+	conversionTricks = "EasyCSP.Core"->%New()
+
+	BadCharacters = conversionTricks->AllControlCharacters
+
+	FOR Idx = 127 TO 250
+		BadCharacters := CHAR( Idx )
+	NEXT Idx
+
+	Dots = STR( '.', LEN( BadCharacters ) )
+
+	Dots := '{|}~.'
+	WorkingString = Buffer             ; * Preserve buffer
+
+	LOOP WHILE WorkingString <> "" DO
+
+     IF LEN( WorkingString ) > 16 THEN
+        FullWord = WorkingString[ 1, 16 ]
+        WorkingString = WorkingString[ 17, 99999 ]
+     END ELSE
+        FullWord = WorkingString
+        WorkingString = ""
+     END
+
+     PrintLine = ""
+     Representation = ""
+
+     LOOP WHILE FullWord <> "" DO
+
+        IF LEN( FullWord ) > 4 THEN
+           HalfWord = FullWord[ 1, 4 ]
+           HexWord = OCONV( HalfWord, conversionTricks->displayinhex )
+           FullWord = FullWord[ 5, 9999 ]
+        END ELSE
+           HalfWord = FullWord
+           HexWord = OCONV( HalfWord, conversionTricks->displayinhex )
+           FullWord = ""
+        END
+
+        PrintLine := FMT( HexWord, "9' 'L" )
+        CONVERT BadCharacters TO Dots IN HalfWord
+        Representation := HalfWord
+
+     REPEAT
+
+     HexadecimalAddress = FMT( DTX( ByteAddress), "6'0'R" ): ' '
+     LengthOfRepresentation = LEN( Representation )
+     
+     FOR Idx = 1 TO LengthOfRepresentation
+        Representation[ Idx, 1 ] = CHAR( BITAND( SEQ( Representation[ Idx, 1 ] ), 127 ) )
+     NEXT Idx
+     
+     DecimalAddress = FMT( ByteAddress, "6'0'R" )
+     Result< -1 > = HexadecimalAddress : FMT( PrintLine, "40' 'L" ) : '  ' : DecimalAddress : ' *' : FMT( Representation, "16' 'L" ) : '*'
+     ByteAddress += 16
+     
+  REPEAT
+      
+  if not(asMV) then Result = ereplace( Result, @fm, char(13):char(10))
+
+      RETURN( Result )
+]]></Implementation>
+</Method>
+</Class>
+</Export>

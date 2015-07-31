@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="Controllers.Sample">
+<Description><![CDATA[
+Starting set of actions. This is the page controller called if the route is empty 
+(meaning the top of the site). Login and redirection after logout are also handled here.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>EasyCSP.Controller.Base</Super>
+<TimeChanged>63590,71386.184482</TimeChanged>
+<TimeCreated>63460,66127.990758</TimeCreated>
+
+<Property name="layout">
+<Type>%String</Type>
+<Final>1</Final>
+<InitialExpression>"Site"</InitialExpression>
+</Property>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+Method afterConstruct() as %Boolean
+{
+} 
+*/
+]]></Content>
+</UDLText>
+
+<Method name="accessRules">
+<Description>
+The afterConstruct event will be run by the application automatically immediately
+after the desired controller has been instantiated. Minimally, the access rules for
+each action should be set up. That is, each user-facing view controller must set 
+access rules for each action the controller will perform.
+
+The accessRules method, if it exists, will be called automatically by the controller
+base class to add access rules to the controller's environment. Specify the actions
+as a comma-separated string of simple action names.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	// allow any user access to help screens, the forgot password screen, the reset password screen,
+	// the error display page, and the signon dialogue.
+	do ..addAccessRule("allow", "index", "*")
+	
+	// Allow only logged in users sign off.
+	do ..addAccessRule("allow", "create,update", "@")
+	
+	// Any other action is implicitly denied.
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+                         Actions
+*/
+]]></Content>
+</UDLText>
+
+<Method name="actionBeforeIndex">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="actionIndex">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	quit 1
+]]></Implementation>
+</Method>
+</Class>
+</Export>

@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Configuration.Settings">
+<Description><![CDATA[
+<p>
+This table contains soft-setting switches for framework behavior. Settings are contained in an MV
+file in the EasyCSP workspace. Attribute (field) 1 is the description of what the setting does.
+All attributes from 2 on are the setting values.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%Persistent,EasyCSP.MVModel.Base</Super>
+<TimeChanged>63749,48128.646917</TimeChanged>
+<TimeCreated>63460,37667.361413</TimeCreated>
+
+<Parameter name="MVFILENAME">
+<Default>SETTINGS</Default>
+</Parameter>
+
+<Parameter name="MVREPOPULATE">
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="MVGLOBAL">
+<Type>%String</Type>
+<Default>SETTINGS</Default>
+</Parameter>
+
+<Parameter name="MVAUTOLOCK">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCLEARDICT">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCREATE">
+<Type>BOOLEAN</Type>
+<Default>1</Default>
+</Parameter>
+
+<Property name="settingKey">
+<Description>
+The name of the setting or the switch it affects. This is a compound key that may consist of up to three parts thus: switch*entity*user</Description>
+<Type>%String</Type>
+<SqlFieldName>setting_key</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="0"/>
+<Parameter name="MVHEADING" value="Setting Key"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="SETTING.KEY"/>
+<Parameter name="MVWIDTH" value="20"/>
+</Property>
+
+<Property name="switch">
+<Description>
+This is the name of the setting to be affected.</Description>
+<Type>%String</Type>
+<Calculated>1</Calculated>
+<SqlComputeCode>Set {switch}=$piece(%ID,"*",1)</SqlComputeCode>
+<SqlComputed>1</SqlComputed>
+<SqlFieldName>switch</SqlFieldName>
+<Parameter name="MVHEADING" value="Switch"/>
+<Parameter name="MVITYPE" value="field(@id,&apos;*&apos;,1)"/>
+<Parameter name="MVNAME" value="SWITCH"/>
+<Parameter name="MVPROJECTED" value="1"/>
+<Parameter name="MVTYPE" value="I"/>
+<Parameter name="MVWIDTH" value="25"/>
+</Property>
+
+<Property name="entity">
+<Description>
+If this is empty then the setting is system-wide. If it is not empty then the setting affects only the named entity. If there is a user name
+in the idKey then this setting is used for the specifically-named user operating in any entity. If both are not empty then the setting is used
+if the named user is operating in the named entity.</Description>
+<Type>%String</Type>
+<Calculated>1</Calculated>
+<SqlComputeCode>Set {entity}=$piece(%ID,"*",2)</SqlComputeCode>
+<SqlComputed>1</SqlComputed>
+<SqlFieldName>entity</SqlFieldName>
+<Parameter name="MVHEADING" value="Entity"/>
+<Parameter name="MVITYPE" value="field(@id,&apos;*&apos;,2)"/>
+<Parameter name="MVNAME" value="ENTITY"/>
+<Parameter name="MVPROJECTED" value="1"/>
+<Parameter name="MVTYPE" value="I"/>
+</Property>
+
+<Property name="user">
+<Description>
+If this is empty then the setting is system-wide or for any user in the named entity. If it is not empty then the setting affects only the named user.</Description>
+<Type>%String</Type>
+<Calculated>1</Calculated>
+<SqlComputeCode>Set {user}=$piece(%ID,"*",3)</SqlComputeCode>
+<SqlComputed>1</SqlComputed>
+<SqlFieldName>user</SqlFieldName>
+<Parameter name="MVHEADING" value="User"/>
+<Parameter name="MVITYPE" value="field(@id,&apos;*&apos;,3)"/>
+<Parameter name="MVNAME" value="USER"/>
+<Parameter name="MVPROJECTED" value="1"/>
+<Parameter name="MVTYPE" value="I"/>
+<Parameter name="MVWIDTH" value="25"/>
+</Property>
+
+<Property name="description">
+<Description>
+Setting value</Description>
+<Type>%String</Type>
+<SqlFieldName>description</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="1"/>
+<Parameter name="MVHEADING" value="Description"/>
+<Parameter name="MVJUSTIFICATION" value="T"/>
+<Parameter name="MVNAME" value="DESCRIPTION"/>
+<Parameter name="MVWIDTH" value="60"/>
+</Property>
+
+<Property name="value">
+<Description>
+Setting value</Description>
+<Type>%String</Type>
+<SqlFieldName>value</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="2"/>
+<Parameter name="MVHEADING" value="Value"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="VALUE"/>
+<Parameter name="MVWIDTH" value="20"/>
+</Property>
+
+<Index name="indexSettingKey">
+<IdKey>1</IdKey>
+<PrimaryKey>1</PrimaryKey>
+<Properties>settingKey</Properties>
+</Index>
+
+<Method name="getSetting">
+<Description><![CDATA[
+Find all keys with a switch named <i>settingName</i>. The values in %session
+govern which setting will be returned.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>settingName:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(settingName) = "" then return ""
+	
+	if $get(%EasyCSPApp) <> "" then
+		forEntity = %EasyCSPApp->sessionData->get("entity")
+	forUser = %EasyCSPApp->getSession("user")
+	end else
+		forEntity = "" ; * site only
+		forUser = "" ; * all
+	end
+	
+	if forEntity = oconv("site","MCL") then forEntity = ""
+	
+	if forUser = oconv("guest","MCL") then forUser = ""
+	
+	filename = "EasyCSP.Configuration.Settings"->%GetParameter("MVFILENAME")
+	open filename to Settings else return ""
+	
+	begin case
+		case (forEntity <> "") and (forUser <> "")
+			key = switch:"*":forEntity:"*":forUser
+			read value from Settings, key then 
+				del value<1>
+				return value ; * exact match switch*entity*user
+			end
+			
+			key = switch:"*":forEntity ; * is there an entity-wide setting?
+			read value from Settings, key then 
+				del value<1>
+				return value ; * exact match switch*entity
+			end
+			
+		case (forEntity = "") and (forUser <> "")
+			key = switch:"**":forUser
+			read value from Settings, key then 
+				del value<1>
+				return value ; * exact match switch**user
+			end
+			
+	end case
+	
+	* no exact matches so try for a default
+	read value from Settings, settingName then 
+		del value<1>
+		return value
+	end
+	
+	return ""
+]]></Implementation>
+</Method>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^SETTINGS</DataLocation>
+<DefaultData>SettingsDefaultData</DefaultData>
+<IdLocation>^C.SETTINGS</IdLocation>
+<IndexLocation>^I.SETTINGS</IndexLocation>
+<StreamLocation>^S.SETTINGS</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="SettingsDefaultData">
+<Value name="1">
+<Value>description</Value>
+</Value>
+<Value name="2">
+<Value>value</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

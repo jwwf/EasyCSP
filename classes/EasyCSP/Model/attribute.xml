@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Model.attribute">
+<Description><![CDATA[
+<p>
+This is the descriptor class for model attributes. When a model is instantiated
+the %OnNew searches for persistent properties. It instantiates an attribute descriptor
+for each. These descriptors hold not only classic Cache property information but also
+carry rules for validation, labels for display or reporting, and other information
+that will be useful labour-savers in apps.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63752,38312.250555</TimeChanged>
+<TimeCreated>63473,71652.796917</TimeCreated>
+
+<Property name="conversions">
+<Description>
+MV conversions (See OCONV). Successive conversions are @VM-delimited. The rule
+is exactly the same as MV and may be applied to any model regardless of whether
+it is MV.</Description>
+<Type>%String</Type>
+<Final>1</Final>
+<Transient>1</Transient>
+</Property>
+
+<Property name="errors">
+<Type>%String</Type>
+<Final>1</Final>
+<Collection>array</Collection>
+<Transient>1</Transient>
+</Property>
+
+<Property name="justification">
+<Type>%String</Type>
+<Final>1</Final>
+<InitialExpression>"L"</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Property name="label">
+<Type>%String</Type>
+<Parameter name="MAXLEN" value="65535"/>
+</Property>
+
+<Property name="searchable">
+<Type>%Boolean</Type>
+<InitialExpression>1</InitialExpression>
+</Property>
+
+<Method name="labelGet">
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(i%label) '= "" quit i%label
+	quit $MVOCONV(..name, "MCT")
+]]></Implementation>
+</Method>
+
+<Property name="name">
+<Type>%String</Type>
+</Property>
+
+<Property name="order">
+<Type>%Integer</Type>
+</Property>
+
+<Property name="required">
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+</Property>
+
+<Property name="sqlFieldName">
+<Type>%String</Type>
+</Property>
+
+<Property name="tooltip">
+<Description>
+HTML is allowed. This text will appear on a web form as a tooltip.</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="type">
+<Type>%String</Type>
+</Property>
+
+<Property name="validators">
+<Type>EasyCSP.Validator.Rule</Type>
+<Collection>array</Collection>
+</Property>
+
+<Property name="value">
+<Type>%String</Type>
+<Parameter name="MAXLEN" value="65535"/>
+</Property>
+
+<Property name="width">
+<Type>%Integer</Type>
+<InitialExpression>65</InitialExpression>
+</Property>
+
+<Method name="valueGet">
+<ReturnType>%String</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[	Quit $get(i%value)
+]]></Implementation>
+</Method>
+
+<Method name="addError">
+<Final>1</Final>
+<FormalSpec>errorText</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	q:$get(errorText)="" $$$ERROR(2, "Specify the error message.")
+	
+	set count = ..errors.Count() + 1
+	
+	do ..errors.SetAt(errorText,count)
+
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="addValidationRule">
+<FormalSpec>ruleName:%String="",scenario:%String="save,insert,update"</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	if ..hasValidationRule(ruleName) quit $$$OK
+	
+	set ruleObject = ##class(EasyCSP.Validator.Rule).%New(ruleName, scenario)
+	
+	if '$IsObject(ruleObject) {
+		do ..addError("Validation "_ruleName_" can not be located.")
+		quit $$$ERROR(3, "Invalid validation rule")
+	}
+	
+	set count = ..validators.Count() + 1
+	d ..validators.SetAt(ruleObject,count)
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="clearErrors">
+<Implementation><![CDATA[	set ..errors = ""
+]]></Implementation>
+</Method>
+
+<Method name="formatErrors">
+<Language>cache</Language>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	set rtn = ##class(%GlobalCharacterStream).%New()
+	set idx = ..errors.Next("")
+	while idx '= "" {
+		set err = ..errors.GetAt(idx)
+		do rtn.WriteLine(err)
+		set idx = ..errors.Next(idx)
+	}
+	
+	do rtn.Rewind()
+	
+	quit rtn
+]]></Implementation>
+</Method>
+
+<Method name="hasError">
+<Final>1</Final>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	quit (..errors.Count() > 0)
+]]></Implementation>
+</Method>
+
+<Method name="hasValidationRule">
+<Description>
+Return TRUE if the list of validators contains a specific rule</Description>
+<Final>1</Final>
+<FormalSpec>ruleName</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	quit:..validators.Count()=0 0
+	set hasRule = 0
+	set idx = ..validators.Next("")
+	while idx '= "" {
+		set rule = ..validators.GetAt(idx)
+		if $mvoconv(rule.ruleClass, "MCL") = $mvoconv(ruleName, "MCL") {
+			set hasRule = 1
+			quit
+		}
+	set idx = ..validators.Next(idx)
+	}
+	quit hasRule
+]]></Implementation>
+</Method>
+
+<Method name="hasValidationRules">
+<Description>
+Return TRUE if at least one validation rule exists.</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	quit:..validators.Count()=0 0
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="setLabel">
+<Description>
+Change the default label to any other text</Description>
+<Final>1</Final>
+<FormalSpec>Text</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	q:$get(Text)="" 0
+	
+	set ..label = Text
+
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="setTooltip">
+<Final>1</Final>
+<FormalSpec>Text</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	q:$get(Text)="" 0
+	
+	set ..tooltip = Text
+
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="validate">
+<ReturnType>%Boolean</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[
+	set hasValidators = 1
+	try {
+		if ..validators.Count() = 0 {
+			set hasValidators = 0 // no validation rules; pass it.
+		}
+	} catch {
+		set hasValidators = 0 // there are no validators
+	}
+	
+	quit:'hasValidators 1
+	
+	set validators = ..validators
+	
+	set key = validators.Next("") // trundle through the validator rules
+	
+	set validator = validators.GetAt(key)
+	
+	while validator '= "" {
+		
+		set OK = 1
+			
+		if '$listValid(validator.scenario) {
+			set validator = validators.Next(validator)
+			continue
+		}
+		
+		set validatorName = validator.ruleClass
+		set attributeValue = ..value
+		
+		// write "<p>",..name,", rule ",validator.ruleClass
+			
+		// Run the validation. An EasyCSP-compatible validator must have an error message parameter.
+			if $CLASSMETHOD(validatorName, "run", attributeValue) '= 1 {
+				set errorList = ""
+				set errorMessage = $PARAMETER(validatorName,"message")
+				do ..addError(errorMessage) // refine error messages later
+				set OK = 0
+				write ..name, " ",errorMessage,!
+			}
+			
+			// write "</p>",!
+		
+		set key = validators.Next(key)
+		set validator = validators.GetAt(key)
+		
+	}
+	
+	quit OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

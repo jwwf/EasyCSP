@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Validator.Validators.isMD5Hash">
+<Description>
+Tests a string to see if it meets the criteria of looking like an MD5 hash string (32 hexadecimal characters)</Description>
+<Super>EasyCSP.Validator.Base</Super>
+<TimeChanged>63473,79901.998585</TimeChanged>
+<TimeCreated>63468,53360.317413</TimeCreated>
+
+<Parameter name="message">
+<Default>The value must be an MD5 hash as a 32-character string.</Default>
+</Parameter>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>value:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+		if $get(value) = "" then return @false ; * that's absolutely not an MD5 hasn
+		if len(value) <> 32 then return @false ; * an MD5 hash is thirty-two characters long
+		
+		* Strip out all the legal hexadecimal characters. If anything is left then the string wasn't an MD5 hash.
+		testValue = convert("abcdef1234567890", "", downcase(value))
+		if len(testValue) > 0 then return @false ; * this is not a hash as it contains other than hex characters
+      
+		return @true ; * it's 32 characters long and contains only hex digits
+]]></Implementation>
+</Method>
+</Class>
+</Export>

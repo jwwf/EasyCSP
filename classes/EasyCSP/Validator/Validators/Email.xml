@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Validator.Validators.Email">
+<Description><![CDATA[
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Language>mvbasic</Language>
+<Super>EasyCSP.Validator.Base</Super>
+<TimeChanged>63616,31040.310553</TimeChanged>
+<TimeCreated>63459,75965.185229</TimeCreated>
+
+<Parameter name="message">
+<Default>The value must be a valid email address (person@place.dom).</Default>
+</Parameter>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>value</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	* If a formatted name is included with the address, only examine the RFC address portion
+	if value matches "0X'<'1X0X'>'" then
+		testvalue = field(value, "<", 2)
+		convert ">" to "" in testvalue
+	end else
+		testvalue = value
+	end
+	
+	if $get(testvalue) = "" then return @false
+	if index(testvalue, "@", 1) = 0 then return @false ; * no @-sign it's not an email address
+	
+	convert "@" to @am in testvalue ; * split the string and evaluate each side
+	
+	if dcount( testvalue, @am ) > 2 then return @false ; * there can only be one @-symbol in an email address
+	
+	if testvalue< 1 > = '' then return @false ; * there has to be a person at the domain
+	
+	domain = convert('.', @am, testvalue<2>) ; * split the domain up
+	
+	domainParts = dcount(domain,@am)
+	if domainParts < 2 then return @false ; * at least something.something
+	
+	if not(domain<domainParts> matches "2A":@vm:"3A") then return @false ; * .com, .co, .net, .uk or some such
+	
+	return @true
+]]></Implementation>
+</Method>
+</Class>
+</Export>

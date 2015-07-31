@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:34">
+<Class name="EasyCSP.Web.javascriptExpression">
+<Super>%Persistent</Super>
+<TimeChanged>63567,40661</TimeChanged>
+<TimeCreated>63483,76404.820685</TimeCreated>
+
+<Property name="code">
+<Type>%String</Type>
+</Property>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+This callback method is invoked by the <METHOD>%New</METHOD> method to 
+provide notification that a new instance of an object is being created.
+
+<P>If this method returns an error then the object will not be created.
+<p>It is passed the arguments provided in the %New call.
+When customizing this method, override the arguments with whatever variables and types you expect to receive from %New().
+For example, if you're going to call %New, passing 2 arguments, %OnNew's signature could be:
+<p>Method %OnNew(dob as %Date = "", name as %Name = "") as %Status
+If instead of returning a %Status code this returns an oref and this oref is a subclass of the current
+class then this oref will be the one returned to the caller of %New method.]]></Description>
+<FormalSpec>code:%String</FormalSpec>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[
+	if $find(code,"js:",1) = 1 set code = $extract(code,4,*)
+	set ..code = code
+	
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="toString">
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[	quit ..code
+]]></Implementation>
+</Method>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^MVCFramewo1335.javascriptEDD48D</DataLocation>
+<DefaultData>javascriptExpressionDefaultData</DefaultData>
+<IdLocation>^MVCFramewo1335.javascriptEDD48D</IdLocation>
+<IndexLocation>^MVCFramewo1335.javascriptEDD48I</IndexLocation>
+<StreamLocation>^MVCFramewo1335.javascriptEDD48S</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="javascriptExpressionDefaultData">
+<Structure>listnode</Structure>
+<Subscript/>
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+<Value name="2">
+<Value>code</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

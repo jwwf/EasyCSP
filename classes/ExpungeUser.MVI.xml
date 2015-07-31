@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-05-05 17:33:51">
+<Routine name="ExpungeUser" type="MVI" languagemode="11" generated="1" timestamp="63632,69197"><![CDATA[
+Program ExpungeUser
+tokenizedSentence = "EasyCSP.Utilities.Tokenize"->run(@sentence)
+uid = tokenizedSentence< 2 >
+if uid = "" then
+	if index($get(%EasyCSPApp),"Web.Application",1) > 0 then
+		u = %EasyCSPApp->webEnvironment->sessionData->get("u")
+	end else
+		crt "User Id:"
+		prompt " "
+		input uid
+		if uid = "" then stop "No change."
+	end
+end
+	rec = $get(^USERS(uid))
+	if rec = "" then stop "Not found."
+	open "USERS" to users else stop "Could not open the USERS file."
+	open "USER.SHADOW" to usershadow else stop "Could not open the USER.SHADOW file."
+	delete users, uid
+	delete usershadow, uid
+	stop "Done. RIP ":uid
+end
+]]></Routine>
+</Export>

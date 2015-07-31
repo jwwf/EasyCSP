@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Core.Encryption">
+<Description>
+System primitives for customer private key generation</Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63622,61856.1585</TimeChanged>
+<TimeCreated>63621,65457.786343</TimeCreated>
+
+<Method name="decrypt">
+<Description>
+Wrapper the Cache system decryption function. This accepts and returns printable strings
+that can be stored in a global.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>CipherText:%String="",Key:%String="",hasLength:%Boolean=0</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(CipherText) = "" then return "Error: nothing to decrypt"
+	if $get(Key) = "" then return "Error: missing key"
+	
+	* if the input string includes a 4-byte length, strip that off and do the decryption
+	if $get(hasLength) = 1 then
+		packetLength = oconv( oconv( CipherText[1,4], "MX"), "MCXD") ; * first four bytes of the string are the length
+		unHex = iconv(CipherText[5,len(CipherText)], "MX")
+	end else
+		unHex = iconv(CipherText, "MX")
+	end
+	
+	return "%SYSTEM.Encryption"->AESCBCDecrypt(unHex,Key)
+]]></Implementation>
+</Method>
+
+<Method name="encrypt">
+<Description>
+Wrapper the Cache system encryption function. This accepts and returns printable strings
+that can be stored in a global. Use the user's own private key</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>Plaintext:%String,Key:%String,hasLength:%Boolean=0</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set encResponse=##class(%SYSTEM.Encryption).AESCBCEncrypt(Plaintext,Key)
+	set response = $MVOCONV(encResponse, "MX0C") ; use an atomic system function instead of looping
+	
+	if hasLength {
+		set hexLen=$zhex($length(encResponse))
+		set padding="0000"
+		set hexLen=$e(padding,1,4-$l(hexLen))_hexLen
+		set response=hexLen_response
+	}
+	
+	QUIT response
+]]></Implementation>
+</Method>
+
+<Method name="generateSalt">
+<Description>
+Pseudo-random key for salting the generate</Description>
+<ClassMethod>1</ClassMethod>
+<Language>mvbasic</Language>
+<Private>1</Private>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	salt1 = fold("EasyCSP.Conversions.MD5String"->run(rnd(99999)+@date), 4, @vm)
+	salt2 = fold("EasyCSP.Conversions.MD5String"->run(rnd(99999)+@time), 4, @vm)
+	salt3 = fold("EasyCSP.Conversions.MD5String"->run(rnd(system(99))), 4, @vm )
+	
+	* Smash the pieces of the salt together. The result will be a dynamic array where
+	* the first attribute contains the first group of four characters from each salt (@vm-delimited)
+	* and each successive attribute will contain the next group of four characters from 
+	* each salt string, and so on.
+	pKey = cats(salt1, salt2)
+	pKey = cats(pKey, salt3)
+	
+	* Take the first three groups to get enough characters
+	pKey = field(pKey, @fm, 1, 3)
+	
+	* get rid of the system delimiters
+	convert @fm:@vm:'/' to "" in pKey
+	
+	* and take the first 32 characters
+	return pKey[1,32]
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+// Generate a private key
+
+]]></Content>
+</UDLText>
+
+<Method name="generatePrivateKey">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set salt = ##class(EasyCSP.Configuration.Settings).getSetting("systemSalt")
+	set privateKey = ##class(EasyCSP.Core.Encryption).encrypt($extract(..generateSalt(),1,16),salt)
+	quit privateKey
+]]></Implementation>
+</Method>
+
+<Method name="%generateSystemKey">
+<Description>
+Generate the system-wide key. Obviously this should only be done once at installation time.</Description>
+<ClassMethod>1</ClassMethod>
+<Language>mvbasic</Language>
+<Implementation><![CDATA[
+	open "SETTINGS" to settings else abort "The SETTINGS MV file is missing or inaccessible."
+	key = "EasyCSP.Core.Encryption"->encrypt("EasyCSP.Core.Encryption"->generateSalt(),"EasyCSP.Core.Encryption"->generateSalt())
+	rec = "This is established on setup. DO NOT ALTER THIS SETTING else no one will be able to log in from the web."
+	rec<2> = key
+	write rec to settings, "systemSalt"
+	close settings
+]]></Implementation>
+</Method>
+</Class>
+</Export>

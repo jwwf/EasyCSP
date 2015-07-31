@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.SQL.Query">
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63763,37174.943101</TimeChanged>
+<TimeCreated>63762,62143.077686</TimeCreated>
+
+<Property name="conditions">
+<Type>EasyCSP.Core.ParameterList</Type>
+</Property>
+
+<Property name="labels">
+<Type>%List</Type>
+</Property>
+
+<Property name="models">
+<Type>EasyCSP.SQL.ModelItem</Type>
+<Collection>array</Collection>
+</Property>
+
+<Property name="sqlColumns">
+<Type>%List</Type>
+</Property>
+
+<Method name="addModel">
+<FormalSpec>model:EasyCSP.Model.Base,alias:%String="t"</FormalSpec>
+<Implementation><![CDATA[
+	set:$get(alias)="" alias = "t"
+	if ..models.IsDefined(alias) {
+		throw ##class(EasyCSP.Core.Exception).%New("Query.addModel",403,"","There is already a table with alias ""t"". Use another alias.")
+	}
+	
+	set def = ##class(EasyCSP.SQL.ModelItem).%New(model)
+	
+	do ..models.SetAt(def, alias)
+]]></Implementation>
+</Method>
+
+<Method name="select">
+<Description><![CDATA[
+Pass a comma-delimited list of column names in via <variable>columnList</variable>.
+Each call is cumulative so columns can be added any time before the query is
+assembled and executed. The <variable>tableAlias</variable> variable allows
+columns from JOINed tables to be included in the output. If no alias is provided
+then the default is "t". Table aliases will be prepended automatically. The table
+alias must match a table alias in the list of ModelItems in <property>models</property>]]></Description>
+<FormalSpec>columnList:%String="",tableAlias:%String="t"</FormalSpec>
+<Implementation><![CDATA[
+	if $get(columnList) = "" set columnList = "*"
+	if $get(tableAlias) = "" set tableAlias = "t"
+]]></Implementation>
+</Method>
+</Class>
+</Export>

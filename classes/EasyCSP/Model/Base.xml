@@ -1,0 +1,1180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Model.Base">
+<Description><![CDATA[
+<p>
+Models a record from a Cache global. Adds common error tracking
+"Glue-ware" that makes a common model type. Model child classes should inherit this
+class in order to access common error reporting, validation, and model event handling. The model is the key component
+in making Cache globals and MV files easy to expose on a web UI. That is, the purpose of the framework
+is rapid web UI development. The underlying business logic the province of an existing back-end.
+</p>
+
+<p>
+One of the most important features of the model class is to enable fast, ready-to-hook up data
+conversion (such as dates and numbers) for display. It leverages ready-made validation for data coming back
+from the UI. Such display conversions and validations are easily extensible by adding more
+type and validation classes and publishing them.
+</p>
+
+<p>
+The model superclass automatically scans the inheriting %Persistent class properties, setting up
+GUI-ready default field labels with data validation and type conversions. Additional validation and conversion
+rules may be set up at any time after the model is instantiated.
+</p>
+
+<p>
+It then represents the current state of a data row by way of "attributes". An attribute differs
+from a standard node or column in that it carries a user-friendly field label, validation rules,
+data conversion strategies, all built-in. Using these attributes, a user data entry form can be
+automatically generated on demand. Adjustments to validation rules or conversions may be made
+at any time in the inheriting model child-class.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Abstract>1</Abstract>
+<CompileAfter>EasyCSP.Core.Component</CompileAfter>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63763,36177.442759</TimeChanged>
+<TimeCreated>63467,73843.495634</TimeCreated>
+
+<Property name="attributes">
+<Type>attribute</Type>
+<Final>1</Final>
+<Collection>array</Collection>
+<Private>1</Private>
+<Transient>1</Transient>
+</Property>
+
+<Property name="displayOrder">
+<Description>
+On instantiation, list all the attributes in storage order by default. The
+controller or view can change this to suit security or display requirements.</Description>
+<Type>%List</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="hasChanged">
+<Type>%Boolean</Type>
+<Final>1</Final>
+<Transient>1</Transient>
+</Property>
+
+<Property name="isNewRecord">
+<Type>%Boolean</Type>
+<InitialExpression>1</InitialExpression>
+<Private>1</Private>
+<Transient>1</Transient>
+</Property>
+
+<Property name="isMV">
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+<Transient>1</Transient>
+</Property>
+
+<Property name="scenario">
+<Type>%String</Type>
+<InitialExpression>"new"</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+<p>This callback method is invoked by the <METHOD>%New</METHOD> method to 
+provide notification that a new instance of an object is being created.</p>
+
+<P>If this method returns an error then the object will not be created.</p>]]></Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+	set classDef = ##class(%Dictionary.CompiledClass).%OpenId($classname())
+	
+	if ($find(classDef.Super, "MV.Adaptor") > 0) ! ($find(classDef.Super, "MVModel.Base") > 0) {
+		set ..isMV = 1
+	}
+	
+	set key = ""
+	set key = classDef.Properties.Next(key)
+	While key '= "" {
+		SET canUse = 1
+		set compiledProperty = classDef.Properties.GetAt(key)
+		
+		set:compiledProperty.Calculated=1 canUse = 0
+		set:compiledProperty.Storable=0 canUse = 0
+		set:compiledProperty.Transient=1 canUse = 0
+				
+		set requiredList = ""
+		
+		if canUse {
+			
+			set attribute = ##class(EasyCSP.Model.attribute).%New()
+			
+			set attribute.name = compiledProperty.Name
+			set attribute.type = compiledProperty.Type
+			set attribute.required = compiledProperty.Required
+			
+			set finder = $MVOCONV(attribute.name, "MCL") // remove case-sensitivity when finding attributes
+			
+			set attribute.order = compiledProperty.SequenceNumber
+			
+			// create a default text box or select box label. The labels can be modified at any time after construct on as as-needed/as-wanted basis.
+			// 2014/12/15 - jwwf - add support for MV classes
+			set externalFieldName = ""
+			
+			// Additional parameters for MV class properties live in a different place to classic %Persistent property parameters.
+			// For MV, retrieve the collection and parse from there.
+			
+			set width = 64 ; * arbitrary width unless overridden by attribute parameter
+			
+			if ..isMV {
+				set parms = compiledProperty.Parameters
+				
+				If parms.IsDefined("MVHEADING") {
+					set externalFieldName = parms.GetAt("MVHEADING")
+				}
+				
+				if (externalFieldName="") & (parms.IsDefined("MVNAME")) {
+					set externalFieldName = parms.GetAt("MVNAME")
+				}
+				
+				if parms.IsDefined("MVWIDTH") {
+					set width = parms.GetAt("MVWIDTH")
+				}
+				
+				// if this is
+				if parms.IsDefined("MVTYPE") {
+					set mvType = parms.GetAt("MVTYPE")
+					if mvType = "I" set canUse = 0
+				}
+			}
+			
+			set:externalFieldName="" externalFieldName = $get(compiledProperty.SqlFieldName)
+			set:externalFieldName="" externalFieldName = compiledProperty.Name
+			
+			set attribute.sqlFieldName = compiledProperty.SqlFieldName
+			
+			set attribute.width = width
+			
+			set label = ""
+			set:label="" label = ##class(EasyCSP.Conversions.ColumnToLabel).run(externalFieldName)
+			set attribute.label = label
+			
+			if ..isMV {
+				set attribute.order = parms.GetAt("MVATTRIBUTE")
+			} else {
+				set attribute.order = $get(compiledProperty.SQLColumnNumber)
+			}
+			
+			d:canUse ..attributes.SetAt(attribute, finder)
+			
+			if attribute.required = 1 do ..addValidationRule(finder, "Required", "new,save")
+			
+			if compiledProperty.Description '= "" set attribute.tooltip = compiledProperty.Description
+		}
+		
+		set key = classDef.Properties.Next(key)
+		
+	}
+	
+	do ..typeToValidation() // add default validation rules for dates, times, and numbers
+	
+	set OK = $$$OK
+	
+	// The model attribute properties are now known. Are there any validation rules to be applied?
+	if ..hasMethod("validationRules") {
+		try {
+			set OK = $METHOD($THIS,"validationRules")
+		} catch %EasyCSPException {
+			quit ; $$$ERROR("Exception in validationRules")
+		}
+	}
+	
+	// Last, if there is a user-written post-construct event to perform:
+	if ..hasMethod("afterConstruct") {
+		try {
+			set OK = $METHOD($THIS,"afterConstruct")
+		} catch %EasyCSPException {
+			quit ; $$$ERROR("Exception in validationRules")
+		}
+	}
+	
+	do ..getAttributeNames()
+	
+	//Quit OK
+	quit $$$OK // allow the model to instantiate so error messages can be retrieved.
+]]></Implementation>
+</Method>
+
+<Method name="typeToValidation">
+<Description><![CDATA[
+At the moment this only types numerics and dates. Required attributes are handled in the mainline of <method>%OnNew()</method>]]></Description>
+<Language>mvbasic</Language>
+<Private>1</Private>
+<Implementation><![CDATA[
+	ord = ""
+	
+	Loop 
+		ord = @ME->attributes->Next(ord)
+	while ord <> "" Do
+		changed = 0
+		atb = @ME->attributes->GetAt(ord)
+		type = atb->type
+		if $get(type) = "" then continue
+		finder = downcase(convert("%$", "", type))
+		segments = dCount(finder, ".")
+		finder = field(finder, ".", segments) ; * pick out the last field which would be the specific type
+
+		Begin Case
+		
+			case index("bigint,counter,currency,double,float,smallint",finder,1) > 0
+				atb->addValidationRule("Numeric")
+				changed = 1
+				
+			case index("boolean", finder, 1)
+				atb->addValidationRule("Boolean")
+				changed = 1
+				
+			case index("date,timestamp", finder, 1) > 0
+				atb->addValidationRule( "Date")
+				changed = 1
+		
+		End Case
+		
+		if changed then @ME->attributes->SetAt(atb,ord)
+	
+	repeat
+]]></Implementation>
+</Method>
+
+<Method name="getAttribute">
+<Description>
+Return the entire property information about an attribute. The name is not case-sensitive. This removes one of the programmatic
+pains in application coding.</Description>
+<FormalSpec>attribute:%String</FormalSpec>
+<ReturnType>EasyCSP.Model.attribute</ReturnType>
+<Implementation><![CDATA[
+	set finder = $MVOCONV(attribute,"MCL") // lower-case the name to access the finder-node
+	set obj = ..attributes.GetAt(finder)
+	quit:$IsObject(obj) obj
+	quit "" // return nothing if the attribute doesn't exist
+]]></Implementation>
+</Method>
+
+<Method name="getAttributeLabel">
+<Description>
+Return the label of an attribute, ready to use in a web page as a label for a text-box control.
+Default labels are first taken from the child-class property attribute "SqlFieldName" after running
+that value through a conversion to make the label user-friendly. The description of the field
+(to be used as a tooltip) is taken from the DESCRIPTION property attribute.</Description>
+<FormalSpec>attribute:%String</FormalSpec>
+<Implementation><![CDATA[
+	set finder = $MVOCONV(attribute,"MCL") // lower-case the name to access the finder-node
+	set obj = ..attributes.GetAt(finder)
+	quit:$IsObject(obj) obj.label
+	quit "" // return nothing if the attribute doesn't exist
+]]></Implementation>
+</Method>
+
+<Method name="getAttributeNames">
+<Description>
+Return a list of all the attribute names.</Description>
+<ReturnType>%List</ReturnType>
+<Implementation><![CDATA[
+	set rtn = ""
+	set build = "" // to set attributes in storage order
+	
+	// find all the published attributes
+	set finder = ..attributes.Next("")
+	while finder '= "" {
+		set attribute = ..attributes.GetAt(finder)
+		set build(attribute.order) = attribute.name
+		set finder = ..attributes.Next(finder)
+	}
+	
+	// then return them in storage order
+	set o = $order(build(""))
+	while o '= "" {
+		set rtn = rtn _ $lb(build(o))
+		set o = $order(build(o))
+	}
+	quit rtn
+]]></Implementation>
+</Method>
+
+<Method name="getAttributeTooltip">
+<Description>
+Return the long description of an attribute. The attribute name is not case-sensitive. 
+The value of this field is taken from the extended %Persistent class property "DESCRIPTION"
+attribute. </Description>
+<FormalSpec>attribute:%String</FormalSpec>
+<Implementation><![CDATA[
+	set finder = $MVOCONV(attribute,"MCL") // lower-case the name to access the finder-node
+	set obj = ..attributes.GetAt(finder)
+	quit:$IsObject(obj) obj.tooltip
+	quit "" // return nothing if the attribute doesn't exist
+]]></Implementation>
+</Method>
+
+<Method name="getAttributeType">
+<Description>
+Return the type of an attribute. The name is not case-sensitive. This removes one of the programmatic
+pains in application coding.</Description>
+<FormalSpec>attribute:%String</FormalSpec>
+<Implementation><![CDATA[
+	set finder = $MVOCONV(attribute,"MCL") // lower-case the name to access the finder-node
+	set obj = ..attributes.GetAt(finder)
+	quit:$IsObject(obj) obj.type
+	quit "" // return nothing if the attribute doesn't exist
+]]></Implementation>
+</Method>
+
+<Method name="getAttributeValue">
+<Description>
+Return the value of an attribute. The name is not case-sensitive. This removes one of the programmatic
+pains in application coding.</Description>
+<FormalSpec>attribute:%String</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set finder = $MVOCONV(attribute,"MCL") // lower-case the name to access the finder-node
+	set obj = ..attributes.GetAt(finder)
+	
+	set v = ""
+	if ..instanceOf(obj,"Model.attribute") {
+		set v = obj.value
+	}
+	quit v // return nothing if the attribute doesn't exist
+]]></Implementation>
+</Method>
+
+<Method name="getAttributes">
+<Description>
+Returns an %ArrayOfDataTypes collection name-value pairs. The key is the
+lower-case "finder". The value at each node is the current value of that model attribute.</Description>
+<Final>1</Final>
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[	quit ..attributes
+]]></Implementation>
+</Method>
+
+<Method name="getAttributeValues">
+<Description>
+Returns an %ArrayOfDataTypes collection name-value pairs. The key is the
+lower-case "finder". The value at each node is the current value of that model attribute.</Description>
+<Final>1</Final>
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[
+	set rtnArray = ##class(%ArrayOfDataTypes).%New()
+	set nextAttribute = ..attributes.Next("")
+	while nextAttribute '= "" {
+		do rtnArray.SetAt(..getAttributeValue(nextAttribute), nextAttribute)
+		set nextAttribute = ..attributes.Next(nextAttribute)
+	}
+	
+	quit rtnArray
+]]></Implementation>
+</Method>
+
+<Method name="setAttribute">
+<Description>
+Sets the value of a model attribute to the value passed in. Performs
+validation before returning. If the new value fails validation, the
+former value is unchanged.</Description>
+<FormalSpec>attribute:%String,value</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set finder = $MVOCONV(attribute, "MCL")
+	quit:'..attributes.IsDefined(finder)
+	set attributeItem = ..attributes.GetAt(finder)
+	set oldValue = attributeItem.value
+	set attributeItem.value = value
+	
+	if attributeItem.validate() = 0 {
+		set attributeItem.value = oldValue
+		quit 0
+	}
+	
+	; * bypass any setter since validation must pass to get here
+	set propertyName = attributeItem.name
+    set:..hasProperty(propertyName) $PROPERTY($THIS,propertyName) = value
+    
+    if ..isMV {
+	    set rec = $property(,"Record")
+	    set amc = attributeItem.order
+	    
+	    if amc = 0 { // this is a key
+	    	if value '= "" set $property(,"Key") = value
+	    } else {
+		    set $p(rec, $mvfm, amc) = value
+	    }
+	    
+	    if rec '= $property(,"Record") {
+		    set $property(,"Record") = rec
+	    }
+    }
+    
+    set ..hasChanged = 1
+    
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="setAttributes">
+<Description>
+Pass in an array of name-value pairs as a Core.ParameterList. If the name
+of the property or the finder-name matches the name in the name-value pair
+array, the model's corresponding property and framework attribute will be updated.</Description>
+<FormalSpec>parameterList:EasyCSP.Core.ParameterList</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(parameterList)'["ParameterList" quit 0
+
+	set values = parameterList.getAll()
+	set idx = values.Next("")
+	while idx '= "" {
+		set value = values.GetAt(idx)
+		do ..setAttribute(idx,value)
+		set idx = values.Next(idx)
+	}
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="getLabels">
+<Description>
+Returns an %ArrayOfDataTypes collection as name-value pairs. The key is the
+"finder" (lower case) attribute name. The value at that key is the generated
+label for that attribute.</Description>
+<Final>1</Final>
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[
+	
+	set rtnArray = ##class(%ArrayOfDataTypes).%New()
+	set nextAttribute = ..attributes.Next("")
+	while nextAttribute '= "" {
+		do rtnArray.SetAt(nextAttribute.label, nextAttribute.name)
+		set nextAttribute = ..attributes.Next(nextAttribute)
+	}
+	
+	quit rtnArray
+]]></Implementation>
+</Method>
+
+<Method name="addError">
+<FormalSpec>attribute,message</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set finder = $MVOCONV(attribute, "MCL")
+	
+	if finder '= ""
+	{
+		set item = ..attributes.GetAt(finder)
+	
+		if '$IsObject(item) quit 0
+	
+	}
+	
+	do item.addError(message)
+	
+	do ..attributes.SetAt(item,finder)
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="clearErrors">
+<Description>
+Arbitrarily clear all errors in all attributes</Description>
+<Implementation><![CDATA[
+	set finder = ""
+	
+	for  {
+		set finder = ..attributes.Next(finder)
+		quit:finder=""
+		
+		set item = ..attributes.GetAt(finder)
+		do item.clearErrors()
+		do ..attributes.SetAt(item,finder)
+	
+	}
+		
+	quit
+]]></Implementation>
+</Method>
+
+<Method name="clearAll">
+<Implementation><![CDATA[
+	do ..ClearConditions()
+	do ..clearErrors()
+]]></Implementation>
+</Method>
+
+<Method name="formatErrors">
+<Language>cache</Language>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	set rtn = ##class(%GlobalCharacterStream).%New()
+	set errors = ..getErrors()
+	set idx = errors.Next("")
+	while idx '= "" {
+		set errorLine = errors.GetAt(idx)
+		set line = $mvfmt($piece(errorLine,$char(254),1), "20 L") _ " - " _ $mvfmt($piece(errorLine,$char(254),2), "80 L")
+		do rtn.WriteLine(line)
+		set idx = errors.Next(idx)
+	}
+	
+	do rtn.Rewind()
+	
+	quit rtn
+]]></Implementation>
+</Method>
+
+<Method name="getErrors">
+<Final>1</Final>
+<FormalSpec>attribute:%String=""</FormalSpec>
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[
+	set finder = $MVOCONV($get(attribute),"MCL") // lower-case the name to access the finder-node
+	set rtnArray = ##class(%ArrayOfDataTypes).%New()
+	set count = 0
+	
+	// if the attribute was specified check only that and stop
+	if finder '= ""
+	{
+		 do gatherErrors
+		 quit rtnArray
+	} else {
+		set finder = ..attributes.Next("")
+		while finder '= "" {
+			do gatherErrors
+			set finder = ..attributes.Next(finder)
+		}
+	}
+	
+	quit rtnArray
+	
+gatherErrors
+	if ..attributes.IsDefined(finder) {
+		set atb = ..attributes.GetAt(finder)
+		quit:atb.hasError()=0
+	}
+		
+	for e = 1:1:atb.errors.Count() {
+		set count = count + 1
+		do rtnArray.SetAt(atb.label_$MVFM_atb.errors.GetAt(e),count)
+	}
+]]></Implementation>
+</Method>
+
+<Method name="hasErrors">
+<Description>
+///////////////////////////////////////////////////////////////////////////
+Error tracking. Multiple errors may be registered per attribute if the
+contents of the attribute has more than one rule. Returns TRUE if at least
+one error is present in the model.
+///////////////////////////////////////////////////////////////////////////</Description>
+<Final>1</Final>
+<FormalSpec>attribute:%String=""</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set finder = $MVOCONV($get(attribute),"MCL") // lower-case the name to access the finder-node
+	
+	// if the attribute was specified check only that and stop
+	if finder '= ""
+	{
+		set item = ..attributes.GetAt(finder)
+		if '$IsObject(item) quit 0
+		quit item.hasError()
+	
+	}
+	set hasErrors = 0
+	
+	set nextAttribute = ..attributes.Next("")
+	while nextAttribute '= "" {
+		set atb = ..attributes.GetAt(nextAttribute)
+		if atb.hasError() {
+			set hasErrors = 1
+			quit
+		}
+		set nextAttribute = ..attributes.Next(nextAttribute)
+	}
+	quit hasErrors
+]]></Implementation>
+</Method>
+
+<Method name="addValidationRule">
+<Description><![CDATA[
+///////////////////////////////////////////////////////////////////////////
+<p>Validation rules. Multiple rules per attribute may be specified. Validators
+must exist either as a class in the local namespace or as a class in the 
+EasyCSP.Validator.Validators package. To add a new validation rule,
+one can create a new class to handle the rule in the local namspace. When
+adding a rule to a model in this case, state the fully-qualified class name.</p>
+<p>addValidationRule() will look for the user override first. If the stated
+class does not exist in the local namespace this function will look in the
+framework-supplied rules in the EasyCSP.Validator.Validators package.
+Any new rule will be automatically detected and immediately available upon compile.<p>
+<p><strong>Do not place override rules in the EasyCSP.Validator.{<i>place</i>}
+package. They will be overwritten or removed on package update.</strong> Add
+custom rules in the user namespace.</p>
+
+<p>Specify both attributes and scenario as a comma-separated string. At least one attribute
+must be specified in the attribute parameter or an error will be returned. If the
+scenario is not specified, a default of "new,save,insert,update" will be used.</p>
+///////////////////////////////////////////////////////////////////////////]]></Description>
+<Final>1</Final>
+<FormalSpec>attributes,rule:%String,scenario:%String</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	q:$get(attributes)="" $$$ERROR(1, "Specify which attribute to which the error should be appended.")
+	q:$get(rule)="" $$$ERROR(2, "Specify the validation rule to be applied.")
+	
+	if $get(scenario) = "" set scenario = "new,save,insert,update"
+	
+	// Attribute names are stored as lower-case in the leftmost node. The "validators" property contains a collection of validators.
+	set finder = $MVOCONV(attributes, "MCL")
+	if '$listValid(attributes) {
+		set attributeList = $listFromString(finder, ",")
+	} else {
+		set attributeList = attributes
+	}
+	
+	set ll = $listLength(attributeList)
+	set hasError = 0
+	
+	set idx = 0, nextAttribute = ""
+	while $listNext(attributeList,idx,nextAttribute) {
+		if $get(nextAttribute) = "" continue // in case there was a double-comma in the original input string
+		set definition = ..attributes.GetAt(nextAttribute)
+		if '$IsObject(definition) {
+			do ..SetCondition(99,"Could not apply rule """_rule_""" on """_nextAttribute_"""")
+			set hasError = 1
+			continue // not a valid attribute name
+		}
+		set OK = definition.addValidationRule(rule,scenario)
+		if OK '= $$$OK set hasError = 1
+	}
+	
+	quit:hasError $$$ERROR(11, "At least one attribute rejected a rule. Check your rule names for errors.")
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="hasValidationRule">
+<Description><![CDATA[
+This method determines if at least one attribute has a validation rule. If
+<i>attribute</i> is empty or the name contained in that parameter is not an
+attribute in <property>..attributes</property> the return is 0. If the
+parameter contains a valid property name then only that attribute is checked.
+If the attribute parameter is empty, all attributes are checked. If at least one
+attribute has a validation rule then 1 is returned.]]></Description>
+<Final>1</Final>
+<FormalSpec>attribute:%String=""</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(attribute) '= "" {
+		set finder = $MVOCONV(attribute, "MCL")
+		quit ..attributes.GetAt(finder).hasValidationRule()
+	}
+	
+	set hasRule = 0
+	set nextAttribute = ..attributes.GetNext("")
+	while nextAttribute '= "" {
+		
+		set:nextAttribute.hasValidationRule() hasRule = 1 quit
+		set nextAttribute = ..attributes.GetNext(nextAttribute)
+	}
+		
+	q hasRule
+]]></Implementation>
+</Method>
+
+<Method name="getValidationRules">
+<Final>1</Final>
+<FormalSpec>attribute:%String=""</FormalSpec>
+<Implementation><![CDATA[
+	if $get(attribute) '= "" {
+		set finder = $MVOCONV(attribute, "MCL")
+		quit:attribute'="" (+$get(..attributes(finder,"validators")) > 0)
+	}
+	
+	set hasRule = 0
+	set nextAttribute = $order(..attributes(""))
+	while nextAttribute '= "" {
+		
+		if +($get(..attributes(nextAttribute,"validators")) > 0) {
+			set nextNode = $increment(rtnArray(finder))
+			set rtnArray(finder, nextNode) = ..attributes(finder,"validators")
+		}
+		
+		set nextAttribute = $order(..attributes(nextAttribute))
+	}
+		
+	q hasRule
+]]></Implementation>
+</Method>
+
+<Method name="getIsNewRecord">
+<Final>1</Final>
+<Implementation><![CDATA[	quit ..isNewRecord
+]]></Implementation>
+</Method>
+
+<Method name="setIsNewRecord">
+<Final>1</Final>
+<FormalSpec>value:%Boolean=1</FormalSpec>
+<Implementation><![CDATA[
+	if +$get(value) '= 1 set value = 0
+	set i%isNewRecord = value
+	set:..isNewRecord=1 ..scenario = "new"
+]]></Implementation>
+</Method>
+
+<Method name="validate">
+<Description><![CDATA[
+<p>The validate method can be called any time. It is especially useful in AJAX validation
+of form data before submission. Validate is called automatically at the beginning of 
+the <method>save()</method> process.</p>
+<p>Validate searches for and runs the <method>beforeValidate()</method> and <method>afterValidate()</method> event handlers
+if either exists in the user model-level code. Validation rules are set up in the
+<method>setValidation()</method> event if the user model-level code has coded it when the model object
+is instantiated. (The process is in the final method %OnNew()</method>.)</p>
+The <method>beforeValidate()</method> and <method>afterValidate()</method> events are only run if the attribute to validate
+has not been specified. The <method>save()</method> process calls the <method>validate()</method>]]></Description>
+<Final>1</Final>
+<FormalSpec>finder:%List</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set OK = 1
+	
+	if $get(finder) = "" set finder = ..getAttributeNames()
+		
+	if ..hasMethod("beforeValidate") {
+		set:..hasMethod("beforeValidate") OK = $METHOD(,"beforeValidate")
+		quit:'OK OK
+	}
+	
+	set ll = $listLength(finder)
+	for idx = 1:1:ll {
+		set nextFinder = $listGet(finder,idx)
+		set atbOK = ..validateAttribute(nextFinder)
+		set:'atbOK OK = 0 // if one validation fails set the "pass" flag to false
+	}
+	
+	if 'OK {
+		if ($get(attribute) '= "") {
+			set:..hasMethod("afterValidate") OK = $METHOD(,"afterValidate")
+		}
+	}
+	
+	quit OK
+]]></Implementation>
+</Method>
+
+<Method name="validateAttribute">
+<FormalSpec>finder:%String=""</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(finder) = "" quit 0
+	set OK = 1
+	
+	try {
+		set atb = ..attributes.GetAt($mvoconv(finder,"MCL"))
+	} catch {
+		set $ZERROR = ""
+		set OK = 0
+		quit 
+	}
+	
+	quit:OK=0 OK
+	
+	do atb.clearErrors()
+	
+	//write "<p> validating ",atb.name,"</p>",!
+
+	set OK = atb.validate()
+	
+	if 'OK {
+		do ..attributes.SetAt(atb,finder) ; carry the error messages forward
+	}
+	
+	quit OK
+]]></Implementation>
+</Method>
+
+<Method name="beforeValidate">
+<Description>
+This is a skeleton method that the child model class may override.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	q $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="afterValidate">
+<Description>
+This is a skeleton method that the child model class may override.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	q $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="NextID">
+<Description>
+Provide an auto-increment number for item-id's in a file.</Description>
+<Language>cache</Language>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[
+	set unclaimed = 0
+	set mvFileName = $classname()
+	
+	lock ^ECSPNextId(mvFileName)
+	
+	set nextId = +$get(^ECSPNextId(mvFileName)) + 1
+	
+	// Don't overwrite existing records. Keep looking for the next available slot.
+	while 'unclaimed {
+		
+		set obj = $classmethod(mvFileName,"%OpenId",nextId)
+		if '$isobject(obj) {
+			set unclaimed = 1
+			quit
+		}
+		
+		set nextId = nextId + 1
+	}
+	
+	set ^ECSPNextId(mvFileName) = nextId
+	lock -^ECSPNextId(mvFileName)
+	quit nextId
+]]></Implementation>
+</Method>
+
+<Method name="search">
+<Description>
+Stub for model searches. This can and should be overridden by individual model classes.
+Models should filter which attributes attributes are allowed to be used for searching.</Description>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[	quit 0
+]]></Implementation>
+</Method>
+
+<Method name="markUnsearchable">
+<FormalSpec>attributes:%List</FormalSpec>
+<Implementation><![CDATA[
+	if $get(attributes) = "" quit ; nothing to do
+	if '$listValid(attributes) set attributes = $listBuild(attributes, ",")
+	if '$listValid(attributes) quit
+	
+	set ll = $listLength(attributes)
+	for idx = 1:1:ll {
+		set finder = $MVOCONV($listGet(attributes,idx,""), "MCL") // de-case-sensitise; the correct casing is known in the attribute description array
+		if ..attributes.IsDefined(finder) 
+		{
+			set atbDef = ..attributes.GetAt(finder)
+			set atbDef.searchable = 0
+			do ..attributes.SetAt(atbDef,finder)
+		}
+	}
+]]></Implementation>
+</Method>
+
+<Method name="findAllByAttributes">
+<Description>
+Find a set of records by attribute contents. Start by stuffing values to compare
+into the model attributes then call this method listing the attributes
+to use in the query. Attribute names are not case-sensitive. This function returns
+an integer that is either the Web.Application job number or the current thread job
+number if this is being run from a command line or a routine. The output is compiled
+in a work global ^queryOut. The ^queryOut global first subscript is the job number
+with several subscripts following: rowCount, status, columns, and query. The actual
+query is jobbed off to the background. Web pages should use a progress counter fired
+off by a periodic timer until the status of "Complete" is seen.</Description>
+<Final>1</Final>
+<FormalSpec>orderBy:%String=""</FormalSpec>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[
+	do ..clearAll() ; ignore errors during search
+	set attributes = ..getAttributeNames()
+	set orderClause = ""
+	
+	set whereClause = ""
+	set columnNames = ""
+	set labels = ""
+	set top = +##class(EasyCSP.Configuration.Settings).getSetting("maxRowsReturned")
+	set:top=0 top = 10000
+	
+	set tableName = ..sqlTableName()
+	
+	set ll = $listLength(attributes)
+	for idx = 1:1:ll
+	{
+		set finder = $MVOCONV($listGet(attributes,idx,""), "MCL") // de-case-sensitise; the correct casing is known in the attribute description array
+		
+		set atbDef = ..attributes.GetAt(finder)
+		//w "<pre>",finder," = ",atbDef.value,"</pre>",!
+		if atbDef.value '= "" {
+			if (atbDef.name'=""),(atbDef.searchable) {
+				set whereClause = whereClause _ $listBuild(atbDef.sqlFieldName _ "='"_atbDef.value_"'")
+			}
+		}
+		
+		set:atbDef.order=0 idColumn = atbDef.sqlFieldName
+		set columnNames = columnNames _ $listBuild(atbDef.sqlFieldName)
+		set labels = labels _ $listBuild(atbDef.label)
+	}
+	
+	if $listLength(columnNames) = 0 set columnNames = $listBuild("*")
+	
+	set uid = %EasyCSPApp.uid
+	set:uid="" uid="guest"
+	set remoteAddr = %EasyCSPApp.getCGI("REMOTE_ADDR")
+	set pid = uid_"*"_remoteAddr
+	
+	set ^queryOut(pid,"columns") = columnNames
+	set ^queryOut(pid,"labels") = labels
+	set ^queryOut(pid, "idColumn") = idColumn
+		
+	set sql = "select top "_top_" "_$listToString(columnNames, ",")_" from "_tableName
+	
+	set:$listLength(whereClause)>0 sql = sql _ " where "_$listToString(whereClause," and ")
+	set:$get(orderBy) sql = sql _ " ORDER BY " _ orderBy
+	
+	set ^queryOut(pid, "sql") = sql
+	
+	/*
+	w "<pre>",!
+	zw ^queryOut
+	w "</pre>",!
+	*/
+	
+	// job off the query
+	job ##class(EasyCSP.Model.Base).backgroundQuery(pid)
+	quit pid
+]]></Implementation>
+</Method>
+
+<Method name="findByPK">
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>id</FormalSpec>
+<ReturnType>EasyCSP.Model.Base</ReturnType>
+<Implementation><![CDATA[
+	set record = $classmethod($classname(), "%OpenId", id)
+	if '$isobject(record) quit ""
+	set model = $classmethod($classname(), "%New")
+	do model.loadModel(record)
+	quit model
+]]></Implementation>
+</Method>
+
+<Method name="sqlTableName">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+		
+	set className = ..%ClassName(1)
+	set sql = "select SqlSchemaName,SqlTableName from %Dictionary.CompiledClass where ID='"_className_"'"
+	
+	set query = ##class(%SQL.Statement).%New()
+	set qStatus = query.%Prepare(sql)
+	
+	if qStatus '= 1 {
+		d ..SetCondition(701, "Could not prepare SQL statement. Statement was:"_$MVVM_sql)
+		quit 0
+	}
+	
+	set recordSet = query.%Execute()
+	
+	while recordSet.%Next()
+	{
+		set tableName = recordSet.%Get("SqlSchemaName")_"."_recordSet.%Get("SqlTableName")
+		quit
+	}
+	
+	quit tableName
+]]></Implementation>
+</Method>
+
+<Method name="loadModel">
+<Description>
+After a record is opened by %OpenId, you have a copy of the %Persistent
+piece. The code doesn't go through the model %OnNew(). It's necessary to
+load the attributes from the %Persistent record.</Description>
+<Final>1</Final>
+<FormalSpec>record:%Persistent</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set key = ""
+	for  {
+		set key = ..attributes.Next(key)
+		quit:key=""
+		set atb = ..attributes.GetAt(key)
+		set propertyName = atb.name
+		set order = atb.order
+		set newValue = $property(record,propertyName) ; attribute-for-attribute
+		set atb.value = newValue
+		do ..attributes.SetAt(atb,key)
+		
+		if ..isMV {
+		
+			if order > 0 {
+				set mvRecord = $property(,"Record")
+				set $piece(mvRecord, $mvfm, order) = newValue
+				set $property(, "Record") = mvRecord
+			} else {
+				if $property(,"Key")'="" set $property(,"Key") = newValue
+				
+			}
+			
+		}
+		
+	}
+		
+	set i%isNewRecord = 0 // This is not a new record; it came from the database.
+	set ..scenario = "old"
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="backgroundQuery">
+<Description><![CDATA[
+This function runs a query in the background. The concept was lifted from Gio Ciampa's
+report generators. This allows long queries to run whilst making the progress during compilation
+available to AJAX queries from a web page. To make it much simpler to build HTML tables
+or grids on the fly, rows are stored as $LISTs in ^queryOut(<i>jobnumber</i>, "rows", <i>rownumber</i>).
+This makes it possible to make pageable grid displays. (See EasyCSP.CHTML.Table)]]></Description>
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pid</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	//set pid = $ZPARENT
+	set columns = ^queryOut(pid,"columns")
+	set numberOfColumns = $listLength(columns)
+	set sql = ^queryOut(pid,"sql")
+	
+	set query = ##class(%SQL.Statement).%New()
+	set qStatus = query.%Prepare(sql)
+	
+	if qStatus '= 1 {
+		d ..SetCondition(701, "Could not prepare SQL statement. Statement was:"_$MVVM_sql)
+		quit ""
+	}
+	
+	set ^queryOut(pid,"status") = "Executing"
+	set recordSet = query.%Execute()
+	set ^queryOut(pid,"rowCount") = 0
+	
+	set ^queryOut(pid,"status") = "Compiling"
+	while recordSet.%Next()
+	{
+		quit:$get(^queryOut(pid,"uicommand"))="stop"
+		set mvRow = ""
+		for idx = 1:1:numberOfColumns
+		{
+			set col = $listGet(columns,idx)
+			set value = recordSet.%Get(col)
+			set $MV(mvRow, -1) =  $select(value="":$MVAM,1:value)
+		}
+		
+		set rowNumber = ^queryOut(pid,"rowCount") + 1
+		set ^queryOut(pid,"rowCount") = rowNumber
+		set ^queryOut(pid,"rows",rowNumber) = $listFromString(mvRow,$MVAM)
+	}
+	
+	set ^queryOut(pid,"status") = "Complete"
+]]></Implementation>
+</Method>
+
+<Method name="loadProperties">
+<Description>
+After a setAttributes update the class persistent properties to reflect the new data in the model</Description>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set finder = ..attributes.Next("")
+	while finder '= "" {
+		set atb = ..attributes.GetAt(finder)
+		set propertyName = atb.name
+		set:..hasProperty(propertyName) $PROPERTY($THIS, propertyName) = atb.value
+		set finder = ..attributes.Next(finder)
+	}
+	
+	set i%isNewRecord = 0 // This is not a new record; it came from the database.
+	set ..scenario = "old"
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="save">
+<Description><![CDATA[
+<p>Saves the model as a record in the database. Save() automatically calls <method>validate()</method>
+which in turn will run the before- and after-validate events if they exist. If validation fails at
+any step the save will not be performed and the model will have specific validation error messages
+loaded into the attribute "errors" location. This simplifies error display on an HTML form, allowing
+both a general "fix all these things before resubmitting" div and an individualized, per-field error
+report marking which fields should be fixed. This increases the likelihood of enforced data integrity
+within the database by pointing out specific errors on the web for for the user to correct.</p>
+
+<p>If validation passes on all attributes, <method>save()</method> will search for and run any
+before-save and after-save event handlers if such exist. Note: it is not an error if no before- or
+after-save event handler has been coded. These exist as hooks for the programmer to pre- or post-process
+model attribute data, such as setting default dates or status data.</p>]]></Description>
+<Final>1</Final>
+<FormalSpec>validate:%Boolean=1</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set OK = $$$OK
+	
+	set ..scenario = "save" // inform validation that the record is being prepared for a write.
+	
+	set OK = ..validate() // validate all attributes
+	quit:$$$ISERR(OK) OK
+	
+	s:..hasMethod("beforeSave") sc = $METHOD(,"beforeSave")
+	quit:$$$ISERR(OK) OK
+	
+	set OK = ..%Save()
+
+	
+	if '$$$ISERR(OK) & ..hasMethod("afterSave") {
+		s OK = $METHOD(,"afterSave")
+	}
+	
+	quit OK
+]]></Implementation>
+</Method>
+
+<Method name="beforeSave">
+<Description>
+This is a skeleton method that may be overridden by the programmer to enable
+processing of the before-save event.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	q $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="afterSave">
+<Description>
+This is a skeleton method that may be overridden by the programmer to enable
+processing of the sfter-save event.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	q $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

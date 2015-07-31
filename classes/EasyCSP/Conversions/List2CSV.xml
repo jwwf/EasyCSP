@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.List2CSV">
+<Super>%RegisteredObject</Super>
+<TimeChanged>63474,31206.633163</TimeChanged>
+<TimeCreated>63468,70226.60905</TimeCreated>
+
+<Method name="run">
+<Description><![CDATA[
+<p>Pass in either a delimited string or a Cache %List structure in <code>theList</code>. 
+If theList is a string, also pass in the delimiter (defaulted to "`") that divides the
+fields. If the value passed in via "theList" then this value will be ignored.
+Specify the delimiter for the output string. This defaults to a comma. Strings
+will automatically be quoted for Excel compatibility.</p>
+<p>The <code>conversions</code> parameter may contain either a list or an attribute-mark-delimited
+list of MVBasic conversions to apply to each resulting field before it is added to the result. In COS,
+this character may be specified as $MVAM or $MVFM (char(254)).</p>
+<p>Multiple conversions may be applied to each field. Delimit these with a value mark (@vm or char(253)).
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>theList="",inDelimiter="`",outDelimiter=",",conversions=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if theList = "" then return ""
+	if $data(conversions) = 0 then conversions = ''
+	
+	* First, convert the input value to a dynamic array.
+	if $listValid(theList) then
+		inString = $listToString(theList, @am)
+	end else
+		inString = convert( inDelimiter, @am, theList )
+	end
+	
+	* If conversions are to be applied to fields, parse them out to be applied during construction of the result.
+	* Conversions may be specified as either a list or a dynamic array.
+	if $listValid(conversions) then
+		outConversions = ""
+		for idx = 1 to $listLength(conversions)
+			conversion = $listGet(conversions, idx, "")
+			if $listValid(conversion) then
+				conversion = $listToString(conversion, @vm)
+			end
+			
+			* The -1 attribute mark count won't append an empty value. Circumvent this annoying behaviour by adding an attribute mark.
+			if conversion = "" then conversion = @am
+			conversions< -1 > = conversion
+		next
+	end else
+		outConversions = conversions
+	end
+	
+	attributeCount = DCount(inString, @am)
+	result = ""
+	
+	for idx = 1 to attributeCount
+	
+		attribute = inString< idx >
+		
+		if conversions< attributeCount > <> '' then
+			attribute = oConvS(attribute,conversion)
+		end
+		
+		if oConv(attribute, 'MCN') <> attribute then * not numeric; surround with quotes
+			attribute = dquote(attribute)
+		end
+		
+		if attribute = '' then attribute = @am
+		result< -1 > = attribute
+		
+	Next
+	
+	convert @am to outDelimiter in result
+	
+	return result
+]]></Implementation>
+</Method>
+</Class>
+</Export>

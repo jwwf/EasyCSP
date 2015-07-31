@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Model.Factory">
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63620,75939.438503</TimeChanged>
+<TimeCreated>63610,21983.989973</TimeCreated>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+Pass in the class name of the model to create. This function will first look in the local namespace
+for a "models.<i>modelId</i>" package. If it's not found as the supplied classname, the classname is
+converted to title case and the local search is performed again. If the class is not located anywhere in
+the local workspace then the "EasyCSP.models.<i>modelId</i>" package is searched. If the model isn't found
+in the EasyCSP.Models package, the class name is again title-cased and one last search is performed.
+Return 0 if the class can not be located or can not be instantiate. If the result is 1 then
+the "model" parameter will have an instatiated model object in it.]]></Description>
+<FormalSpec><![CDATA[&model,className:%String=""]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set model = "" ; kill an existing oref
+	if $get(className)="" {
+		do ..SetCondition(19,"Supply the class base name for the model to be instantiated.")
+		quit $$$OK
+	}
+	
+	set fqcn = "Models."_className ; fully-qualified class name
+	set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+	if '$IsObject(def) {
+		set fqcn = "Models."_$mvoconv(className, "MCT") ; fully-qualified class name
+		set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+		if '$IsObject(def) {
+			set fqcn = "EasyCSP.Models."_className ; fully-qualified class name
+			set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+			if '$IsObject(def) {
+				set fqcn = "EasyCSP.Models."_$mvoconv(className, "MCT") ; fully-qualified class name
+				set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+				if '$IsObject(def) {
+					do ..SetCondition(20, "There is no model named "_className_".")
+					quit $$$OK
+				}
+			}
+		}
+	}
+	
+	// Try to instantiate the model that was located above
+	set model = $CLASSMETHOD(fqcn, "%New")
+	if ..instanceOf(model,"Models") = 0 {
+		do ..SetCondition(21, "The model class name "_fqcn_" appears to be valid but can not be instantiated.")
+		set model = ""
+		quit $$$OK
+	}
+    
+    /// The requested model must be an extent of model.Base
+    set supers = $listFromString(def.Super, ",")
+    if ($listFind(supers, "EasyCSP.Model.Base") = 0) & ($listFind(supers, "EasyCSP.MVModel.Base") = 0) {
+		do ..SetCondition(22,className_" does not extend Model.Base.")
+		quit $$$OK
+    }
+		
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="locator">
+<Description>
+Return the full class name of the model being sought. Models classes can be overridden
+in the local namespace simply by placing the properly-formed class in the local Models
+package. This function passes back the full name of the first model with the base name
+passed in. Remember: a model must extend either EasyCSP.Model.Base or EasyCSP.MVModel.Base
+or it's not a valid framework model.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>className</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(className)="" {
+		quit ""
+	}
+		
+	set fqcn = "Models."_className ; fully-qualified class name
+	set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+	if '$IsObject(def) {
+		set fqcn = "EasyCSP."_fqcn
+		set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+		if '$IsObject(def) {
+			quit ""
+		}
+	}
+    
+    /// The requested model must be an extent of model.Base
+    set supers = $listFromString(def.Super, ",")
+    if ($listFind(supers, "EasyCSP.Model.Base") = 0) & ($listFind(supers, "EasyCSP.MVModel.Base") = 0) {
+		quit ""
+    }
+	
+	quit fqcn
+]]></Implementation>
+</Method>
+</Class>
+</Export>

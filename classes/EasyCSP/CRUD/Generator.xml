@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.CRUD.Generator">
+<Description>
+Using a model that extends either Model.Base or MVModel.Base, generate classes
+for CRUD. Pages that can be created automatically include (but will not be limited to)
+index, record view, create and update with a single form. This class generates the most
+common view pages in a very generic form. Run this class for rapid app development to
+obtain generic views then modify as desired.</Description>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63575,60605.85567</TimeChanged>
+<TimeCreated>63573,72183.567247</TimeCreated>
+
+<Property name="configuredViews">
+<Type>%List</Type>
+<InitialExpression>$lb("Index","View","Create","Update")</InitialExpression>
+</Property>
+
+<Method name="createView">
+<Description>
+Generate the requested view. Supply an instance of a model that extends EasyCSP.Model.Base</Description>
+<FormalSpec>model:EasyCSP.Model.Base,controllerName:%String="Site",viewName:%String="index",deleteExisting:%Boolean=0</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	
+	// Validate the model instance
+	if '$isobject(model) {
+		do ..SetCondition(1500, "Supply an instance of an EasyCSP model. It may be either Cache or MV.")
+		quit 0
+	}
+	
+    set modelDef = ##class(%Dictionary.CompiledClass).%OpenId(model.%ClassName(0))
+	
+    // The requested controller must be an extent of Controller.Base
+    set supers = $listFromString(modelDef.Super, ",")
+    if $listFind(supers, "EasyCSP.Controller.Base") = 0 {
+	    do ..SetCondition(1501, "The model supplied must ultimately extend from EasyCSP.Model.Base")
+		quit 0
+    }
+	
+	if $get(viewName) = "" {
+		do ..SetCondition(1502,"Name the type of form to be generated.")
+		quit 0
+	}
+	
+	set viewName = ##class(EasyCSP.Conversions.CamelCase).run(viewName) ; remove any punctuation and normalize
+	if $listFind(..configuredViews,viewName) = 0 {
+		do ..SetCondition(1502, "The view name must consist of one of the following: "_$listToString(..configuredViews,", "))
+		quit 0
+	}
+	
+	if '..hasMethod("generate"_viewName) {
+		do ..SetCondition(1502, "The generator is currently configured to create the following types of view: "_$listToString(..configuredViews,", "))
+		quit 0
+	}
+	
+	set viewClassName = "Views."_viewName
+	set viewClassDef = $CLASSMETHOD(viewClassName,"%OpenId",viewClassName)
+	if '$isobject(viewClassDef) {
+		set viewClassDef = ##class(%Dictionary.ClassDefinition).%New()
+		set viewClassDef.Super = "EasyCSP.Views.Base"
+		set viewClassDef.Language = "cache"
+	}
+	
+	// Remove the existing run() method. All EasyCSP worker classes operate at the run() method. This
+	// method will be regenerated later. If the formalspec deleteExisting is TRUE (1)
+	do:viewClassDef.Methods.IsDefined("run") viewClassDef.Methods.RemoveAt("run")
+    
+    // Find the controller class
+    set controllerClassName = "Controllers."_controllerName
+    set controllerDef = ##class(%Dictionary.CompiledClass).%OpenId(controllerClassName)
+    
+    if '$isobject(controllerDef) {
+	    set sc = ..createController(model, controllerName, deleteExisting)
+	    quit:sc=0 ; the error message will remain in the instance
+    }
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="createController">
+<Description>
+Create a controller for the supplied model</Description>
+<FormalSpec>model:EasyCSP.Model.Base,controllerName:%String="",deleteExisting:%Boolean=0</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="generateCreate">
+<Description>
+Generate the "create" wrapper for the input form. Generate the input form in-line.</Description>
+<FormalSpec><![CDATA[model:EasyCSP.Model.Base,&viewClassDef:%Dictionary.CompiledClass=""]]></FormalSpec>
+</Method>
+
+<Method name="generateIndex">
+<Description>
+Generate contents for index</Description>
+<FormalSpec><![CDATA[model:EasyCSP.Model.Base,&viewClassDef:%Dictionary.CompiledClass=""]]></FormalSpec>
+<Private>1</Private>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+</Method>
+
+<Method name="generateInputForm">
+<Description>
+Generate the form that gets used by both the create and the update view pages</Description>
+<Private>1</Private>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+</Method>
+
+<Method name="generateUpdate">
+<Description>
+Generate the "update" wrapper for the input form. Generate the input form in-line.</Description>
+<FormalSpec>model:EasyCSP.Model.Base,controllerName:%String="",deleteExisting:%Boolean=0</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+</Method>
+</Class>
+</Export>

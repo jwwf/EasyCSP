@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.SourceControl.IO">
+<Description>
+Save and restore EasyCSP framework data</Description>
+<ProcedureBlock>1</ProcedureBlock>
+<Super>%Studio.SourceControl.Base</Super>
+<TimeChanged>63664,35770.495077</TimeChanged>
+<TimeCreated>63635,69827.529043</TimeCreated>
+
+<Parameter name="DirectoryFields">
+<Description>
+Columns returned from a directory query</Description>
+<Default>Name;Type;Size;DateCreated;DateModified;ItemName</Default>
+</Parameter>
+
+<Parameter name="exportDir">
+<Description>
+Default export topmost directory. Change this to match your file system and source control needs.</Description>
+<Type>%String</Type>
+<Default>C:\SourceControl</Default>
+</Parameter>
+
+<Method name="exportGlobals">
+<Description>
+Kill off work and query result scratch globals. Reset the globals that have tables by using SQL. This
+method contains a list with global names that are used as patterns.
+This method starts by finding all the globals in the namespace
+then picks out full global names based on the patterns in the list. This ensures that all
+related globals and subtables will be included in the dump.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>exportDirectory:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	quit:..setIOLocations(.exportDirectory,.slash,.location,.instanceName,.namespace)'=1 $System.Status.Error("Unable to locate or create the source control export directory.")
+	
+	// Now query the namespace to find the complete list of globals. Iterate through the list
+	// to find all the globals containing the target name-strings.
+	set allGlobalResults = ##class(%ResultSet).%New("%SYS.GlobalQuery:NameSpaceList")
+	do allGlobalResults.Execute(namespace,"*",1,"",,0)
+	
+	set exportList = ""
+	
+	while (allGlobalResults.Next()) {
+		set exportList = exportList _ $listBuild( "^"_allGlobalResults.Data("Name"))
+	}
+
+	set exportFiles = $listToString(exportList)
+	
+	/*
+	w !, "Export files: ",$listToString(exportList, ","),!
+	w !, "Table list: ",$listToString(tableList, ","),!
+	w !, "Simple list: ",$listToString(simplesList, ","),!
+	quit 0
+	*/
+	
+	// *************************************************************************************** //
+	//                        Save a current image of globals in an export file
+	//		
+	
+	set date = $replace($zd($p($now(),",",1)),"/","-")
+	set time =  $replace($zt($p($now(),",",2)),":","-")
+	set exportFileName = exportDirectory _ slash _ date _ "-" _ time _ "-beforeReset.gof"
+	
+	set sc = ##class(%Library.Global).Export(namespace, exportFiles, exportFileName) // the rest of the options are Cache default
+	if $$$ISERR(sc) {
+		write !
+		write $SYSTEM.Status.GetErrorText(sc),!
+		write !,"Could not make a backup file. Correct the error-causing condition ",!
+		Write "and try again. No globals have been changed."
+		quit 0
+	}
+	
+	quit 1 // change after debugging!!
+]]></Implementation>
+</Method>
+
+<Method name="exportCode">
+<Description>
+Export each class and routine definition to disk in a directory structure that matches the IDE
+project structure. Intermediate and generated code is not included.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>exportDirectory:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	quit:..setIOLocations(.exportDirectory,.slash,.location,.instanceName,.namespace)'=1 $System.Status.Error("Unable to locate or create the source control export directory.")
+		
+	/*
+	Docbook page %SYSTEM.OBJ:
+	classmethod ExportAllClassesIndividual(dirname As %String = "", qspec As %String = "", ByRef errorlog As %String, Charset As %String = "", Package As %String = "*") as %Status
+	Export all the classes as individual XML files to a directory.
+	This function will loop through all the classes exporting each one as an individual XML file named after the classname to the directory dirname. If you specify a Package then it will only export this package.
+	*/
+	
+	// First create a map of the classes to be exported. The output in ^EasySC(namespace can be used in a report.
+	kill ^EasySC(namespace, "classes")
+	kill ^EasySC(namespace, "routines")
+	
+	set ^EasySC(namespace, "classes", "columns") = $listFromString("ClassName:Super:Hidden:Datatype:System:Final:Persistent:Serial:TimeChanged:SqlTableName:Abstract", ":")
+	set ^EasySC(namespace, "classes", "rowCount") = 0
+	// set result = ##class(%ResultSet).RunQuery("%ClassDefinition","ClassInfo","@") // retrieve classes that begin with "A" onward
+	// 
+	set result=##class(%ResultSet).%New()
+	set result.ClassName="%ClassDefinition"
+	set result.QueryName="ClassInfo"
+	do result.Execute("@")
+	set colCount = result.GetColumnCount()
+	
+	while result.Next() {
+		
+	    set rowCount = +$get(^EasySC(namespace, "classes", "rowCount")) + 1
+    	set ^EasySC(namespace,"classes","rowCount") = rowCount
+    	set row = ""
+    	
+    	for col=1:1:colCount { 
+    		set row = row _ $listBuild(result.GetData(col))
+    	}
+    	
+    	set ^EasySC(namespace, "classes", "rows", rowCount) = row
+		
+	}
+	
+	do result.Close()
+	set result = ""
+	
+	// Next, find all the routines (.INT, .MAC, .MVB) and include them in the list to export
+	// "Name:%String(MAXLEN=512):File Name/Ext,Size:%Integer:Routine Size,Date:%TimeStamp:Date/Time last modified,Lang:%String:Language
+	set ^EasySC(namespace, "routines", "columns") = $listFromString("Name,Ext Size,Last Modified,Language",",")
+	set ^EasySC(namespace, "routines", "rowCount") = 0
+	set result = ##class(%ResultSet).%New()
+	
+	set result.ClassName = "%Routine"
+	set result.QueryName = "RoutineList"
+	do result.Execute("*",1,0)
+	set colCount = result.GetColumnCount()
+	set rowCount = 0
+	
+	while result.Next() {
+		
+	    set rowCount = +$get(^EasySC(namespace, "routines", "rowCount")) + 1
+    	set ^EasySC(namespace,"routines","rowCount") = rowCount
+    	set row = ""
+    	
+    	set name = result.Data("Name")
+    	if '..filterGenerated(name) continue
+    	
+    	for col=1:1:colCount { 
+    		set row = row _ $listBuild(result.GetData(col))
+    	}
+    	
+    	set ^EasySC(namespace, "routines", "rows", rowCount) = row
+		
+	}
+	
+	do result.Close()
+	set result = ""
+	set hasErr = 0
+	
+	// The class and routine structure are built. Begin exporting the targets to files,
+	// with classes in a classes subdirectory and routines in a routines subdirectory.
+	// This roughly matches the IDE structure view.
+	
+	set rowCount = ^EasySC(namespace, "classes", "rowCount")
+	
+	// Now create a directory tree that matches the packaging. Export classes in this section.
+	for item = 1:1:rowCount {
+		set row = $get(^EasySC(namespace, "classes", "rows", item))
+		set className = $listGet(row, 1)
+		
+		// now split the class file name out of the package path
+		set externalName = ..pathFromClassname("", className)
+		
+		if externalName '= "" {
+			set sc = $SYSTEM.OBJ.Export( className_".cls", externalName_".xml")
+		} else {
+			write "Could not create directory "_exportDirectory,!
+			set hasErr = 1
+			quit
+		}
+	}
+	
+	// Export routines.
+	set rowCount = ^EasySC(namespace, "routines", "rowCount")
+	
+	// Now create a directory tree that matches the packaging.
+	for item = 1:1:rowCount {
+		set row = $get(^EasySC(namespace, "routines", "rows", item))
+		set className = $listGet(row, 1)
+		
+		continue:'..filterGenerated(className)
+		
+		// now split the class file name out of the package path
+		set externalName = ..pathFromClassname(exportDirectory, className,1)
+		
+		if externalName '= "" {
+			set sc = $SYSTEM.OBJ.Export( className, externalName_".xml")
+		} else {
+			write "Could not create directory "_exportDirectory,!
+			set hasErr = 1
+			quit
+		}
+	}
+	
+	if hasErr {
+		write !,"Process ended incomplete."
+		quit 0
+	} else {
+		write !,"Process complete."
+		quit 1
+	}
+]]></Implementation>
+</Method>
+
+<Method name="pathFromClassname">
+<Description>
+Returns a list with two pieces: the path to the class and the class name. The default is to
+create the folders and subfolders needed. The simple class name is returned as the second
+element in the list.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>exportDirectory:%String="",internalName:%String,isRoutine:%Boolean=0,create:%Boolean=1</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $data(exportDirectory) = 0 then exportDirectory = ""
+	
+	*crt "pathFromClassname; input exportDirectory: ":exportDirectory
+	
+	if "EasyCSP.SourceControl.IO"->setIOLocations(suggestedExportDirectory, slash, location, instanceName, namespace) <> 1 then
+		return ""
+	end
+	
+	if exportDirectory = "" then exportDirectory = suggestedExportDirectory
+	
+	*crt "pathFromClassname; exportDirectory after setIOLocations: ":exportDirectory
+	
+	routineExtensions = $listBuild("int", "mac", "inc")
+	
+	stringToParse = convert( ".", @fm, internalName)
+	possibleExtension = downcase(stringToParse< dcount(stringToParse, @fm) >)
+	
+	begin case
+	
+		case $listFind(routineExtensions, possibleExtension) > 0
+			isRoutine = 1
+			externalName = internalName
+			
+		case possibleExtension = "cls"
+			isRoutine = 0 ; * this is a class definition
+			del stringToParse<dcount(stringToParse, @fm)> ; * remove the extension
+			externalName = stringToParse
+			
+		case @true
+			externalName = internalName			
+	
+	end case
+		
+	
+	rtn = exportDirectory
+	* if mapping a class, use the classes subdirectory else use routines for .mac and .int
+	rtn<-1> = if isRoutine then "routines" else "classes"
+	rtn<-1> = externalName
+	convert slash to @fm in rtn
+	rtn = trim(rtn, @fm)
+	
+	pathLength = dcount(rtn,@fm)
+	dirOnly = field(rtn, @fm, 1, pathLength - 1)
+	
+	*crt "pathFromClassname dir-only: ":dirOnly
+	
+	if not("EasyCSP.SourceControl.IO"->mkdir(dirOnly)) then return "" ; * check and create dir if needed; return "" if it can't be found or created
+	simpleClassName = rtn<pathLength>
+	
+	convert @fm to slash in rtn
+	return rtn ; * then return the enclosing folder name and class name separately
+]]></Implementation>
+</Method>
+
+<Method name="classnameFromPath">
+<Description>
+Return the (package[.package...].)classname from the path</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>exportDir:%String="",internalName</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if osPath = "" then
+		osPath = "EasyCSP.SourceControl.IO"->setExportDir()
+	end
+	
+	slash = "EasyCSP.SourceControl.IO"->slash()
+	convert slash to @fm in osPath
+	
+	if osPath<dcount(osPath,@fm)> <> "classes" then osPath< -1 > = "classes"
+]]></Implementation>
+</Method>
+
+<Method name="filterGenerated">
+<Description>
+Filter generated classes and routines out</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>name:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(name) = "" then return 0
+	
+	excludePatterns = $listBuild("1X0X'.'1N0N'.INT'", "1X0X'.'1N0N'.MAC'", "1X0X'.G'1N0N'.MAC'", "1X0X'.'1N0N'.MVI'")
+	filter = $listToString(excludePatterns, @vm)
+	if name matches filter then return 0
+	
+	return 1
+]]></Implementation>
+</Method>
+
+<Method name="setExportDir">
+<Description><![CDATA[
+Set the location of the OS export directory. Allow the value to be overridden so the export routines
+may be used from the command line for out-of-line code and global exports. If no formal argument is
+supplied in <var>exportDirectory</var> this method will first attempt to retrieve it from the SETTINGS
+global. If that has not been set then use the hard-coded <parameter>exportDir</parameter> parameter in this class.
+If the directory can be either located or created then a 1 (TRUE) will be returned along with the
+ByRef variable exportDirectory pointing to the finalized external directory path.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[&exportDirectory:%String]]></FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set:$get(exportDirectory)="" exportDirectory = ##class(EasyCSP.Configuration.Settings).getSetting("exportDir") 
+	set:$get(exportDirectory)="" exportDirectory = ..#exportDir
+	
+	set slash = ..slash()
+	set instanceName = $P($zu(86),"*",2)
+	set exportDirectory = exportDirectory _ slash _ $zu(110) _ slash _ instanceName _ slash _ $zu(5)
+	
+	quit ..mkdir(exportDirectory) ; check the entire path, create subdirs as needed
+]]></Implementation>
+</Method>
+
+<Method name="setIOLocations">
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[&exportDirectory:%String="",&slash:%String="",&location:%String="",&instanceName:%String="",&namespace:%String=""]]></FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	
+	set slash = ..slash()
+	set location = ..location()
+	set instanceName = $piece(location, slash, 1)
+	set namespace = $piece(location, slash, 2)
+	set OK = ..setExportDir(.exportDirectory)
+	quit OK
+]]></Implementation>
+</Method>
+
+<Method name="slash">
+<Description>
+Return the correct path delimiter depending on the OS (Windows or *nix -- VMS is not supported here).</Description>
+<ClassMethod>1</ClassMethod>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	runningWindows = ( SYSTEM(91) = 1 )
+	slash = if runningWindows then "\" else "/"
+	return slash
+]]></Implementation>
+</Method>
+
+<Method name="location">
+<Description>
+Return a string with the ready-for-use subpath to use under the topmost export directory. The two string pieces
+are: Cache instance name (delimiter) current namespace.</Description>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[	quit $p($zu(86),"*",2)_..slash()_$zu(5)
+]]></Implementation>
+</Method>
+
+<Method name="mkdir">
+<Description>
+For Windows, specify the drive-letter:\ portion explicitly. If the dir argument passed in
+does not have a drive specification then this routine will refuse to create it.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>dir:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(dir) = "" then return 0 ; * where is the new folder supposed to live?
+	slash = "EasyCSP.SourceControl.IO"->slash()
+	
+	convert "\/" to @fm:@fm in dir
+	runningWindows = (system(91) = 1)
+	
+	if runningWindows then
+		driveSpec = dir<1>
+		if not(driveSpec matches "1A':'") then return 0
+		rootDir = field(dir, @fm, 1, 2)
+		del dir<1> ; del dir<1> ; * start creating stems at the top then work on the subdirs below
+	end else
+		if dir<1> = "" then del dir<1>
+		rootDir = "/" : dir< 1 >
+		del dir<1>
+		startAt = 1
+	end
+	
+	convert @fm to slash in rootDir
+	
+	* if the topmost part of the directory path doesn't exist and can't be
+	* created then this process has to stop.
+	if "EasyCSP.SourceControl.IO"->checkdir( rootDir ) = 0 then
+		pcperform "mkdir " : rootDir
+		if "EasyCSP.SourceControl.IO"->checkdir( rootDir ) = 0 then return 0
+	end
+	
+	dirLength = dcount(dir, @fm)
+	
+	pieces = 1
+	for idx = 1 to dirLength
+		nextStem = rootDir : slash : field(dir, @fm, 1, idx)
+		convert @fm to slash in nextStem
+		if "EasyCSP.SourceControl.IO"->checkdir( nextStem ) = 0 then
+			pcperform "mkdir " : nextStem
+			if "EasyCSP.SourceControl.IO"->checkdir( nextStem ) = 0 then return 0
+		end
+	next
+	
+	return 1
+]]></Implementation>
+</Method>
+
+<Method name="checkdir">
+<Description>
+Using the MVBasic OPENPATH command, check the existence of an OS path (Windows or
+*nix -- VMS is not supported here). Return 1 (TRUE) if the path exists.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pathname:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(pathname) = "" then return 0
+	
+	openpath pathname to dir on error return 0 else return 0
+	
+	close dir
+	
+	return 1
+]]></Implementation>
+</Method>
+
+<Method name="ls">
+<Description><![CDATA[
+<p>
+Get a directory listing from the host file system.
+</p>
+
+<p>
+The return in the source control map global:
+<ol>
+<li>namespace</li>
+<li>"dirlist"</li>
+<ul>
+	<li>"columns" = the list of column headers</li>
+	<li>"directory" = the starting path of the search</li>
+	<li>"fileWildCard" = list of wildcards used in the search (default it *.*)</li>
+	<li>"listSubdirs" = search in subdirectories</li>
+	<li>"recurse" = set to 1 if the search is to descend into all subdirectories</li>
+	<li>"sortBy" = column name (from supplied) by which to sort entries</li>
+	<li>"rows", <i>n</i> = contents of each row
+</ul>
+</ul>
+</p>]]></Description>
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>directory:%String,fileWildcards:%String,sortBy:%String,listSubdirs:%Boolean=1,recurse:%Boolean=0</FormalSpec>
+<Implementation><![CDATA[
+	set namespace = $zu(5)
+	k ^EasySC(namespace,"dirlist")
+
+	if $get(SortBy)="" set SortBy="Name"
+
+	q:'..DirectoryFieldExists(SortBy) "FileHandler.DirectoryList : illegal SortBy '"_SortBy_"'"
+
+	set ^EasySC(namespace,"dirlist","rowCount") = 0
+	set ^EasySC(namespace,"dirlist","columns") = $listFromString(..#DirectoryFields, ";")
+	
+	set ^EasySC(namespace,"dirlist","directory")=directory
+	set ^EasySC(namespace,"dirlist","fileWildcards")=fileWildcards
+	set ^EasySC(namespace,"dirlist","sortBy")=sortBy
+	set ^EasySC(namespace,"dirlist","listSubdirs")=listSubdirs
+	set ^EasySC(namespace,"dirlist","recurse")=recurse
+	
+	do ..doLS(directory,fileWildcards,sortBy,listSubdirs,recurse)
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="doLS">
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>directory:%String,fileWildcards:%String,sortBy:%String,listSubdirs:%Boolean=1,recurse:%Boolean=0</FormalSpec>
+<Private>1</Private>
+<Implementation><![CDATA[
+	set namespace = $zu(5)
+	
+	set rset=##class(%ResultSet).%New()
+	set rset.ClassName="%File",rset.QueryName="FileSet"
+	do rset.Execute(directory, fileWildcards, sortBy, listSubdirs)
+	set colCount=rset.GetColumnCount()
+    while rset.Next() {
+	    set rowCount = +$get(^EasySC(namespace, "dirlist", "rowCount")) + 1
+    	set ^EasySC(namespace,"dirlist","rowCount") = rowCount
+    	set row = ""
+    	for col=1:1:colCount { 
+    		set row = row _ $listBuild(rset.GetData(col))
+    	}
+    	set ^EasySC(namespace, "dirlist", "rows", rowCount) = row
+    	if (rset.Data("Type") = "D"),(recurse = 1) {
+			do ..doLS(rset.Data("Name"),fileWildcards,sortBy,listSubdirs,recurse)
+    	}
+    }
+    d rset.Close()
+    quit
+]]></Implementation>
+</Method>
+
+<Method name="DirectoryFields">
+<Description>
+ list of valid directory fields</Description>
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[        q ..#DirectoryFields
+]]></Implementation>
+</Method>
+
+<Method name="DirectoryFieldExists">
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>candidate</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[        q ";"_..#DirectoryFields_";"[candidate
+]]></Implementation>
+</Method>
+
+<Method name="DirectoryListDump">
+<Description>
+Display directory listing from result
+req:
+ entry as defined by classmethod DirectoryList</Description>
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[&entry]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+        //n e,col,x 
+        f e=1:1:entry {
+                w "---------------------------------------"
+                f col=1:1:entry(-1) s x=entry(-2,col) w:x<4 ! w ?x,entry(-1,col),": ",entry(e,col)
+                w !
+        }
+        q $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

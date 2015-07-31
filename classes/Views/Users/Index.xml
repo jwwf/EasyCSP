@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-06-02 15:12:33">
+<Class name="Views.Users.Index">
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63591,56069.818803</TimeChanged>
+<TimeCreated>63591,53488.153426</TimeCreated>
+
+<XData name="gatherScripts">
+<Description>
+Check the back-end periodically for complettion of a query. When enough
+rows have been gathered to make a page before status is "Complete" then
+the first page is displayed.</Description>
+<Data><![CDATA[
+<root><![CDATA[
+	<script type='text/javascript' language='javascript'>
+            var processID = "";
+            var myTimer = "";
+    
+            function startGather(sd,ed) {
+                resetTimeout();
+                processID = #server(FCT.PurchaseActivityOverview.Gather(sd,ed))#;
+                myTimer = setInterval(function(){ getGatherStatus(); },1000);
+            }
+    
+            function getGatherStatus() {
+                resetTimeout();
+                var status=#server(FCT.PurchaseActivityOverview.GatherStatus(processID))#;
+                document.getElementById('gatherStatus').innerHTML = status;
+        
+                // finished?
+                if ((status == "Complete") || (status.substring(0,5) == "Error:")){
+                    clearInterval(myTimer);
+                }
+            }
+        </script>
+]]]]><![CDATA[>
+</root>
+]]></Data>
+</XData>
+</Class>
+</Export>

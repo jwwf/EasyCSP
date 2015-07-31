@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Console.ControlGroup">
+<Description>
+Line-by-line console version of a web control group. Allows a model to be used
+for prompts, input, and validation. Pass in the model attribute for which to
+accept input. The input is validated and if it passes, control is returned to
+the calling class.</Description>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63622,69846.516687</TimeChanged>
+<TimeCreated>63621,65282.963898</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>attribute:EasyCSP.Model.attribute</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>EasyCSP.Model.attribute</ReturnType>
+<Implementation><![CDATA[
+		if index($get(attribute), "Model.attribute", 1) = 0 then
+			crt "The 'attribute' argument must contain an instance of a Model.Attribute"
+			return 0
+		end
+		
+		oldValue = attribute->value
+		loop
+			crt
+			attribute->clearErrors() ; * if this is iterating you'll never leave the loop with errors set
+			if attribute->tooltip <> "" then crt attribute->tooltip
+			crt attribute->label : " "
+			if oldValue <> "" then crt "Old value: " : oldValue
+			input newValue
+			
+			if newValue = "" then 
+				newValue = oldValue
+				crt oldValue : " - unchanged"
+				continue
+			end
+						
+			attribute->value = newValue
+			attribute->validate()
+			
+			if attribute->hasError() then
+				stream = attribute->formatErrors()
+				crt
+				loop
+					len = 132
+				while (stream->AtEnd = 0 ) do
+					crt stream->Read(len)
+				repeat
+				
+				attribute->value = oldValue
+			end else
+				exit
+			end
+			
+		repeat
+		
+		return attribute
+]]></Implementation>
+</Method>
+</Class>
+</Export>

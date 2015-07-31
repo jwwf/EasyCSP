@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Views.Base">
+<Description><![CDATA[
+<p>
+This is the base class for all view pages. Any data the view will need, such as
+instances of models or other information for display or control should be placed
+in the <property>data</property> before calling the <method>run</method> method.
+</p>
+
+<p>
+All output is gathered into the <property>stream</property> property by using either the
+<method>addContent</method> or the <method>addStreamContent</method> method. Output is
+held until the layout calls the view's <method>render<method> method to build output into
+the resulting HTML page or report.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Abstract>1</Abstract>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63763,80489.763955</TimeChanged>
+<TimeCreated>63541,82697.943671</TimeCreated>
+
+<Property name="clientScripts">
+<Description>
+Register and manage scripts.</Description>
+<Type>EasyCSP.Web.Client.Scripts</Type>
+</Property>
+
+<Property name="data">
+<Description><![CDATA[
+Any data that should be passed down from the controller must exist
+in <property>data</property> <i>before</i> calling the <method>run</method> method.]]></Description>
+<Type>EasyCSP.Core.ParameterList</Type>
+<Final>1</Final>
+<Private>1</Private>
+</Property>
+
+<Property name="pageTitle">
+<Description><![CDATA[
+The title that should appear in the HTML &lt;head&gt; section title tag.]]></Description>
+<Type>%String</Type>
+<InitialExpression>"Edit the page title"</InitialExpression>
+</Property>
+
+<Property name="stream">
+<Description>
+All output is gathered here for eventual rendering by the layout.</Description>
+<Type>%GlobalCharacterStream</Type>
+<Final>1</Final>
+<Private>1</Private>
+</Property>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+Instantiate a new view. Views should be created via the <class>EasyCSP.Views.Factory</class>
+The controller or layout instantiating the view should pass any model or other relevant data
+in via the <variable>data</variable> formal spec argument which is in turn an instance of an <class>EasyCSP.Core.ParameterList</class>.]]></Description>
+<FormalSpec>data:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	do ..stream.Clear()
+	set:..instanceOf(data, "Core.ParameterList") ..data = data
+	set ..clientScripts = ##class(EasyCSP.Web.Client.Scripts).%New()
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="addContent">
+<Description>
+This is the mechanism used to add string content to a page.</Description>
+<Final>1</Final>
+<FormalSpec>data:%String</FormalSpec>
+<Implementation><![CDATA[		do ..stream.WriteLine(data)
+]]></Implementation>
+</Method>
+
+<Method name="addStreamContent">
+<Description><![CDATA[
+This method quickly copies stream data from a provider stream into
+the page output stream. <variable>data</variable> should be an instance of a %GlobalCharacterStream.]]></Description>
+<Final>1</Final>
+<FormalSpec>data:%GlobalCharacterStream</FormalSpec>
+<Implementation><![CDATA[
+	do ..stream.MoveToEnd()
+	do ..stream.CopyFrom(data)
+]]></Implementation>
+</Method>
+
+<Method name="render">
+<Description>
+Returns the page content output stream. This stream is copied automatically in the
+controller base class to be emitted whole at the end of the page building process.</Description>
+<Final>1</Final>
+<FormalSpec>data:EasyCSP.Core.ParameterList</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[	quit ..stream
+]]></Implementation>
+</Method>
+
+<Method name="xDataToContent">
+<Description>
+If a page is carrying scripts or other data in the form of XData, call this
+method with the id of the XData section to read. The XData contents will be
+copied into the final output stream.</Description>
+<FormalSpec>id</FormalSpec>
+<Implementation><![CDATA[
+	set xDataDef = ##class(%Dictionary.CompiledXData).%OpenId($classname()_"||"_id)
+	set outputStream = xDataDef.Data
+	
+	if '$isobject(outputStream) {
+		do ..addStreamContent($classname(0)_": "_id_" stream failed to open.")
+		quit 0
+	}
+	
+	//set status=##class(%XML.TextReader).ParseStream(outputStream,.textreader)
+	
+	//if $$$ISERR(status) {
+		//do ..addStreamContent($classname(0)_": Could not parse "_id_" stream.")
+		//quit 0
+	//}
+	
+	//while textreader.Read() {
+		//do ..addContent(textreader.Value)
+		do ..addStreamContent(xDataDef.Data)
+	//}
+	
+	quit 1
+]]></Implementation>
+</Method>
+</Class>
+</Export>

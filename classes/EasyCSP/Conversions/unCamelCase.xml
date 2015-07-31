@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.unCamelCase">
+<Description><![CDATA[
+Takes a camel-cased string and makes a string that can be used as a SQL or MV-global column
+heading. "CamelCase" become "camel_case"
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Language>mvbasic</Language>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63474,31948.637563</TimeChanged>
+<TimeCreated>63459,80030.662012</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>InputString:%String=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(InputString) = "" then return ""
+	
+	dingbats = "`~!@#$%^&*()_-+=[]{}\|;:/?.>,<" : '"'
+    OutputString = ""
+    
+    Length = Len( InputString )
+    
+    For Idx = 1 To Length
+        
+        TheCharacter = InputString[ Idx, 1 ]
+        If Index( dingbats, TheCharacter, 1 ) > 0 Then OutputString := @fm
+        OutputString := downcase( TheCharacter )
+        
+    Next
+    
+    OutputString = Trim( OutputString, @fm ) ; * take out the extra breaks
+    
+    Convert @fm To "_" In OutputString ; * then turn the dynamic array into a string separated with underscores
+    
+    Return OutputString
+]]></Implementation>
+</Method>
+</Class>
+</Export>

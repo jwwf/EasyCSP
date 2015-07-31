@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.Currency">
+<Language>mvbasic</Language>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63474,30152.351689</TimeChanged>
+<TimeCreated>63474,30152.351689</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>value</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	value = oconv(value, 'MCN') ; * strip out non-numerics
+	return trim(fmt(value,'16R2')) ; * Format in a 16-character wide field with two decimal places. Trim the spaces off both ends.
+]]></Implementation>
+</Method>
+</Class>
+</Export>

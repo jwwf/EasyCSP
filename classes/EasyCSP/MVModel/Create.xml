@@ -1,0 +1,985 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.MVModel.Create">
+<Language>mvbasic</Language>
+<Super>%RegisteredObject,EasyCSP.Core.Component</Super>
+<TimeChanged>63537,54745.883701</TimeChanged>
+<TimeCreated>63534,69459.285181</TimeCreated>
+<ServerOnly>1</ServerOnly>
+
+<Property name="MaxRealAttribute">
+<Description>
+%MVBParseDict structure</Description>
+<Type>%Integer</Type>
+<InitialExpression>8999</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFileInfoFilePropertiesSubscript">
+<Type>%String</Type>
+<InitialExpression>"datalevel"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFileInfoDictPropertiesSubscript">
+<Type>%String</Type>
+<InitialExpression>"dictlevel"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFileInfoDictionaryStructureSubscript">
+<Type>%String</Type>
+<InitialExpression>"dictentry"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFileInfoClassPropertiesSubscript">
+<Type>%String</Type>
+<InitialExpression>"class"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFileInfoPropertyParametersSubscript">
+<Type>%String</Type>
+<InitialExpression>"parameters"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFilePathOrGlobalName">
+<Description><![CDATA[
+Subscripts for file/dict properties (from FileInfo()).  If "MVBooster.Library"->FileInfo is called,
+information about the physical DATA and DICT levels will be returned in these subscripts.]]></Description>
+<Type>%String</Type>
+<InitialExpression>"PathOrGlobalName"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="FileInfoPathOrGlobalName">
+<Type>%Integer</Type>
+<InitialExpression>2</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFileHandle">
+<Type>%String</Type>
+<InitialExpression>"Handle"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFileStorageType">
+<Type>%String</Type>
+<InitialExpression>"FileStorageType"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="FileInfoStorageType">
+<Type>%Integer</Type>
+<InitialExpression>3</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFileHashingAlgorithm">
+<Type>%String</Type>
+<InitialExpression>"HashingAlgorithm"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="FileInfoHashingAlgorithm">
+<Type>%Integer</Type>
+<InitialExpression>4</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBFileHasIndices">
+<Type>%String</Type>
+<InitialExpression>"HasIndices"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="FileInfoHasIndices">
+<Type>%Integer</Type>
+<InitialExpression>13</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrAMC">
+<Description>
+Dictionary attributes for the %MVBFileInfo structure.  These are subscripts of the (filename, MVBFileInfoDictionaryStructureSubscript) node.</Description>
+<Type>%String</Type>
+<InitialExpression>"attrno"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrAssoc">
+<Type>%String</Type>
+<InitialExpression>"assoc"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttr8">
+<Type>%String</Type>
+<InitialExpression>"attr8"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrCamelCaseName">
+<Type>%String</Type>
+<InitialExpression>"camelcasename"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrConversion">
+<Type>%String</Type>
+<InitialExpression>"conv"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrDataType">
+<Type>%String</Type>
+<InitialExpression>"dataType"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrDecimals">
+<Type>%String</Type>
+<InitialExpression>"decimals"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrDescale">
+<Type>%String</Type>
+<InitialExpression>"descale"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrDSPCode">
+<Type>%String</Type>
+<InitialExpression>"dspcode"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrHeading">
+<Type>%String</Type>
+<InitialExpression>"heading"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrITypeSource">
+<Type>%String</Type>
+<InitialExpression>"itypesource"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrJustification">
+<Type>%String</Type>
+<InitialExpression>"justification"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrMV">
+<Type>%String</Type>
+<InitialExpression>"mv"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrName">
+<Type>%String</Type>
+<InitialExpression>"name"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrScale">
+<Type>%String</Type>
+<InitialExpression>"scale"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrType">
+<Type>%String</Type>
+<InitialExpression>"type"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="MVBDictAttrWidth">
+<Type>%String</Type>
+<InitialExpression>"width"</InitialExpression>
+</Property>
+
+<Property name="MVBFileInfoClassPropertyParameters">
+<Description>
+Class property definition parameters</Description>
+<Type>%String</Type>
+<InitialExpression>"Calculated,Cardinality,ClientName,Collection,Description,Final,Identity,Internal,Inverse,MultiDimensional,Name,NoModBit,NotInheritable,Private,ReadOnly,Relationship,Required,SequenceNumber,ServerOnly,SqlCollation,SqlColumnNumber,SqlComputeCode,SqlComputed,SqlComputeOnChange,SqlFieldName,SqlListDelimiter,SqlListType,Transient,Type"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Method name="CreateMVFileClass">
+<Description><![CDATA[
+<h2>Create an MV file class</h2>
+<h3>Call "MVBooster.Library"->FileInfo( mvfilename ) before calling this classmethod</h3>
+<p>If mvfilename isn't located in %MVBFileInfo( mvfilename, "datalevel" ) then the
+file doesn't exist or can't be opened.  This method will refuse to create a class for a file
+that can not be opened.  If <i>DeleteExistingClass</i> = @false (the default) and the file class exists,
+it will be updated from information in the %MVBFileInfo array that was gathered from the DICT of the file.
+If <i>DeleteExistingClass</i> = @true then the existing class will be deleted before a new
+class is built.</p>
+<p><b>NOTE:</b> make sure thefile DICT is populated.  Only D, A, or I types will be used. 
+ The "S" type and F-Correlatives are explicitly not supported in this version.  If someone else wants to
+write an F-correlative parser, I'll gladly add it to the MVBooster.Library.  For now, I am
+not supporting either.  F-correlatives are ancient legacy and should have been converted to I-Types long ago.</p>
+<p><b>NOTE:</b> Some of this code was lifted from the original PROTOCLASS by Rich Taylor.</p>
+<p><b>NOTE:</b>        
+S-type, A- and F-correlatives are not supported by this method.  Only A-types with no correlatives, D- and
+I-types are supported.  Bring your dictionary up to modern standard by changing A-types with correlatives and S-types with
+A- or F-correlatives to I-types.  A- and S-types with no correlatives or conversions should be updated to
+become D-types, even though the former are weakly supported here.</p>]]></Description>
+<FormalSpec>Filename:%String="",PackageName:%String="MVFile",DeleteExistingClass:%Boolean=0,MaxRealAttribute:%Integer=8999</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    If Filename = "" Then
+        Return "%SYSTEM.Status"->Error( 0, "Supply the name of an MV file." )
+    End
+    
+    If PackageName = @ME->nil Then PackageName = "MVFile"
+    
+    If MaxRealAttribute = 0 Then MaxRealAttribute = %MVBCommon->MaxRealAttribute
+    
+    Dim %MVBFileInfo()
+    Dim %MVBAttributeCrossRef()
+    
+    @ME->CreateMVFileAttributeCrossRef( Filename )
+    
+    If Status() <> @ME->successful Then
+        Return "%SYSTEM.Status"->Error( %MVBErrorNumber, %MVBErrorDescription )
+    End
+
+*
+* This file may already have a class extent.  The VOC item will have that in attribute 5.
+*
+    If $Get( %Voc ) = "" Then %Voc = "MVBooster.TypicalMVFile"->%New( "VOC" )
+    
+    %Voc->Read( Filename )
+    
+    If %Voc->Record = "" Then Return "%SYSTEM.Status"->Error( 0, Filename : " doesn't exist in the VOC.  Create it first." )
+    
+    VocRecord = %Voc->Record
+    
+    If VocRecord< 5 > <> "" Then ; * whoops!  there's a class extent.  Delete it.
+        SC = "%ExtentMgr.Util"->DeleteExtent( DQuote( VocRecord< 5 > ) )
+        VocRecord< 5 > = ""
+        %Voc->Record = VocRecord
+        %Voc->RecordHasChanged = @true
+        %Voc->Write()
+    End
+    
+******************************************************************************************************************
+
+* The complete class name is the packagename.filename
+    CompleteClassName = PackageName : "." : Filename
+    
+    If DeleteExistingClass = @true Then
+        ClassDefinition = "%SYSTEM.MV"->getPrimaryMVClass(%MVBFileInfo( Filename, %MVBCommon->MVBFileInfoDictPropertiesSubscript, %MVBCommon->MVBFileHandle ), 0 )
+        If ClassDefinition <> "" Then "%Dictionary.ClassDefinition"->%DeleteId(ClassDefinition->Name) ; * delete the class
+        ClassDefinition = "" ; * delete the reference
+        $Kill %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoClassPropertiesSubscript ) ; * remove in-memory references to the deleted class properties
+    End
+    
+    
+*  Create a new class with the same name as the file
+    ClassDefinition = "%SYSTEM.MV"->getPrimaryMVClass(%MVBFileInfo( Filename, %MVBCommon->MVBFileInfoDictPropertiesSubscript, %MVBCommon->MVBFileHandle ), 1, CompleteClassName )
+            
+* Remove the existing %OnNew method.  It will be replaced below.
+    If DeleteExistingClass = @false Then
+
+        NextMethod = ""
+        Loop
+            NextMethod = ClassDefinition->Methods->Next( NextMethod )
+        Until NextMethod = "" Do
+        
+            ExistingMethod = ClassDefinition->Methods->GetAt( NextMethod )
+            
+            If ( ExistingMethod->Name = "%OnNew" ) Then
+                ClassDefinition->Methods->RemoveAt( NextMethod )
+                Exit ; * there'll only be one
+            End
+            
+        Repeat
+            
+    End
+    
+*  Begin building properties for the new class (or rebuilding properties for an existing one)
+
+    ClassDefinition->Parameters->SetAt( Filename, "MVFILENAME" )
+    ClassDefinition->Super = "%Persistent, %MV.Adaptor, EasyCSP.MVModel.Abstract" ; * leverage MVBooster
+    ClassDefinition->Language = "mvbasic"
+
+* Build the %OnNew method for this property that will use MVBooster.MVFileAbstraction methods inherited by the new class
+    NewMethod = "%Dictionary.MethodDefinition"->%New(CompleteClassName : ":%OnNew" )
+    NewMethod->ClassMethod = @false ; * this is an instance method
+    NewMethod->Language = "mvbasic"
+    NewMethod->ReturnType = "%Status"
+    NewMethod->FormalSpec = "WorkSilently:%Boolean = 0,ReadOnly:%Boolean = 0"
+
+    StringBuilder = "%GlobalCharacterStream"->%New() ; * build the body of the method in here
+
+    StringBuilder->WriteLine( \Return @ME->New( @ME->%GetParameter("MVFILENAME" ), WorkSilently, ReadOnly )\ )
+
+    NewMethod->Implementation = StringBuilder
+
+    ClassDefinition->Methods->Insert( NewMethod )
+
+    $Kill StringBuilder ; * destroy the method definition code builder so the variable can be reused
+    $Kill NewMethod ; * destroy the method definition so it will be clean on the next loop through here
+
+* Iterate through the attribute number dimension to find the next attribute name dimension.  Attribute
+* properties live in the dimension below (to the right of) the attribute name.
+    AttributeNumber = ""
+    
+    DefaultQueryFields = ""
+    
+    Loop
+        AttributeNumber = $Order( %MVBAttributeCrossRef( AttributeNumber ) )
+    While AttributeNumber <> "" Do
+    
+        AttributeName = ""
+        
+        If Abs( AttributeNumber = 0 ) Then Continue
+        
+        Loop
+            AttributeName = $Order( %MVBAttributeCrossRef( AttributeNumber, AttributeName ) )
+        While AttributeName <> "" Do
+* S-type, A- and F-correlatives are not supported by this method: only A-types with no correlatives and any D-types.
+* Bring your dictionary up to modern standard by changing A-types with correlatives and S-types with
+* A- or F-correlatives to I-types.  A- and S-types with no correlatives or conversions should be updated to
+* become D-types, even though the former are weakly supported here.
+*
+* These class instance methods relate strictly one-to-one with actual file fields.  Calculated fields aren't
+* necessary for file access, thus aren't supported as such.  Of course, after the class is generated, you can
+* edit it any way you like.
+            If $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttr8 ) ) <> "" Then
+                Continue ; * no attributes with correlatives
+            End
+            
+            NewPropertyName = %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrCamelCaseName )
+            "EasyCSP.MVModel.Create"->CreateMVAttributeProperty( ClassDefinition, CompleteClassName, AttributeNumber, AttributeName, NewPropertyName )
+
+            DefaultQueryFields< -1 > = NewPropertyName
+            
+        Repeat ; * foreach attribute name
+    
+    Repeat ; * foreach attribute number
+    
+* Add a default "ALL" query.  Remove any existing before replacing.
+
+        NextQuery = ""
+        Loop
+            NextQuery = ClassDefinition->Queries->Next( NextQuery )
+        Until NextQuery = "" Do
+        
+            ExistingQuery = ClassDefinition->Queries->GetAt( NextQuery )
+            
+            If ( ExistingQuery->Name = "All" ) Then
+                ClassDefinition->Queries->RemoveAt( NextQuery )
+                Exit ; * there'll only be one
+            End
+            
+        Repeat
+    
+    NewQuery = "%Dictionary.QueryDefinition"->%New()
+    NewQuery->Name = "All"
+    NewQuery->SqlQuery = "SELECT " : Convert( @fm, ',', DefaultQueryFields ) : " FROM " : Filename : " ORDER BY %ID "
+    NewQuery->Type = "%SQLQuery"
+    NewQuery->Parameters->SetAt( 1, "CONTAINID" )
+    
+    ClassDefinition->Queries->Insert( NewQuery )
+    
+* Save the class
+    If @ME->Debugging Then
+        %MVBTrace->WriteEntry( "Saving class " : CompleteClassName )
+    End
+    
+    RC = ClassDefinition->%Save()
+    
+    If Left(RC, 1 ) = 0 Then
+    
+        %MVBTrace->WriteEntry( "Error upon saving class." )
+        Return RC
+        
+    End
+    
+* Otherwise, the save was good.  Attempt to compile the class.
+    If @ME->Debugging = @true Then
+        %MVBTrace->WriteEntry( "Compiling the generated class..." )
+    End
+    
+    RC = "%SYSTEM.OBJ"->Compile(ClassDefinition->Name, "cfvko3")
+    
+    If Left( RC, 1 ) = 0 Then
+    
+        %MVBTrace->WriteEntry( "MV file class compilation generated errors:" )
+        Return RC
+        
+    End
+      
+* Reopen the class definition and remove the namespace reference from 
+* the Storage locations elements in the storage definintion
+    %MVBTrace->WriteEntry( "Removing namespace references from the compiled class." )
+    
+    ClassDefinition = "" ; * close the object
+    ClassDefinition = "%SYSTEM.MV"->getPrimaryMVClass(%MVBFileInfo( Filename, %MVBCommon->MVBFileInfoDictPropertiesSubscript, %MVBCommon->MVBFileHandle ),1,CompleteClassName)
+    StorageDefinition = ClassDefinition->Storages->GetAt(1)
+    
+* check Datalocation
+    location = StorageDefinition->DataLocation
+    Gosub RemoveNamespace
+    StorageDefinition->DataLocation = location
+    
+* check Idlocation
+    location = StorageDefinition->IdLocation
+    Gosub RemoveNamespace
+    StorageDefinition->IdLocation = location
+
+* check Indexlocation
+    location = StorageDefinition->IndexLocation
+    Gosub RemoveNamespace
+    StorageDefinition->IndexLocation = location
+
+    CRT "Saving the updated class..."
+    RC = ClassDefinition->%Save()
+
+    If Left( RC, 1 ) = "0" THEN
+        %MVBTrace->WriteEntry( "Class definition save error after updating storage." )
+        Return RC
+    End
+    
+* Save was good, so now to compile it.
+    If @ME->Debugging = @true Then
+        %MVBTrace->WriteEntry( "Compiling the updated class." )
+    End
+    
+    RC = "%SYSTEM.OBJ"->Compile( ClassDefinition->Name, "cfvko3" )
+    If Left( RC, 1 ) = "0" Then
+        %MVBTrace->WriteEntry( "MV file class compilation generated errors:" )
+        Return RC
+    End
+    
+    Return "%SYSTEM.Status"->OK()
+    
+******************************************************************************
+RemoveNamespace:
+
+    StartNamespace = INDEX( location, "|", 1 )
+    
+    If StartNamespace > 0 Then
+        EndNamespace = Index( location, "|", 2 )
+        If EndNamespace # 0 Then
+            location = location[ 1, ( StartNamespace - 1 ) ] : location[ ( EndNamespace + 1 ), Len( location ) ]
+        End; * if EndNamespace # 0 ...
+    End; * if index(location,"|",...
+    
+    Return
+]]></Implementation>
+</Method>
+
+<Method name="CreateMVAttributeProperty">
+<Description><![CDATA[
+<p>Using the contents of %MVBAttributeCrossRef (see MVBooster.Library-&gt;CreateMVFileAttributeCrossRef), create an MV property
+ready to be inserted into a class definition object. Because this routine is designed for MV file classes, it also adds
+default Get() and Set() methods that leverage MVBooster.MVFileAbstraction.</p>
+<ul>
+<li><b>ClassDefinition</b> must be a valid instance of a %Library.ClassDefinition.</li>
+<li><b>AttributeNumber</b> must be an integer value of the property's attribute number.  If the next property's MVATTRIBUTE
+    is not known, specify 0 and the property will be added.  If the attribute number conflicts with an existing attribute
+    then the property at that location will left alone and the new property added at the end.  Default type will be %String.
+    Badly-designed calling code could potentially cause data storage location problems.</li>
+<li><b>AttributeName</b> is a string value specifying the name the new property should be called]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>ClassDefinition:%Dictionary.ClassDefinition,CompleteClassName:%String="",AttributeNumber:%Integer=0,AttributeName:%String="",PropertyName:%String=""</FormalSpec>
+<ReturnType>%Dictionary.PropertyDefinition</ReturnType>
+<Implementation><![CDATA[
+    
+    If $Get( %MVBCommon ) = "" Then %MVBCommon = "MVBooster.Common"->%New() ; * make sure there's a copy of MVB common definitions
+
+*  The complete class name ("Package.ClassName") needs to be made known to this method in order for the resulting class
+*  to compile correctly.
+    If CompleteClassName = "" Then
+        "MVBooster.Library"->SetCondition( 3, "You must supply the complete class name (Package.Classname) in order to define a new property." )
+        Return ""
+    End 
+    
+    Dim %MVBAttributeCrossRef()
+    Dim %MVBFileInfo()
+    
+*  In order to insert a new property into the class, its identity must be unique.  Because MVFileAbstraction is the
+*  superclass for all classes and properties created by this library, if a property named the same as the one being
+*  built here, it must be deleted along with the default Get() and Set() methods.  This will allow existing class
+*  properties to be updated (by being removed and replaced).
+
+    NextProperty = ""
+    Loop
+        NextProperty = ClassDefinition->Properties->Next( NextProperty )
+    Until NextProperty = "" Do
+    
+        ExistingPropertyDefinition = ClassDefinition->Properties->GetAt( NextProperty )
+        
+        If ExistingPropertyDefinition->Name = PropertyName Then
+        
+            ClassDefinition->Properties->RemoveAt( NextProperty )
+            
+* Okay, there was a property with a matching name.  There is likely a Get() and Set() method as well.
+
+            NextMethod = ""
+            Loop
+                NextMethod = ClassDefinition->Methods->Next( NextMethod )
+            Until NextMethod = "" Do
+            
+                ExistingMethod = ClassDefinition->Methods->GetAt( NextMethod )
+                
+                If ( ExistingMethod->Name = PropertyName : "Set" ) Or ( ExistingMethod->Name = PropertyName : "Get" ) Then
+                    ClassDefinition->Methods->RemoveAt( NextMethod )
+                End
+                
+            Repeat
+            
+        End
+        
+    Repeat
+    
+*  If you don't know the next available attribute number, set AttributeNumber = 0.  This loop will find it for you.
+    If AttributeNumber = 0 Then ; * signal to use the next available attribute number
+    
+        Loop
+            NextAttributeNumber = $Order( %MVBAttributeCrossRef( AttributeNumber ) )
+        While NextAttributeNumber <> "" Do
+        
+            If NextAttributeNumber > AttributeNumber Then AttributeNumber = NextAttributeNumber
+        
+        Repeat
+        
+        Association = ""
+        
+        DictAttributeName = AttributeName
+        AttributeName = "MVBooster.Library"->CamelCase( AttributeName )
+        
+        AttributeNumber += 1 ; * use the next available attribute number
+        Collation = "SPACE"
+        Descale = ""
+        DictAttr8 = ""
+        DType = "D"
+        Justification = "L"
+        PMV = "S"
+        Scale = ""
+        Type = "%String"
+        
+    End Else
+    
+        If PropertyName = "" Then ; * allow override of the default camelcase name
+            PropertyName = $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrCamelCaseName  ) )
+        End
+        
+        If $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrAssoc ) ) <> "" Then
+            Association = $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrAssoc ) )
+        End Else
+            Association = ""
+        End
+        
+        DictAttr8 = $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttr8 ) )
+        
+        If $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrConversion ) ) <> "" Then
+            DType = $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrType ) )
+        End Else
+            DType = "D"
+        End
+    
+        If $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrScale ) ) <> "" Then
+            Scale = %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrScale )
+        End Else
+            Scale = ""
+        End
+        
+        If $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrDescale ) ) <> "" Then
+            Descale = %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrDescale )
+        End Else
+            Descale = ""
+        End
+        
+        If $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrDataType ) ) <> "" Then
+            Type = %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrDataType )
+        End Else
+            Type = "%String"
+        End
+        
+        If $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrJustification ) ) <> "" Then
+            Justification = $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrJustification ) )
+        End Else
+            Justification = "L"
+        End
+
+        Collation = ""
+        
+        If Type <> "%MV.Numeric" Then
+            If %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrJustification ) = "L" Then
+                Collation = "SPACE"
+            End Else
+                Collation = "MVR"
+            End
+        End
+        
+        If $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrMV ) ) <> "" Then
+            PMV = %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttrMV )
+        End Else
+            PMV = "S" ; * default to single-valued
+        End
+        
+    End
+        
+
+* no I-types or S-types with correlatives
+    If Index( "ADS", DType, 1 ) = 0 Then
+        "MVBooster.Library"->SetCondition( 2, "Only D, A, or simple S-types are allowed for now." )
+        Return ""
+    End 
+
+    NewProperty = "%Dictionary.PropertyDefinition"->%New( CompleteClassName : ":" : PropertyName )
+
+    NewProperty->Type = Type
+    
+    If Collation <> "" Then NewProperty->Parameters->SetAt( Collation, "COLLATION" )
+
+    If Association <> "" Then
+        NewProperty->Parameters->SetAt( Association, "MVASSOCIATION" )
+    End
+
+    NewProperty->Parameters->SetAt( AttributeNumber, "MVATTRIBUTE" )
+
+    NewProperty->Parameters->SetAt( 0, "MVPROJECTED" )
+
+    NewProperty->Parameters->SetAt( AttributeName, "MVNAME" )
+        
+    If NewProperty->Type = "%MV.Numeric" Then
+    
+        If Descale <> "" Then NewProperty->Parameters->SetAt( Descale, "DESCALE" )
+        If Scale <> "" Then NewProperty->Parameters->SetAt( Scale, "SCALE" )
+        
+    End
+
+    If $Get( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttr8 ) ) <> "" Then
+        NewProperty->Parameters->SetAt( %MVBAttributeCrossRef( AttributeNumber, AttributeName, %MVBCommon->MVBDictAttr8 ), "MVTOLOGICAL" )
+    End
+
+    If Index( "ADI", DType, 1 ) <> 0 Then
+        NewProperty->Parameters->SetAt( DType, "MVTYPE" )
+    End Else
+        NewProperty->Parameters->SetAt( "D", "MVTYPE" ) ; * defaults to "D"; "S" is not supported.
+    End
+
+    
+        
+* Is this property to support some kind of calculation due to having an A-type DICT item with a conversion in
+* attribute 8 or its being an I-type?
+
+    If ( AttributeNumber = "" ) Or ( AttributeNumber = 0 ) Or ( AttributeNumber > %MVBCommon->MaxRealAttribute ) Then
+        RName   = "id"
+    END ELSE 
+        RName   = "Attribute" : AttributeNumber
+    END
+    
+    If  RName = "id" Then
+        PCalc = 1
+    End Else
+
+        IF AttributeNumber > %MVBCommon->MaxRealAttribute Then
+            PCalc = 1
+        End Else
+            PCalc = 0
+        End
+        
+    End
+
+
+    If ( DictAttr8 <> "" ) Or ( DType = "I" ) Then
+        PCode = 1
+    End Else
+        PCode = 0
+    End
+    
+    If PMV <> "S" Then ; * Multivalued
+        NewProperty->Collection = "list" ;* This is a multivalue set
+    End
+            
+* Some form of calculation?
+    If ( PCalc = 1 ) Or ( PCode = 1 ) Then
+    
+        NewProperty->Transient = 1
+        NewProperty->Calculated = 1
+                  
+    End
+    
+    ClassDefinition->Properties->Insert( NewProperty )
+        
+* The property is set up.  MVBooster has its own mechanism for handling file update and
+* retrieval.  You can go back and customize each Set() method to enforce data integrity
+* and each Get() method for data shaping.
+
+* Build the Get() method for this property that will use MVBooster.MVFileAbstraction methods inherited by the new class
+    GetMethod = "%Dictionary.MethodDefinition"->%New(CompleteClassName : ":" : PropertyName : "Get" )
+    GetMethod->ClassMethod = @false ; * this is an instance method
+    GetMethod->Language = "mvbasic"
+    GetMethod->ReturnType = Type ; * same as the property type
+
+    StringBuilder = "%GlobalCharacterStream"->%New() ; * build the body of the method in here
+
+    StringBuilder->WriteLine( "theRecord = @ME->Record" )
+    StringBuilder->WriteLine( "return theRecord<" : AttributeNumber : ">" )
+
+    GetMethod->Implementation = StringBuilder
+
+    ClassDefinition->Methods->Insert( GetMethod )
+
+    $Kill StringBuilder ; * destroy the method definition code builder so the variable can be reused
+    $Kill GetMethod ; * destroy the method definition so it will be clean on the next loop through here
+        
+* Build the Set() method for this property.  It will also use methods and properties inherited from the MVBooster.MVFileAbstraction class
+    SetMethod = "%Dictionary.MethodDefinition"->%New(CompleteClassName : ":" : PropertyName : "Set" )
+    SetMethod->ClassMethod = @false ; * this is also an instance method
+    SetMethod->Language = "mvbasic"
+    SetMethod->ReturnType = "%Status"
+    SetMethod->FormalSpec = "Value:" : Type
+
+    StringBuilder = "%GlobalCharacterStream"->%New() ; * build the body of the method in here
+
+* You'll need to go back into the class and add your own data integrity enforcement code if it's needed
+    StringBuilder->WriteLine( "@ME->SetAttribute( " : AttributeNumber : ", Value )" )
+    StringBuilder->WriteLine( \Return "%SYSTEM.Status"->OK()\ )
+
+    SetMethod->Implementation = StringBuilder
+
+    ClassDefinition->Methods->Insert( SetMethod )
+
+    $Kill StringBuilder
+    $Kill SetMethod
+    
+    @ME->ClearConditions()
+]]></Implementation>
+</Method>
+
+<Method name="CreateMVFileAttributeCrossRef">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>Filename:%String</FormalSpec>
+<Implementation><![CDATA[
+    
+    Dim %MVBFileInfo()
+    
+    If $Get( %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoFilePropertiesSubscript, %MVBCommon->MVBFileHandle ) ) = "" Then
+        "MVBooster.Library"->FileInfo( Filename )
+        If $Get( %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoFilePropertiesSubscript, %MVBCommon->MVBFileHandle ) ) = "" Then
+            "MVBooster.Library"->SetCondition( 1, "There is no file named " : DQuote( Filename ) : " that can be accessed.", "MVBooster.Library->CreateMVAttributeCrossRef(": DQuote( Filename ) ")" )
+            Return
+        End
+    End
+        
+* Create a list of DICT items ordered by attribute number.  If an attribute has more than one DICT item reference,
+* the first one in wins.  (A good reason to clean up DICTs before calling this method!)
+    $Kill %MVBAttributeCrossRef
+    Dim %MVBAttributeCrossRef()
+    Dim DictDefinition() ; * work array
+    
+    NextAttribute = ""
+    
+    Loop
+        NextAttribute = $Order( %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, NextAttribute ) )
+    While NextAttribute <> "" Do
+    
+        AttrNo = %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, NextAttribute, %MVBCommon->MVBDictAttrAMC )
+        If AttrNo Matches "1N0N" Then ; * take only "real" attributes, no I-Types
+            If $Get( %MVBAttributeCrossRef( AttrNo ) ) = "" Then
+                $Merge %MVBAttributeCrossRef( AttrNo, NextAttribute ) = %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, NextAttribute )
+            End
+        End
+    
+    Repeat
+    
+    @ME->ClearConditions() ; * report success
+]]></Implementation>
+</Method>
+
+<Method name="FileInfo">
+<Description><![CDATA[
+<p>Scrape the dictionary of a file then pass back definitions in
+several associated arrays.  The input parameter is
+<b>Filename</b> = the file whose DICT you need to pillage.  Only D, I, A, or S type items
+are returned.</p>
+<p>If there are items in the dictionary, this method will populate a Cache array %MVBFileInfo minimally with the following subscripts:
+<p>After an initial parse has occurred, this method also calls "%SYSTEM.MV"->parseDict for extended information.</p>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>Filename:%String=""</FormalSpec>
+<Implementation><![CDATA[
+
+    IF Filename = "" Then
+        "MVBooster.Library"->SetCondition( 701, 'No file name', Identity )
+        Return
+    End
+
+    Filename = EReplace( Filename, 'DICT ', "" )
+    
+    TheFile = "MVBooster.TypicalMVFile"->%New( Filename, @false, @true ) ; * open the file in ReadOnly mode
+    
+    If Status() <> %MVBCommon->successful Then
+*        "MVBooster.Library"->SetCondition( 701, Filename : ' is not a file name in the VOC.', Identity )
+* jwwf 12/2011 There might exist an MV file class for this file but no actual MV file.  While that's absolutely
+*              not best practice, it can happen by accident, poor design, or poor maintenance.  In order to
+*              allow automated file class and MV file re-creation, this ClassMethod has been modified to
+*              seek out an existing MV file class for the requested file and return property information for
+*              it.  Thus, it's possible to create a file DICT based on the properties in the existing file
+*              class.
+        "MVBooster.Library"->MVFileClassInfo( Filename ) ; * recover any class information if it exists
+        Return
+    End
+    
+    
+* %MVBFileInfo is a thread global containing a parsed dictionary for each file.  Its subscripts are in MVBooster.Common.
+    
+    Dim %MVBFileInfo() ; * as a Cache' array
+
+* Forget everything we knew about this particular MV file from previous runs and repopulate it below
+
+    $Kill %MVBFileInfo( Filename ) ; * empty the thread global before repopulating it
+    $Kill %dictionary ; * empty the Cache parsed dict thread global before repopulating it
+    
+* Save the file data level properties
+
+    %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoFilePropertiesSubscript, %MVBCommon->MVBFilePathOrGlobalName ) = FileInfo( TheFile->FileHandle, %MVBCommon->FileInfoPathOrGlobalName )
+    %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoFilePropertiesSubscript, %MVBCommon->MVBFileStorageType ) = FileInfo( TheFile->FileHandle, %MVBCommon->FileInfoStorageType )
+    %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoFilePropertiesSubscript, %MVBCommon->MVBFileHasIndices ) = FileInfo( TheFile->FileHandle, %MVBCommon->FileInfoHasIndices )
+    %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoFilePropertiesSubscript, %MVBCommon->MVBFileHandle ) = TheFile->FileHandle
+
+    Dim %dictionary() ; * the %SYSTEM.MV->parseDict method uses this
+    
+    TheFile->OpenDict() ; * data is already open; now open the dict level
+    
+* Save the file dict level properties
+
+    %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoDictPropertiesSubscript, %MVBCommon->MVBFilePathOrGlobalName ) = FileInfo( TheFile->DictHandle, %MVBCommon->FileInfoPathOrGlobalName )
+    %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoDictPropertiesSubscript, %MVBCommon->MVBFileStorageType ) = FileInfo( TheFile->DictHandle, %MVBCommon->FileInfoStorageType )
+    %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoDictPropertiesSubscript, %MVBCommon->MVBFileHasIndices ) = FileInfo( TheFile->DictHandle, %MVBCommon->FileInfoHasIndices )
+    %MVBFileInfo( Filename, %MVBCommon->MVBFileInfoDictPropertiesSubscript, %MVBCommon->MVBFileHandle ) = TheFile->FileHandle
+
+* Gather everything we know about the DICT portion as outlined in the DICT portion of the file
+
+    ValidCodesForProcessing = '"A"ý"S"ý"D"ý"I"'
+
+    Execute "SSELECT DICT " : Filename : " WITH CODE = " : ValidCodesForProcessing : " BY KEY.CODE TO 9" CAPTURING Reply
+   
+    Loop While ReadNext TheFile->Key FROM 9 DO
+    
+        AMC = ""
+        Conversion = ""
+        Fieldname = ""
+        Justification = ""
+        SQLType = ""
+   
+        TheFile->DictRead()
+        DRec = TheFile->DictRecord
+        
+        Type = DRec< 1 >[ 1, 1 ] ; * is this a type this method supports?
+        
+        If Index( "ASDI", Type, 1 ) = 0 Then Continue ; * if not a supported type
+
+        AMC = DRec< 2 >                  
+
+        If Index( "AS", Type, 1 ) > 0 Then
+        
+            Fieldname = DRec< 3 >
+            Conversion = DRec< 8 >
+            Justification = OConv( DRec< 10 >, 'MCA' )
+
+            If DRec< 8 > <> "" Then
+                SQLType = DRec< 6 >
+            End
+            
+        End Else
+        
+            Conversion = DRec< 3 >
+            Fieldname = DRec< 4 >
+            Justification = OCONV( DRec< 5 >, 'MCA' )
+
+            If DRec< 8 > <> "" Then
+                SQLType = DRec< 8 >
+            End
+
+        End
+        
+        Justification = If Index( Justification, "R", 1 ) Then "R" Else "L"
+        
+        If Fieldname = "" Then
+            Fieldname = TheFile->Key
+        End
+
+        %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, TheFile->Key, %MVBCommon->MVBDictAttrAMC ) = AMC
+        %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, TheFile->Key, %MVBCommon->MVBDictAttrCamelCaseName ) = "MVBooster.Library"->CamelCase( TheFile->Key )
+        %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, TheFile->Key, %MVBCommon->MVBDictAttrConversion ) = Conversion
+        %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, TheFile->Key, %MVBCommon->MVBDictAttrHeading ) = Fieldname
+        %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, TheFile->Key, %MVBCommon->MVBDictAttrJustification ) = Justification
+        %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, TheFile->Key, %MVBCommon->MVBDictAttrDataType ) = SQLType
+        %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, TheFile->Key, %MVBCommon->MVBDictAttrType ) = Type
+        
+* Add a special system parse for Cache'
+        If Index( "ADSI", Type, 1 ) > 0 Then
+            "%SYSTEM.MV"->parseDict( TheFile->DictHandle, TheFile->DictRecord, TheFile->Key )
+        End
+            
+         
+   Repeat
+ 
+    DictArrayPointer = ""
+    
+    Loop
+        DictArrayPointer = $Order( %dictionary( DictArrayPointer ) )
+    While DictArrayPointer <> "" Do
+    
+        PropertyAttribute = ""
+
+        Loop
+            PropertyAttribute = $Order( %dictionary( DictArrayPointer, PropertyAttribute ) )
+        While PropertyAttribute <> "" Do
+            
+            DType = %dictionary( DictArrayPointer, "name" ) ; * pointer into the %MVBFileInfo array
+            
+            If $Get( %dictionary( DictArrayPointer, PropertyAttribute ) ) <> "" Then
+                
+                If $Get( %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, DType, PropertyAttribute ) ) = "" Then ; * don't overwrite existing information
+                    %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, DType, PropertyAttribute ) = %dictionary( DictArrayPointer, PropertyAttribute )
+                End
+                
+            End
+
+* A multivalue attribute is either (s)ingle or (m)ultivalued  
+      
+            If $Get( %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, DType, %MVBCommon->MVBDictAttrMV ) ) = "" Then
+                %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, DType, %MVBCommon->MVBDictAttrMV ) = "S"
+            End Else
+            
+                If %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, DType, %MVBCommon->MVBDictAttrMV ) <> "S" Then
+                    %MVBFileInfo( Filename, @ME->MVBFileInfoDictionaryStructureSubscript, DType,%MVBCommon-> MVBDictAttrMV ) = "M"
+                End
+                
+            End
+            
+        Repeat
+        
+    Repeat
+    
+*  As much information as possible has been gleaned from the file header, dict header, and the dictionary itself.  A clean
+*  list of attributes has been gathered.  Now find out if this file has an associated class with it.  If it does, gather a
+*  list of properties into the file information array.
+
+    TheFile->Close() ; * get rid of the globally-cached file handle
+    TheFile = "" ; * get rid of the generic file object
+    
+    "MVBooster.Library"->MVFileClassInfo( Filename ) ; * gather file class information also
+    
+    Return
+]]></Implementation>
+</Method>
+</Class>
+</Export>

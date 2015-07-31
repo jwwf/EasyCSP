@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.SQL.Condition">
+<Description>
+Define a condition for selection</Description>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63763,34250.754962</TimeChanged>
+<TimeCreated>63763,33873.599054</TimeCreated>
+
+<Property name="column">
+<Type>%String</Type>
+</Property>
+
+<Property name="comparitor">
+<Type>%String</Type>
+<InitialExpression>"="</InitialExpression>
+</Property>
+
+<Property name="value">
+<Type>%String</Type>
+<InitialExpression>"="</InitialExpression>
+</Property>
+
+<Method name="%OnNew">
+<FormalSpec>column:%String="",comparitor:%String="=",value:%String=""</FormalSpec>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<ServerOnly>1</ServerOnly>
+<Implementation><![CDATA[
+	if $get(column) = "" {
+		throw ##class(EasyCSP.Core.Exception).%New("new sql condition",500,"","Specify a table column to compare.")
+	}
+	
+	if $get(comparitor) = "" set comparitor = "="
+	
+	if $get(value) = "" set value = "" ; avoid uninitialized variable error
+	
+	set ..column = column
+	set ..comparitor = comparitor
+	set ..value = value
+	
+	Quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

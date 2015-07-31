@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Controller.Factory">
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63615,78973.131553</TimeChanged>
+<TimeCreated>63609,74720.324567</TimeCreated>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+Pass in the class name of the controller to create. This function will first look in the local namespace
+for a "Controllers.<i>controllerId</i>" package. If the class is not located there then the "EasyCSP.Controllers.<i>controllerId</i>" package is searched
+next. Return 0 if the class can not be located or can not be instantiate. If the result is 1 then
+the "controller" parameter will have an instatiated controller object in it.]]></Description>
+<FormalSpec><![CDATA[&controller,className:%String=""]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set controller = "" ; kill an existing oref
+	if $get(className)="" {
+		do ..SetCondition(19,"Supply the class base name for the controller to be instantiated.")
+		quit $$$OK
+	}
+	
+	set fqcn = "Controllers."_className ; fully-qualified class name
+	set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+	if '$IsObject(def) {
+		set fqcn = "EasyCSP."_fqcn
+		set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+		if '$IsObject(def) {
+			do ..SetCondition(20, "There is no controller named "_className_".")
+			quit $$$OK
+		}
+	}
+	
+	// Try to instantiate the controller that was located above
+	try {
+		set controller = $CLASSMETHOD(fqcn, "%New")
+	} catch {
+		set controller = ""
+	}
+	
+	if ..instanceOf(controller,"controllers") = 0 {
+		do ..SetCondition(21, "The controller class name "_fqcn_" appears to be valid but can not be instantiated.")
+		set controller = ""
+		quit $$$OK
+	}
+    
+    /// The requested controller must be an extent of Controller.Base
+    set supers = $listFromString(def.Super, ",")
+    if $listFind(supers, "EasyCSP.Controller.Base") = 0 {
+		do ..SetCondition(22,className_" does not extend Controller.Base.")
+		quit
+    }
+	
+		
+	quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Widget.ButtonColumn">
+<Description><![CDATA[
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63760,40180.020598</TimeChanged>
+<TimeCreated>63752,76719.883245</TimeCreated>
+
+<Method name="run">
+<Description><![CDATA[
+Constructs a button column. <variable>id</variable> is the key to the record
+in the current row. To override the default button set
+(delete, update, and view), supply a button configuration (see
+the <method>initDefaultButtons</method> below). The default set
+expects a route each for "delete", "update", and "view"/drill-down
+]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>id:%String="",buttonConfig:%ArrayOfDataTypes=""</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	quit:$get(id)="" ""
+	
+	if $get(%EasyCSPApp) '= "" {
+	set appUrl = %EasyCSPApp.getAppUrl()
+	set imageUrl = %EasyCSPApp.getImageUrl(1)_"gridview/"
+	set controllerId = %EasyCSPApp.controller.id
+	} else {
+		set appUrl = "easycsp/index.cls"
+		set imageUrl = "easycsp/images"
+		set controllerId = "users"
+	}
+	
+	set:$get(buttonConfig)="" buttonConfig = ..initDefaultButtons()
+	set output = ##class(%GlobalCharacterStream).%New()
+	set buttonOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	set key = ""
+	for {
+	set key = buttonConfig.Next(key)
+		quit:key=""
+		set def = buttonConfig.GetAt(key)
+		
+		if 'def.IsDefined("imageUrl") continue ; ignore poorly-formed definitions		
+		
+		if def.IsDefined("label") {
+			set label = $mvoconv(def.GetAt("label"), "MCT")
+		} else {
+			set label = $mvoconv(key, "MCT")
+		}
+		
+		do buttonOptions.set("class", "activeButton")
+		
+		set imageName = def.GetAt("imageUrl")
+		do buttonOptions.set("id", controllerId_"_"_key_"_"_id)
+				
+		do output.WriteLine( ##class(EasyCSP.Web.CHTML).image(imageUrl_imageName, label, buttonOptions))
+		
+		do buttonOptions.unsetAll()
+
+	}
+	
+	quit output
+]]></Implementation>
+</Method>
+
+<Method name="initDefaultButtons">
+<Description><![CDATA[
+Returns a Core.ParameterList with one node per button to be displayed. Each
+node is in turn a Core.ParameterList with the buttons to display, where to
+find them, and which actions to take. This routine is called if the <method>run</method>
+isn't supplied a ParameterList with a custom button setup.]]></Description>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[
+	if $get(%EasyCSPApp) '= "" {
+	set imageUrl = %EasyCSPApp.getImageUrl() ; used to display the buttons
+	set controllerId = %EasyCSPApp.controller.id ; used to construct the action route
+	} else {
+		
+		set imageUrl = "/easycsp/images"
+		set controllerId = "testing"
+	}
+	
+	set output = ##class(%ArrayOfDataTypes).%New()
+
+	set deleteButtonDef = ##class(%ArrayOfDataTypes).%New()
+	set updateButtonDef = ##class(%ArrayOfDataTypes).%New()	
+	set viewButtonDef = ##class(%ArrayOfDataTypes).%New()
+	
+	do deleteButtonDef.SetAt("delete.png","imageUrl")
+	do deleteButtonDef.SetAt("Delete", "label")
+	
+	do output.SetAt(deleteButtonDef, "delete")
+	
+	do updateButtonDef.SetAt("update.png","imageUrl")
+	do updateButtonDef.SetAt("Update", "label")
+	
+	do output.SetAt(updateButtonDef, "update")
+	
+	do viewButtonDef.SetAt("view.png","imageUrl")
+	do viewButtonDef.SetAt("View", "label")
+	
+	do output.SetAt(viewButtonDef, "view")
+	
+	/*
+	d $System.OBJ.Dump(output)
+	d $System.OBJ.Dump(deleteButtonDef)
+	d $System.OBJ.Dump(updateButtonDef)
+	d $System.OBJ.Dump(viewButtonDef)
+	*/
+	
+	quit output
+]]></Implementation>
+</Method>
+</Class>
+</Export>

@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-05-05 17:33:51">
+<Routine name="PROTOCLASS" type="MVI" languagemode="11" generated="1" timestamp="63632,69198"><![CDATA[
+	$OPTIONS CACHE
+	DIM %dictionary()
+	DIM attrRefs()
+	DIM pxref()
+	GenerateXDATA = 0
+	DeleteExistingClass=0
+	MaxRealAttribute=255
+	StripPeriodUnderscore = 0
+    OPEN @FILENAME TO dictFDSC ELSE
+    	ABORT 201, "DICT ":fileName
+    END
+    FINDSTR "2D" IN $GET(%parseControl) SETTING LINT ELSE ABORT 445, "PROTOCLASS":@VM:"D"
+    $KILL %dictionary     
+    XDATAList=""   
+    LOOP WHILE "%SYSTEM.MV"->TCL2Next() = 1 DO
+    	READ record FROM dictFDSC,@ID ELSE 	
+    	   CRT "DICT entry '":@ID:"' was not found in ":@FILENAME
+    	   CONTINUE
+    	END
+    	type = UPCASE(record<1>[1,1])
+    	IF INDEX("ADSIV", type, 1) # 0 THEN
+			IF @ID # "@ID" THEN
+		    	"%SYSTEM.MV"->parseDict(dictFDSC, record, @ID)
+	    		CONTINUE
+	    	END
+    	END
+		IF GenerateXDATA THEN
+			XDATAList<-1> = @ID 
+		END ELSE
+			CRT "DICT entry '":@ID:"' ignored."
+		END
+    REPEAT
+    DIM FieldAssoc()
+    $KILL FieldAssoc
+    curOrd = ""
+    LOOP
+    	curOrd = $Order(%dictionary(curOrd))
+    WHILE curOrd # "" DO
+    	aRef = $GET(%dictionary(curOrd, "attrno"))+0
+    	IF aRef = 0 OR aRef > MaxRealAttribute THEN 
+			CONTINUE
+		END
+    	attrRefs(aRef) 				= $GET(attrRefs(aRef)) + 1  ;* Accumulate reference count for each attribute
+    	attrRefs(aRef,"ordinal")	= curOrd
+    	IF $GET(%dictionary(curOrd, "mv")) # "S" THEN
+    		attrRefs(aRef,"mv")			= "M"		;* Multivalued
+    	END
+    REPEAT
+    fileName = FIELD(@FILENAME, " ", 2)
+    OPEN fileName TO dataFDSC ELSE
+    	STOP 201, fileName
+    END
+    IF DeleteExistingClass THEN
+        classDef = "%SYSTEM.MV"->getPrimaryMVClass(dataFDSC,0)
+        If classDef # "" THEN "%Dictionary.ClassDefinition"->%DeleteId(classDef->Name)
+    END
+	newClassName = "" 
+    classDef = "%SYSTEM.MV"->getPrimaryMVClass(dataFDSC,1,newClassName)
+	className	= FIELD(classDef->Name, ".",DCOUNT(classDef->Name,"."))
+	properties = classDef->Properties
+	x = ""
+	LOOP
+		x = properties->Next(x)		;* First time through, x = "" which gives us the first
+	WHILE x # "" DO
+		p = properties->GetAt(x)	;* Get the property object reference
+		pxref(p->Name) = x			;* Table subscripted by name
+	REPEAT
+	aRef = ""
+	LOOP
+		aRef = $Order(attrRefs(aRef))  ;* Find the first or next attribute referenced
+	WHILE aRef # "" DO
+		IF attrRefs(aRef) > 1 THEN
+			rawName = "rawAttr":aRef
+			IF NOT($Data(pxref(rawName))) THEN
+				rdef = "%Dictionary.PropertyDefinition"->%New(className:":":rawName)
+				rdef->Parameters->SetAt("0", "MVPROJECTED")   ;* Dont put this in the DICT
+				rdef->Parameters->SetAt(aRef, "MVATTRIBUTE")  ;* This is attribute nnn
+				rdef->Type = "%String" ;* You can change this type if you know what it is
+				If $Data(attrRefs(aRef, "mv")) THEN
+					rdef->Collection = "list"  ;* Means that this is multivalued (a list collection)
+				END
+				classDef->Properties->Insert(rdef)
+			END
+		END
+	REPEAT
+	pord = ""
+	LOOP
+		pord = $Order(%dictionary(pord))
+	WHILE pord # "" DO
+		pname=$GET(%dictionary(pord,"name"))
+		IF StripPeriodUnderscore THEN 
+			IF NUM(pname[1,1]) THEN
+				CONVERT "._-" TO "" IN pname
+				pname = "p":pname
+			END ELSE
+				CONVERT "._-" TO STR(@AM,3) IN pname
+				pname = OCONVS(pname,"MCT")
+				CONVERT @AM TO "" IN pname
+			END; * if num(pname[1,1]) ...
+		END; * if stripperiod ...
+		pname = "%SYSTEM.MV"->validCacheName(pname)
+		IF NOT($Data(pxref(pname))) THEN
+			IF $GET(%dictionary(pord, "conv"))<1,1>="ZJR" THEN
+				DEL %dictionary(pord, "conv")<1,1>
+			END
+			rattrno = $GET(%dictionary(pord, "attrno"))
+			IF rattrno = "" OR rattrno = 0 OR rattrno > MaxRealAttribute THEN
+				rname	= "id"
+			END ELSE 
+				rname	= "rawAttr":rattrno
+			END
+			pattr8	= $GET(%dictionary(pord, "attr8"))
+			pitype	= $GET(%dictionary(pord, "itypeSource"))
+			ptype	= $GET(%dictionary(pord, "type"))
+			pmvname	= $GET(%dictionary(pord, "name"))
+			pmv		= $GET(%dictionary(pord, "mv"))
+			passoc	= $GET(%dictionary(pord, "assoc"))
+			pconv	= $GET(%dictionary(pord, "conv"))
+			BEGIN CASE
+				CASE pconv[1,1]="D"
+					pjust =""
+				CASE pconv[1,2]="MT"
+					pjust =""
+				CASE pconv[1,2]="MD"
+					pjust =""
+				CASE pconv[1,2]="MR"
+					pjust =""
+				CASE pconv[1,2]="ML"
+					pjust =""
+				CASE $GET(%dictionary(pord, "justification")) = "R"
+					pjust = "MVR" 	;* Multivalued right justification
+				CASE 1
+					pjust = "Space"	;* MV left justified is equivalent to Cache Space justification
+			END CASE
+			CRT "Creating property called ":className:":":pname
+			pdef	= "%Dictionary.PropertyDefinition"->%New(className:":":pname)
+			pdef->Parameters->SetAt("0",	"MVPROJECTED")
+			IF pjust <> "" THEN
+				pdef->Parameters->SetAt(pjust, 	"COLLATION")		;* How this property sorts
+			END
+			pdef->Parameters->SetAt(pmvname,	"MVNAME")			;* The name in the DICT
+			pdef->Type = "%String"								;* Data type of property (can change if known)
+			BEGIN CASE
+				CASE pconv[1,1]="D"
+					propType = "%MV.Date"		
+				CASE pconv[1,2]="MT"
+					propType = "%Time"		
+				CASE pconv[1,2]="MD"
+					propType = "%MV.Numeric"		
+				CASE pconv[1,2]="ML"
+					propType = "%MV.Numeric"		
+				CASE pconv[1,2]="MR"
+					propType = "%MV.Numeric"		
+				CASE 1
+					propType = "%String"		
+			END CASE
+			pdef->Type = propType
+			IF propType="%MV.Numeric" THEN
+				char3 = pconv[3,1]
+				char4 = pconv[4,1]
+				BEGIN CASE
+					CASE NUM(char4) AND char4<>""
+						descale = char4
+						decimals = char3
+					CASE NUM(char3) AND char3<>""
+						descale = char3
+						decimals = char3					
+					CASE 1
+						descale = ""
+						decimals = ""
+				END CASE
+				IF descale <> "" THEN
+					pdef->Parameters->SetAt(descale, "DESCALE")
+					pdef->Parameters->SetAt(decimals, "SCALE")
+				END
+			END
+			IF rattrno # "" THEN	pdef->Parameters->SetAt(rattrno, "MVATTRIBUTE")	;* Attribute reference
+			IF passoc  # "" THEN	pdef->Parameters->SetAt(passoc,  "MVASSOCIATION")	;* Association name
+			IF pattr8  # "" THEN 	pdef->Parameters->SetAt(pattr8,  "MVTOLOGICAL")	;* Attr 8 conversion
+			IF pitype  # "" THEN	pdef->Parameters->SetAt(pitype,  "MVITYPE")	;* Itype source
+			IF ptype   # "" THEN	
+				pdef->Parameters->SetAt(ptype,  "MVTYPE")		;* D, A, I etc
+			END ELSE
+				pdef->Parameters->SetAt("D",	"MVTYPE")		;* Defaults to a D type
+			END
+			IF  rname = "id" THEN
+				pcalc = 1
+			END ELSE
+				IF attrRefs(rattrno) > 1 THEN
+					pcalc = 1
+				END ELSE
+					pcalc = 0
+				END
+			END
+			IF pattr8 = "" AND pitype = "" THEN
+				pcode = 0
+			END ELSE
+				pcode = 1
+			END
+			IF pmv # "S" THEN
+				pdef->Collection = "list" ;* This is a multivalue set
+				IF pcalc = 1 OR pcode = 1 THEN
+					pdef->Transient = 1
+					pdef->SqlComputed = 1
+				END
+			END ELSE
+				IF pcalc = 1 OR pcode = 1 THEN
+					pdef->Calculated = 1
+					pdef->SqlComputed = 1
+				END
+			END
+			IF pcalc # 0 OR pcode # 0 THEN
+				BEGIN CASE
+					CASE pcalc = 1 AND pcode = 0 AND rname	= "id"
+						pdef->SqlComputeCode = "Set {":pname:"}={%%ID}"
+					CASE pcalc = 1 AND pcode = 0
+						pdef->SqlComputeCode = "Set {":pname:"}={":rname:"}"
+					CASE pattr8 # "" 
+						pcalcName 			= "calc":pname	;* Class method name, if we use it
+						pcalc 				= "%Dictionary.MethodDefinition"->%New(className:":":pcalcName)
+						pcalc->ClassMethod	= 1
+						pcalc->ReturnType	= "%String"
+						pi = "%GlobalCharacterStream"->%New()
+						ctype = pattr8[1,1]
+						IF pmv # "S" OR ctype="F" OR ctype="A" THEN  ;* Catch Multivalues, F correl, A correl
+							pdef->SqlComputeCode	= 'Set {':pname:'}=##class(':classDef->Name:').':pcalcName:'({%%ID},{%RECORD})'
+							pcalc->FormalSpec		= "ItemID:%String,Item:%String"
+							eol						= CHAR(13):CHAR(10)
+							description				= 			  "Calculates property ":pname:" from the raw ref, using the ATTR 8 correlative":eol
+							description				= description:"NOTE!!! The use of a correlative limits this generated class from being used":eol
+							description				= description:"        as a programming object because {%RECORD} provides only the":eol
+							description				= description:"        value on disk at load time. This means that changing properties":eol
+							description				= description:"        of an object will not be reflected in {%RECORD} and hence indexes":eol
+							description				= description:"        would be built with incorrect values. To solve this, change the":eol
+							description				= description:"        compute code to be dependant on the actual raw attributes it uses":eol
+							description				= description:"        and not {%RECORD}, then set these values into @RECORD ($mvv(17) directly."
+							pcalc->Description		= description
+							pi->WriteLine("	#; Iterate and calculate")
+							pi->WriteLine("	#; Need to set @ID and @RECOrd")
+							pi->WriteLine("	Set $mvv(16)=ItemID, $mvv(17) = Item  ; Assign new @RECORD value")
+							pi->WriteLine("	#;")
+							pi->WriteLine("	#; Apply correlation code to value")
+							pi->WriteLine("	#; Input is attribute ":rattrno:" of the Item")
+							pi->WriteLine("	#; We always iterate any multivalues here...")
+							pi->WriteLine("	#;")
+							pi->WriteLine("	#; Initialize the conversion counters etc")
+							pi->WriteLine("	Set $mvv(159) = 1, $mvv(160) = 1, $mvv(206) = 0, $mvv(207) = 0,")
+							IF rattrno = 0 THEN 
+								pi->WriteLine("	    inStr = ItemID,")
+							END ELSE
+								pi->WriteLine("	    inStr = $mv(Item, ":rattrno:"),")
+							END
+							pi->WriteLine("	    cmv   = $Length(inStr, $c(253)),")
+							pi->WriteLine("	    inVal  = $mv(inStr, 1, $mvv(159)),")
+							pi->WriteLine("	    csv    = $length(inVal, $c(252)),")
+							pi->WriteLine('	    outStr = ""  ; Initialize the result string')
+							pi->WriteLine("	#; We always call the conversion once then see if there is anything left")
+							pi->WriteLine("	Set more=1")
+							pi->WriteLine("	While (more) {")
+							pi->WriteLine('		Set $mv(outStr, 1, $mvv(159), $mvv(160)) = $MVOCONV($mv(inVal,1,1,$mvv(160)),"':CHANGE(pattr8,'"','""'):'") ; Inline compile of conversion code')
+							pi->WriteLine("		if ($mvv(207) || ($mvv(160) < csv))  {")
+							pi->WriteLine("	   		Set $mvv(160) = $mvv(160)+1")
+							pi->WriteLine("		} else {")
+							pi->WriteLine("	   		if ($mvv(206) || ($mvv(159) < cmv)) {")
+							pi->WriteLine("	     		Set $mvv(159) = $mvv(159) + 1,")
+							pi->WriteLine("	         	$mvv(160) = 1,")
+							pi->WriteLine("	         	inVal = $mv(inStr, 1, $mvv(159))")
+							pi->WriteLine("	  		} else  {")
+							pi->WriteLine("	     		Set more = 0")
+							pi->WriteLine("	  		}")
+							pi->WriteLine("		}")
+							pi->WriteLine("		Set $mvv(206) = 0, $mvv(207) = 0")
+							pi->WriteLine("	}")
+							pi->WriteLine("	#; Done - now return the calculation")
+							pi->WriteLine("	Quit outStr  ; All values calculated")
+    						pcalc->Implementation = pi
+	    					classDef->Methods->Insert(pcalc)
+							END ELSE
+								pdef->SqlComputeCode	 = "Set {":pname:"}=$MVOCONV({":rname:'},"':CHANGE(pattr8,'"','""'):'")'
+							END
+						CASE 1
+				END CASE
+			END
+			classDef->Properties->Insert(pdef)
+		END
+	REPEAT
+	IF GenerateXDATA & XDATAList # "" THEN
+		xdef = "%Dictionary.XDataDefinition"->%New(className:":MVAdditionalDictItems")
+		xstream=xdef->Data
+		xdataCount=1
+    	xstream->WriteLine( '<DictItems>')
+		LOOP
+			@ID = XDATAList<xdataCount>
+			xdataCount+=1	
+		WHILE @ID #"" DO
+		   READ record FROM dictFDSC,@ID ELSE
+    	   CRT "DICT entry '":@ID:"' was not found in ":@FILENAME
+    	   CONTINUE
+    	END
+    	xstream->WriteLine( '<DictItem Name="':@ID:'">')
+    	For AttrNo = 1 TO DCOUNT(record,@AM)
+    		%attrData=record<AttrNo>
+    		$XECUTE 'Set %attrData = $ZCVT(%attrData,"O","XML")'
+    		xstream->WriteLine( "<Attr>":%attrData:"</Attr>")
+    	NEXT AttrNo
+    	xstream->WriteLine('</DictItem>')
+		REPEAT 
+    	xstream->WriteLine('</DictItems>')
+		classDef->XDatas->Insert(xdef)
+	END
+	"%SYSTEM.MV"->generateItypeMethods(classDef)
+	CRT "Saving the generated class..."
+	sc = classDef->%Save()
+	IF sc[1,1] = 0 THEN
+		CRT "Class definition save caused class definition save errors!"
+		"%SYSTEM.MV"->decomposeStatus(sc)
+		STOP
+	END ELSE
+		CRT "Compiling the generated class..."
+		sc = "%SYSTEM.OBJ"->Compile(classDef->Name, "cfvko3")
+		IF sc[1,1] = 0 THEN
+			CRT "MV file class compilation generated errors:"
+			"%SYSTEM.MV"->decomposeStatus(sc)
+			STOP
+		END ELSE
+			CRT str("*",30)
+			CRT "Removing Namespace References from the compiled class..."
+			classDef = ""; * close the object
+			classDef = "%SYSTEM.MV"->getPrimaryMVClass(dataFDSC,1,newClassName)
+			StorageDef = classDef->Storages->GetAt(1)
+			location = StorageDef->DataLocation
+			Gosub RemoveNamespace
+			StorageDef->DataLocation = location
+			location = StorageDef->IdLocation
+			Gosub RemoveNamespace
+			StorageDef->IdLocation = location
+			location = StorageDef->IndexLocation
+			Gosub RemoveNamespace
+			StorageDef->IndexLocation = location
+			CRT "Saving the updated class..."
+			sc = classDef->%Save()
+			IF sc[1,1] = 0 THEN
+				CRT "Class definition update caused class definition save errors!"
+				"%SYSTEM.MV"->decomposeStatus(sc)
+				STOP
+			END ELSE
+				CRT "Compiling the updated class..."
+				sc = "%SYSTEM.OBJ"->Compile(classDef->Name, "cfvko3")
+				IF sc[1,1] = 0 THEN
+					CRT "MV file class compilation generated errors:"
+					"%SYSTEM.MV"->decomposeStatus(sc)
+					STOP
+				end; * if sc[1,1] = 0 (Compile Class)
+			end; * if sc[1,1] = 0 (Save Class)
+		END
+	END
+	CRT "Class generation and compilation was successful!"
+	STOP
+RemoveNamespace:
+	StartNamespace = INDEX(location,"|",1)
+	IF StartNamespace > 0 then
+		EndNamespace = index(location,"|",2)
+		if EndNamespace # 0 then
+			location = location[1,(StartNamespace-1)]:location[(EndNamespace+1),len(location)]
+		end; * if EndNamespace # 0 ...
+	end; * if index(location,"|",...
+	RETURN
+]]></Routine>
+</Export>

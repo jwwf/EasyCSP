@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.SQL.ModelItem">
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63763,32466.521319</TimeChanged>
+<TimeCreated>63762,58587.282661</TimeCreated>
+
+<Property name="alias">
+<Type>%String</Type>
+<InitialExpression>"t"</InitialExpression>
+</Property>
+
+<Property name="attributes">
+<Type>%List</Type>
+</Property>
+
+<Property name="className">
+<Type>%String</Type>
+</Property>
+
+<Property name="columnLabels">
+<Type>%List</Type>
+</Property>
+
+<Property name="columnNames">
+<Type>%List</Type>
+</Property>
+
+<Property name="idColumn">
+<Type>%String</Type>
+</Property>
+
+<Property name="model">
+<Type>EasyCSP.Model.Base</Type>
+</Property>
+
+<Property name="tableName">
+<Type>%String</Type>
+</Property>
+
+<Method name="OnNew">
+<FormalSpec>model:EasyCSP.Model.Base="",alias:%String="t"</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+	quit:$get(model)="" $$$ERROR("Supply an instance of an active record model.")
+	
+	if $get(alias) = "" set alias = "t"
+		
+	set ..className = model.%ClassName(1)
+	set sql = "select SqlSchemaName,SqlTableName from %Dictionary.CompiledClass where ID='"_..className_"'"
+	
+	set query = ##class(%SQL.Statement).%New()
+	set qStatus = query.%Prepare(sql)
+	
+	if qStatus '= 1 {
+		quit $$$ERROR("Could not prepare SQL statement. Statement was:"_$MVVM_sql)
+	}
+	
+	set recordSet = query.%Execute()
+	
+	while recordSet.%Next()
+	{
+		set ..tableName = recordSet.%Get("SqlSchemaName")_"."_recordSet.%Get("SqlTableName")
+		quit
+	}
+	
+	set modelAttributes = model.getAttributes()
+	set finder = ""
+	for {
+		set finder = modelAttributes.Next("finder")
+		quit:finder=""
+		
+		set attribute = modelAttributes.GetAt(finder)
+		
+		set ..attributes = ..attributes _ $listBuild(finder)
+		set ..columnLabels = ..columnLabels _ $listBuild(attribute.label)
+		set ..columnNames = ..columnNames _ $listBuild(attribute.sqlFieldName)
+		
+		set:attribute.order=0 ..idColumn = attribute.sqlFieldName
+	}
+	
+	quit:..tableName'="" $$$OK
+	
+	quit $$$ERROR("Unable to resolve SQL table name. Does the model ultimately extend EasyCSP.Model.Base?")
+]]></Implementation>
+</Method>
+</Class>
+</Export>

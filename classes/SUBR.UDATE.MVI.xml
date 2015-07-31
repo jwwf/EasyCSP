@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-05-05 17:33:51">
+<Routine name="SUBR.UDATE" type="MVI" languagemode="11" generated="1" timestamp="63632,69198"><![CDATA[
+   SUBROUTINE SUBR.UDATE( Results, UnixDate, OptionFlags )
+   IF NOT( UnixDate MATCHES '1N0N' ) THEN
+      Results = ""
+      RETURN
+   END
+   Time = REM( UnixDate, 86400 )
+   Days = INT( ( UnixDate - Time ) / 86400 ) + 732
+   BEGIN CASE
+      CASE OptionFlags = ""
+         Results = OCONV( Days, "D4/" ) : " " : OCONV( Time, "MTS" )
+      CASE ( INDEX( OptionFlags, "D", 1 ) > 0 )
+         IF INDEX( OptionFlags, "I", 1 ) > 0 THEN
+            Results = Days
+         END ELSE
+            Results = OCONV( Days, "D4/" )
+         END
+      CASE ( INDEX( OptionFlags, "T", 1 ) > 0 )
+         IF INDEX( OptionFlags, "I", 1 ) > 0 THEN
+            Results = Time
+         END ELSE
+            Results = OCONV( Time, "MTS" )
+         END
+   END CASE
+   RETURN
+END
+]]></Routine>
+</Export>

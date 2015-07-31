@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Layouts.Login">
+<Description><![CDATA[
+<p>
+Default layout. Extend this class or create your own layout to provide your site's
+custom look and feel.
+
+<p>
+The only required classmethod is "run()". When a controller calls the base class render() function,
+render searches for the run() method in the layout and passes in a MVFFramework.Core.ParameterList
+minimally containing an image of the controller object and as many table models as will be required.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>EasyCSP.Web.Layouts.Base</Super>
+<TimeChanged>63764,30363.918539</TimeChanged>
+<TimeCreated>63481,36812.042056</TimeCreated>
+
+<Method name="run">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	
+	set controller = ..data.get("controller")
+	
+	if $get(controller)'["Controller" {
+		do ..SetCondition(404,"Missing the controller name that should have been passed to "_$classname()_".")
+		quit 0
+	}
+	
+	/* 
+	* uncomment before live
+	*/
+	
+	set view = ""
+	set viewBaseClassname = ..data.get("view")
+	
+	set viewFactory = ##class(EasyCSP.Views.Factory).%New(.view, viewBaseClassname, controller.id, ..data)
+	
+	if viewFactory.hasConditions() {
+		throw ##class(EasyCSP.Core.Exception).%New("run",404,"","Missing the view name that should have been passed to "_$classname()_".")
+		quit 0
+	}
+	
+	set ..view = view
+	
+	if ..hasConditions() do view.copyConditions(..formatConditions())
+	do ..view.run()
+	
+	
+	// start an output buffer
+	do ..beginHeadContent()
+	
+	/*
+	* Doctype, beginning <html> tag, and <head></head> section
+	*/
+	
+	// head: doctype and metas
+	set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	do ..addHeadContent(##class(EasyCSP.Web.CHTML).metaTag("text/html; charset=utf-8", "", "Content-Type", htmlOptions))
+	do ..addHeadContent(##class(EasyCSP.Web.CHTML).metaTag("en", "language", "", htmlOptions))
+	do ..addHeadContent(##class(EasyCSP.Web.CHTML).metaTag("IE=Edge,chrome=1", "", "X-UA-Compatible", htmlOptions))
+    
+    // uncomment before live
+    do ..addHeadContent(##class(EasyCSP.Web.CHTML).tag("title", "", view.pageTitle, 1))
+	
+	// head: stylesheets
+	
+    
+    // head: core scripts -- add these to baseJS.cls if needed. NOTE: be careful to note dependencies in
+    // the addPackage call. Dependencies will automatically be loaded ahead of the requested script.
+    
+    //do ..headStream.addContent("<script type=""text/javascript"" src=""https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js""</script>")
+    do ..scripting.registerCoreScript("bootstrap")
+    do ..scripting.registerCoreScript("maskedinput")
+    do ..scripting.registerCoreScript("head")
+    do ..scripting.registerCoreScript("modernizer")
+    do ..scripting.registerCoreScript("prepareTransition")
+    do ..scripting.registerCoreScript("jqueryui")
+    do ..scripting.registerCoreScript("jqueryuiAutocomplete")
+    do ..scripting.registerCoreScript("validation")
+    do ..scripting.registerCoreScript("main")
+    do ..scripting.registerCoreScript("login")
+    
+    // many of the html controls for the EasyCSP are based on Twitter Bootstrap
+    do ..addHeadContent("<!-- Latest compiled and minified CSS -->")
+    do htmlOptions.unsetAll()
+	do ..addHeadContent(##class(EasyCSP.Web.CHTML).linkTag("stylesheet", "text/css", "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css", "", htmlOptions))
+
+	do ..addHeadContent("<!-- Optional theme -->")
+	do ..addHeadContent(##class(EasyCSP.Web.CHTML).linkTag("stylesheet", "text/css", "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap-theme.min.css", "", htmlOptions))
+	do ..addHeadContent(##class(EasyCSP.Web.CHTML).linkTag("stylesheet", "text/css", "css/style-wide.css", "", htmlOptions))
+	
+	// End of the <head> section. Add head section tags *before* ending the content. Ending the content will close the head section and rewind the stream.
+	// You may leave this out and allow the renderer to close it automatically.
+	do ..endHeadContent()
+	
+	/*
+	*	Add scripting in if desired for scripts that go between the end of the head section and the 
+	*	beginning of the body. For example, this is a script that merges some css classes.
+	*/
+	
+	// Combine a few css classes together for streamlined code
+    // Add this in after CSS is loaded
+    do ..scripting.registerScriptFile("tidy","tidyAtEnd.js", ..scripting.%GetParameter("posBegin"))
+	
+	/*
+	*  Body and content
+	*/
+	
+	do htmlOptions.unsetAll()
+	do ..beginBodyContent(htmlOptions)
+	
+	// Outermost div - page-wrapper
+	do ..addBodyContent("<div id=""page-wrapper"">")
+	
+	// here is an appropriate place to add a menu widget
+	// do %EasyCSPApp.addheadStreamContent(##class(buildamenuthingie).run())
+		
+	// Next-inner div: page-block. This is the white square with rounded corners where content goes.
+    do ..addBodyContent("        <div class=""container"" id=""page-block"">")
+    
+    // Set up come kind of a heading for demo
+    do ..addBodyContent("            <div class=""header"">")
+    do ..addBodyContent("               <table width=""100%""><tr>")
+    do ..addBodyContent("               <td><img src=""images/EasyCSP-sm-xp.png"" style=""text-align: left;"" alt=""Easy CSP"" /></td>")
+	do ..addBodyContent("               <td style=""text-align: right;""><h1>Easy CSP Framework</h1></td>")
+	do ..addBodyContent("               </tr></table>")
+    do ..addBodyContent("            </div>")
+    
+    // The content divs are set up. The endpoint view class will put the content here.
+    
+    // The content divs are set up. The endpoint view class will put the content here.
+    
+	try {	
+    	do ..addBodyStreamContent(view.render())
+	} catch %EasyCSPException {
+	
+		set viewFactory = ##class(EasyCSP.Views.Factory).%New(.exView, "Error", controller.id, ..data)
+		
+		if 'viewFactory.hasConditions() {
+				do exView.run()
+	    }
+	    
+	    // if an exception occurred within the view, dump it where the debug information will be useful
+    	do ..addBodyStreamContent(exView.render())
+	    
+	    set %EasyCSPException = ""
+    }
+
+	// Close this layout's div tags.
+    do ..addBodyContent("    </div>")  // container
+    do ..addBodyContent("</div>") // page-block
+	
+	
+	/*
+	*  End of body content and page
+	*/
+	
+	do ..endBodyContent()
+		
+	quit 1
+]]></Implementation>
+</Method>
+</Class>
+</Export>

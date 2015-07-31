@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Models.GenericMV">
+<Description>
+Extend the framework to a table/globalthat doesn't extend EasyCSP.MVModel directly. This
+is used largely for email attachments and legacy tables. When opening an MV file with this
+class, the FileName argument in the %New() call must be supplied.</Description>
+<Super>%Persistent,EasyCSP.MVModel.Base</Super>
+<TimeChanged>63614,56631.363344</TimeChanged>
+<TimeCreated>63614,26930.365265</TimeCreated>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^EasyCSP.Models.GenericMV</DataLocation>
+<IdLocation>^C.EasyCSP.Models.GenericMV</IdLocation>
+<IndexLocation>^I.EasyCSP.Models.GenericMV</IndexLocation>
+<StreamLocation>^S.EasyCSP.Models.GenericMV</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+</Storage>
+</Class>
+</Export>

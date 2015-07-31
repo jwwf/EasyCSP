@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Controller.Base">
+<Description><![CDATA[
+<p>
+Superclass for app controller objects. The application class will need to call
+two actions after the instance is created: beforeHTTP (if custom HTTP headers
+are to be added to the response) and, if that is successful then call the rendering engine
+to process and deliver page content.
+</p>
+<p>
+The default layout file (as shipped with the framework) is <class>EasyCSP.Web.Layouts.Site</class>.
+It is suggested to override this layout class with a custom. The custom should be placed in "Views.Layouts.<i>yourLayout</i>".
+The controller base class with search two packages for the custom layout named in the <property>layout</property>
+property: Views.Layouts and EasyCSP.Views.Layouts. These values will be prepended to the value in
+<property>layout</property>.
+</p>
+
+<p>
+A controller performs <i>actions</i>. An action could be "index" (the default), "view", "create",
+"update", etc. For each controller, an index action and view should be written. If no action
+is supplied in the query-string route parameter, index is the default. As with the layout, the
+controller base class will search for the requested action's view first in the site-custom
+"Views.<i>controllerId</i>" package and if the view is not located there, inside the
+"EasyCSP.Views.<i>controllerId</i> package. This way, any default view shipped with
+the MVC Framework may easily be overridden.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Abstract>1</Abstract>
+<CompileAfter>EasyCSP.Core.Component</CompileAfter>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63762,38176.85403</TimeChanged>
+<TimeCreated>63460,42024.981464</TimeCreated>
+
+<Property name="layout">
+<Description>
+The class name of the layout to use. The layout class must reside in one of two packages:
+Views.Layouts or EasyCSP.Views.Layouts. The "Views" package is where are all site-custom
+views and layouts should reside, leaving the pre-packaged EasyCSP intact, thus easily
+upgraded.</Description>
+<Type>%String</Type>
+<InitialExpression>"Site"</InitialExpression>
+</Property>
+
+<Parameter name="defaultLayout">
+<Type>%String</Type>
+<Default>Site</Default>
+</Parameter>
+
+<Property name="defaultAction">
+<Description>
+if no action is specified in the route, use the controller's index-page action</Description>
+<Type>%String</Type>
+<InitialExpression>"index"</InitialExpression>
+</Property>
+
+<Property name="action">
+<Description>
+currently-request action</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="id">
+<Description>
+class name</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="accessRules">
+<Type>EasyCSP.Controller.AccessRule</Type>
+<Final>1</Final>
+<Collection>array</Collection>
+<Private>1</Private>
+</Property>
+
+<Property name="pageTitle">
+<Type>%String</Type>
+<Final>1</Final>
+<Private>1</Private>
+</Property>
+
+<Property name="pageStates">
+<Type>%String</Type>
+<Final>1</Final>
+<Private>1</Private>
+</Property>
+
+<Parameter name="stateInputName">
+<Type>%String</Type>
+<Default>mvcPageState</Default>
+</Parameter>
+
+<Method name="%OnNew">
+<Description>
+Instantiates the object and processes the afterConstruct event if it exists.</Description>
+<Final>1</Final>
+<FormalSpec>action:%String</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+	if $get(action) = "" set action = "index"
+	
+	// The controller id is the simple classname without the package. The controller
+	// will use this value to locate the requested view first in "Views.<i>controllerId.viewname</i>"
+	// (the site-custom package) then in "EasyCSP.Views.<i>controllerId.viewname</i>".
+	// This allows the programmer to override any default-packaged controller and view.
+	set ..id = $piece($classname(), ".", $length($classname(), "."))
+	
+	// Fire the afterConstruct event handler if it exists
+	do:..hasMethod("afterConstruct") $METHOD($THIS,"afterConstruct")
+	
+	// Fire the accessRules event handler if it exists.
+	do:..hasMethod("accessRules") ..accessRules()
+	
+	set ..action = $MVOCONV(action, "MCT") // uppercase first letter; result would be beforeIndex, beforeView, etc
+	
+	// Because CSP pages are constructed with class methods (equivalent to PHP statics) rendering
+	// happens in two main phases: OnPreHTTP and OnPage. The controller is created in the OnPreHTTP
+	// phase. This allows the controller to be found (or not) and HTTP headers to be set. The latter
+	// *must* be assigned before the first text is sent. Custom headers may be assigned in the
+	// optional before action event handler (ie, beforeIndex, beforeView, etc). Page rendering is
+	// delayed until the OnPage CSP phase. The app will call {controller}.run() to build, finalize,
+	// and then output the page content.
+	do:..hasMethod("before"_action) $CLASSMETHOD($THIS,"before"_action)
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="addAccessRule">
+<Description>
+///////////////////////////////////////////////////////////////////////////
+Access rule. Multiple rules per action may be specified. Validators
+must exist as a class in the EasyCSP.Validators package. To add a new
+Access rule, create a new class to handle the rule in that package. A
+new rule will be automatically detected and immediately available upon compile.
+///////////////////////////////////////////////////////////////////////////</Description>
+<Final>1</Final>
+<FormalSpec>action,users:%String="*"</FormalSpec>
+<Private>1</Private>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	If $get(action)="" do ..SetCondition(1, "Specify which action(s) to which the rule should be applied") quit 0
+	If $get(users)="" set users = "*" ; default to "all users"
+	
+	set rule = ##class(EasyCSP.Controller.AccessRule).%New(action,users)
+	
+	do:$IsObject(rule) ..accessRules.SetAt(rule, ..accessRules.Count() + 1)
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="applyAccessRules">
+<Description><![CDATA[
+<p>
+Any request for an action that is not explicitly allowed is implicitly forbidden. 
+Besides valid user names, the following keywords are also
+used. Single characters are used to denote certain classes or categories of users.
+These special characters are used for user categories to prevent them from conflicting
+with actual user names.
+</p>
+<ul>
+<li><strong>*</strong> => the rule is applied to all users regardless of whether they're logged in.</li>
+<li><strong>@</strong> => the rule applies to users who are logged in.</li>
+<li><strong>-</strong> => the rule applies to the guest user (anyone not logged in).</li>
+<li><strong>&</strong> => the rule applies to entity DBA-level users.</li>
+<li><strong>!</strong> => the rule applies to site-owner DBA-level users.</li>
+<li><string>&gt;<i>string</i></strong> ==> the current user will be allowed access if their current entity-role level meets or exceeds the level named in <i>string</i>.</li>
+</ul>]]></Description>
+<Final>1</Final>
+<FormalSpec>action=""</FormalSpec>
+<Private>1</Private>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(action) = "" set action = ..action
+	if $get(action) = "" {
+		set (..action,action) = "index"
+	}
+	
+	set action = $mvoconv(action,"MCT")
+	
+	// set user id
+	set userId = %EasyCSPApp.getSession("uid")
+	set:userId="" userId = "guest"
+	
+	set myself = %EasyCSPApp.users
+	set myShadow = %EasyCSPApp.userShadow
+	
+	if '..instanceOf(myself, "Users") {
+		set sc = ##class(EasyCSP.Model.Factory).%New(.users, "Users") ; create an empty user record for guests
+		set sc = ##class(EasyCSP.Model.Factory).%New(.myShadow, "UserShadow")
+	}
+	
+	set roleCorporateDBA = myShadow.%GetParameter("roleCorporateDBA")
+	
+	set OK = 0 // assume the action will be denied
+	
+	set key = ..accessRules.Next("")
+	while key '= "" {
+		set rule = ..accessRules.GetAt(key)
+		set found = $listFind(rule.actions, action)
+		if found = 0 {
+			set key = ..accessRules.Next(key)
+			continue
+		} else {
+			set OK = 1
+			quit
+		}
+		
+		// A rule covering this action has been retrieved. If any user may run this action
+		// then proceed. First, check "all users".
+		if $listFind(rule.users, "*") > 0 {
+			set OK = 1
+			quit
+		}
+		
+		// If the current rule doesn't apply, check "all logged in users".
+		if $listFind(rule.users, "@") > 0 {
+			set OK = 1
+			quit
+		}
+		
+		// Guest users
+		if ($listFind(rule.users,"-")) & (userId = "guest") {
+			set OK = 1
+			quit
+		}
+		
+		// Any user in the current entity who has a role level equal to or greater than the named role.
+		// Note: if this role isn't found in the
+		
+		// Last, see if the current rule only applies to certain users.
+		if $listFind(rule.users, userId) > 0 {
+			set OK = 1
+			quit
+		}
+		
+		// Corporate DBA or higher
+		if $listFind(rule.users, "!") > 0 {
+			if +myShadow.getAttributeValue("role") >= roleCorporateDBA {
+				set OK = 1
+				quit
+			}
+		}
+		
+		set key = ..accessRules.Next(key)
+	}
+	
+	quit OK
+]]></Implementation>
+</Method>
+
+<Method name="run">
+<Description>
+Actions are identified as having all lower-case characters except for an initial
+upper case character. Action ID's don't begin with the string "action"; that is
+prepended during calls to each particular action function. The ID is the simple
+name, like "Index", "View", "Update", etc. Identifying actions this way allows
+the framework to construct, search for, and call event handlers (like beforeIndex,
+beforeView, etc). The run() method will look for methods beginning with the string
+"action". Thus, in order to perform action "Xyz" needed to set headers before the
+page is rendered, the controller will search for "Method beforeXyz()" in the OnPreHTTP
+CSP phase. In the OnPage() phase, the controller will search for "Method actionXyz()"
+in the compiled class. In both cases, only the string "Xyz" is passed to the controller
+to locate the beforeIndex() event handler and the actionIndex() rendering event.</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if ..action = "" set ..action = "Index"
+	
+	set actionId = "action"_$MVOCONV(..action,"MCT")
+	
+	// For example, the signature for the handler that creates an index page is "actionIndex(optional_parameters)"
+	if '..applyAccessRules(..action) {
+		throw ##class(EasyCSP.Core.Exception).%New("run",403,"","The requested action can not be performed .")
+		quit 0
+	}
+	
+	s priorAction = ..action
+			
+	if ..hasMethod(actionId) {
+        
+		try {
+			set OK = $METHOD(, actionId)
+		} catch %EasyCSPException {
+			set OK = 0
+		}
+	} else {
+		throw ##class(EasyCSP.Core.Exception).%New("run",403,"", "The requested action "_actionId_" can not be located.")
+		set OK = 0
+	}
+
+	
+	do %EasyCSPApp.saveToSession()
+		
+	set ..action = priorAction
+	quit OK
+]]></Implementation>
+</Method>
+
+<Method name="afterRender">
+<Description>
+Placeholder function. If needed, the child controller class should override this method.</Description>
+<FormalSpec>view:%String</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	//do %EasyCSPApp.webEnvironment.sessionData.dump()
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="beforeRender">
+<Description>
+Placeholder function. If needed, the child controller class should override this method.</Description>
+<FormalSpec>view:%String</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="render">
+<Description>
+Start by obtaining the layout. The layout defaults to EasyCSP.Views.Layouts.Site.
+That can be overridden any time during controller setup BEFORE an action is run. The
+layout value can be changed but that will have no effect.</Description>
+<Final>1</Final>
+<FormalSpec>view:%String,params:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	
+	// A controller can "soft redirect" control to another controller by using a fully-qualified
+	// route (a string with a forward slash, ie the "controller/view" route format).
+	if view [ "/" {
+		set OK = %EasyCSPApp.init(view)
+		if $$$ISERR(OK) {
+			throw ##class(EasyCSP.Core.Exception).%New("run",404,"","The requested route "_view_" can not be located.")
+			quit
+		}
+		quit %EasyCSPApp.controller.run() ; run the new route
+	}
+	
+	// Find a layout. The layout property may be altered by an extent of Controller.Base.
+	if ..layout = "" {
+		set ..layout = ..#defaultLayout
+	}
+	
+	set:'..instanceOf(params,"ParameterList") params = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	do params.set("view", view)
+	do params.set("controller",$THIS)
+	
+	set layoutObj = ""
+	
+	// Call the factory to find the layout.
+	set factory = ##class(EasyCSP.Web.Layouts.Factory).%New(.layoutObj,..layout,params)
+	
+	if '..instanceOf(layoutObj,"Layouts") {
+		throw ##class(EasyCSP.Core.Exception).%New("render",404,"","The requested layout '"_..layout_"' does not exist, has not been compiled, or is not in the correct package.")
+	}
+		
+	if ..hasMethod("beforeRender") do ..beforeRender()
+	
+	if ..hasConditions() do layoutObj.copyConditions(..formatConditions())
+	do layoutObj.run()
+	
+	if ..hasMethod("afterRender") do ..afterRender()
+	
+	set page = layoutObj.render()
+	
+	set doLog = ##class(EasyCSP.Configuration.Settings).getSetting("log")
+	
+	
+	if doLog {
+		do ##class(EasyCSP.Network.Log).newEntry("http",page,..action)
+	}
+	
+	
+	while (page.AtEnd = 0) {
+		set len = 1024
+		write page.Read(.len)
+	}
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="renderPartial">
+<Final>1</Final>
+<FormalSpec>view:%String,params</FormalSpec>
+</Method>
+
+<Method name="getLayout">
+<FormalSpec>layoutName:%String</FormalSpec>
+<Implementation><![CDATA[
+	if $get(layoutName) = "" set layoutName = ..layout
+	if layoutName = 0 quit 0 // no layout has been provided.
+]]></Implementation>
+</Method>
+
+<Method name="getRoute">
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	completeRoute = @ME->id : "/" : @ME->action    
+    return completeRoute
+]]></Implementation>
+</Method>
+</Class>
+</Export>

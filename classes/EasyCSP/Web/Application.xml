@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Application">
+<Description><![CDATA[
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%CSP.Page,EasyCSP.Core.Component</Super>
+<TimeChanged>63757,77837.241148</TimeChanged>
+<TimeCreated>63363,66886.422943</TimeCreated>
+
+<Property name="action">
+<Type>%String</Type>
+<Final>1</Final>
+<InitialExpression>"index"</InitialExpression>
+</Property>
+
+<Property name="charSet">
+<Type>%String</Type>
+<InitialExpression>"UTF-8"</InitialExpression>
+</Property>
+
+<Property name="clientScript">
+<Type>EasyCSP.Web.Client.Scripts</Type>
+<Final>1</Final>
+<Private>1</Private>
+</Property>
+
+<Property name="controller">
+<Description>
+OREF to the current controller</Description>
+<Type>EasyCSP.Controller.Base</Type>
+</Property>
+
+<Property name="ended">
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<UDLText name="T">
+<Content><![CDATA[
+// Property environment As EasyCSP.Web.Environment;
+
+]]></Content>
+</UDLText>
+
+<Property name="globalState">
+<Type>%String</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="homeNamespace">
+<Type>%String</Type>
+</Property>
+
+<Property name="homeUrl">
+<Type>%String</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="id">
+<Type>%String</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="indexName">
+<Description>
+Default index which probably doesn't exist. The index page in use should set its name in this property.</Description>
+<Type>%String</Type>
+<InitialExpression>"index.cls"</InitialExpression>
+</Property>
+
+<Property name="language">
+<Type>%String</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="name">
+<Type>%String</Type>
+<InitialExpression>"Simple MV Framework"</InitialExpression>
+</Property>
+
+<Property name="pageOutput">
+<Type>%GlobalCharacterStream</Type>
+</Property>
+
+<Property name="pageState">
+<Type>%String</Type>
+<InitialExpression>"preHTTP"</InitialExpression>
+</Property>
+
+<Property name="pid">
+<Type>%Integer</Type>
+</Property>
+
+<Property name="route">
+<Type>%String</Type>
+<InitialExpression>"site/index"</InitialExpression>
+</Property>
+
+<Parameter name="defaultRoute">
+<Type>%String</Type>
+<Default>site/index</Default>
+</Parameter>
+
+<Property name="sourceLanguage">
+<Type>%String</Type>
+<InitialExpression>"en-us"</InitialExpression>
+</Property>
+
+<Property name="stateChanged">
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="webEnvironment">
+<Type>EasyCSP.Web.Environment</Type>
+</Property>
+
+<Property name="uid">
+<Type>%String</Type>
+<InitialExpression>"guest"</InitialExpression>
+</Property>
+
+<Property name="entity">
+<Type>%String</Type>
+</Property>
+
+<Property name="uploadedContent">
+<Type>%CSP.Stream</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="cgiData">
+<Type>EasyCSP.Core.ParameterList</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="requestData">
+<Type>EasyCSP.Core.ParameterList</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="sessionData">
+<Type>EasyCSP.Core.ParameterList</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="users">
+<Type>EasyCSP.Models.Users</Type>
+<Transient>1</Transient>
+</Property>
+
+<Property name="userShadow">
+<Type>EasyCSP.Models.UserShadow</Type>
+<Transient>1</Transient>
+</Property>
+
+<UDLText name="T">
+<Content><![CDATA[
+// [ Private ];
+
+]]></Content>
+</UDLText>
+
+<Property name="widgets">
+<Type>EasyCSP.Web.Widget.Base</Type>
+<Collection>array</Collection>
+<Private>1</Private>
+</Property>
+
+<Method name="%OnNew">
+<Description>
+Child classes must use an onAfterConstruct event handler to finish custom construction</Description>
+<Final>1</Final>
+<FormalSpec>config:%String="",pageState:%String="preHTTP"</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set %EasyCSPException = ""
+	
+	/// GET, POST, and CGI vars can be accessed via %EasyCSP.webEnvironment.GetParam("paramName")
+	//set ..webEnvironment = ##class(EasyCSP.Web.Environment).%New() // collect all the response and session data so subclasses can access them
+	do ..setEnvironmentFromRequest()
+		
+	// Parse the request to set up the routing
+	set ..route = ..getRequestData("route")
+	//if ..route = "" set ..route = "site/index"
+	set ..uid = ..getSession("uid")
+	set ..entity = ..getSession("e")
+	set:..route="" ..route = ..#defaultRoute
+	
+	quit ..init()
+]]></Implementation>
+</Method>
+
+<Method name="init">
+<Description>
+Do a 30,000-foot pass of qualifying the user's login status (guest/logged in) and attempt to set up
+a controller to handle the requested route. If the user is not logged in and allowGuest is set to 0
+any route request is overwritten to login. If the site is closed for maintenance, overwrite the requested
+route with site/closed.</Description>
+<FormalSpec>newRoute:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+	set siteOpen = ##class(EasyCSP.Configuration.Settings).getSetting("siteOpen")
+	if 'siteOpen { ; if the site is closed for maintenance then stop here and rewrite the route to site/closed
+		set ..route = "site/closed"
+	} else {
+	
+		// a controller can soft-redirect to another controller if render() detects a destination containing a slash
+		if $get(newRoute) '= "" {
+			if newRoute [ "/" { // a route contains a "/"
+				set ..route = newRoute
+			}
+		}
+		
+		set allowGuest = ##class(EasyCSP.Configuration.Settings).getSetting("allowGuest")
+		if 'allowGuest & ($get(%EasyCSPException) = "") { ; if guest viewing is turned off then force redirect to login
+			if ..getSession("uid") = "" {
+				set ..route = "site/login"
+			}
+		}
+		
+	}
+	
+	set routePieces = $listfromstring(..route, "/") // the controller is the first part of a route
+	set baseName = ##class(EasyCSP.Conversions.CamelCase).run($listGet(routePieces, 1, "site")) // if no route the default to "site"	
+	set ..action = ##class(EasyCSP.Conversions.CamelCase).run($listGet(routePieces, 2, "index")) // defaults to "Index"
+	
+	if (..uid '= "guest") & (..uid '= "") {
+		set sc = ##class(EasyCSP.Model.Factory).%New(.users, "Users")
+		do users.Read(..uid)
+		set ..users = users
+		set sc = ##class(EasyCSP.Model.Factory).%New(.userShadow, "UserShadow")
+		do userShadow.Read(..uid)
+		set ..userShadow = userShadow
+	
+	//w "<pre>",!,"In application:",!
+	//d $SYSTEM.OBJ.Dump(..users)
+	//w "</pre>"
+	}
+	
+	set controller = ""
+	set newException = 0
+	try {
+		set factory = ##class(EasyCSP.Controller.Factory).%New(.controller,baseName)
+		if factory.hasConditions() {
+			throw ##class(EasyCSP.Core.Exception).%New("CreateController",404,"",..streamToString(factory.formatConditions()))
+		}
+	} catch exception {
+		set %EasyCSPException = exception
+		set newException = 1
+	}
+	
+	if newException {
+		quit $$$OK
+	}
+			
+	kill ^MVCFUtil($j)
+	//kill ^queryOut($j)
+	
+	set ..controller = controller
+	set ..controller.action = ..action
+	
+	q $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="getController">
+<Description>
+Returns the oref of the currently-instantiated controller.</Description>
+<ReturnType>%RegisteredObject</ReturnType>
+<Implementation><![CDATA[	q ..controller
+]]></Implementation>
+</Method>
+
+<Method name="getAppUrl">
+<Description><![CDATA[
+Returns the application URL as <br />
+http://<i>machine.dom.com</i>/csp/<i>namespace</i>/<i>name.of.index.cls</i>?route= <br />
+The process can add the route whenever that's generated. This can be used for grid buttons,
+AJAX processes, etc.]]></Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set baseUrl = ..getBaseUrl(1)
+	quit baseUrl_"/"_..indexName_"?route="
+]]></Implementation>
+</Method>
+
+<Method name="getBaseDir">
+<Description>
+Returns the document root ready to be used to construct a URL.</Description>
+<FormalSpec>fullUrl:%Boolean=0,https:%Boolean=0</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	slash = @ME->getslash()
+	documentRoot = @ME->getCGI("DOCUMENT_ROOT")
+	convert '\/' to slash:slash in documentRoot
+	return documentRoot
+]]></Implementation>
+</Method>
+
+<Method name="getBaseUrl">
+<Description>
+Constructs the base URL with the application class name..</Description>
+<FormalSpec>fullyQualified:%Boolean=0</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set serverName = ..getCGI("SERVER_NAME")
+	
+	set serverPort = ":"_..getCGI("SERVER_PORT")
+	set:serverPort=":80" serverPort = ""
+	
+	set serverPortSecure = +..getCGI("SERVER_PORT_SECURE")
+	
+	set protocol = "http"_$select(serverPortSecure=0:"",1:"s")_"://"
+	
+    // set application = ..webEnvironment.requestData.get("Application") // gives you the short url
+    set requestURL =(..getRequestData("URL"))
+    set pieces = $length(requestURL,"/")
+    set application = $piece(requestURL,"/", 1, pieces - 1)
+    
+    set url = ""
+    set:fullyQualified url = protocol_serverName_serverPort
+    set url = url_application
+    
+    quit url
+]]></Implementation>
+</Method>
+
+<Method name="getViewURL">
+<Description>
+Constructs a URL with the current route</Description>
+<FormalSpec>fullyQualified:%Boolean=0,params:EasyCSP.Core.ParameterList="",reflectParms:%Boolean=0</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set ignoreList = $listBuild("CSPDEBUG","ContentType","PageName","RequestId","URL","URLPrefix","UserAgent","pid","route")
+	set baseUrl = ..getBaseUrl(fullyQualified)
+	set route = baseUrl_"/"_..indexName_"?route="_..controller.getRoute()
+	
+	if '$isobject(params) {
+		If reflectParms {
+			set paramArray = ..requestData.getAll()
+		} else {
+			set paramArray = ##class(%ArrayOfObjects).%New()
+		}
+	} else {
+		set paramArray = params.getAll()
+	}
+	
+	if paramArray.Count() > 0 {
+		set stringParams = ""
+		set name = paramArray.Next("")
+		set hasParm = 0
+		while name '= "" {
+			if $listFind(ignoreList,name) = 0 {
+				set val = paramArray.GetAt(name)
+				set stringParams = stringParams _ $listBuild(name_"="_val)
+				set hasParm = 0
+			}
+			set name = paramArray.Next(name)
+		}
+		set:hasParm route = route _ "&" _ $listToString(stringParams,"&")
+	}
+	
+	quit route
+]]></Implementation>
+</Method>
+
+<Method name="getCssUrl">
+<Description>
+Constructs the URL path to the default css directory.</Description>
+<FormalSpec>fullyQualified:%Boolean=0</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[	quit ..getBaseUrl(fullyQualified)_"css/"
+]]></Implementation>
+</Method>
+
+<Method name="getImageUrl">
+<Description>
+Construct the URL path to the default image directory.</Description>
+<FormalSpec>fullyQualified:%Boolean=0</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[	quit ..getBaseUrl(fullyQualified)_"/images/"
+]]></Implementation>
+</Method>
+
+<Method name="getScriptUrl">
+<Description>
+Construct the URL path to the default script directory.</Description>
+<FormalSpec>fullyQualified:%Boolean=0</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[	quit ..getBaseUrl(fullyQualified)_"js/source"
+]]></Implementation>
+</Method>
+
+<Method name="addContent">
+<Description>
+Adds last-minute content to the stream. Apps should use the controller version.</Description>
+<FormalSpec>content:%String=""</FormalSpec>
+<Implementation><![CDATA[
+	do ..beginContent() // make sure the stream is instantiated
+	do ..pageOutput.MoveToEnd()
+	do ..pageOutput.WriteLine(content)
+]]></Implementation>
+</Method>
+
+<Method name="addStreamContent">
+<Description>
+Adds last-minute stream content to the output stream. Apps should use the controller version.</Description>
+<FormalSpec>content:%String=""</FormalSpec>
+<Implementation><![CDATA[
+	do ..beginContent() // make sure the stream is instantiated
+	do ..pageOutput.MoveToEnd()
+	do ..pageOutput.CopyFrom(content)
+]]></Implementation>
+</Method>
+
+<Method name="beginContent">
+<Description>
+Create a new output stream if one doesn't exist. Do not disturb existing
+page output if such has already been added to the stream.</Description>
+<Implementation><![CDATA[
+	if $get(..pageOutput)'["CharacterStream" {
+		set ..pageOutput = ##class(%GlobalCharacterStream).%New() ; * build the body of the page in here
+		set ..pageOutput.LineTerminator = ..crlf
+	}
+]]></Implementation>
+</Method>
+
+<Method name="endContent">
+<Implementation><![CDATA[
+	do ..pageOutput.Rewind()
+	while (..pageOutput.AtEnd() = 0)
+	{
+		write ..pageOutput.Read(2048)
+	}
+	do ..pageOutput.Clear()
+]]></Implementation>
+</Method>
+
+<Method name="beginWidget">
+<FormalSpec>id:%String</FormalSpec>
+</Method>
+
+<Method name="setEnvironmentFromRequest">
+<Description>
+Copies the entire HTTP environment locally where non-CSP-aware apps can access
+the information. This also manages interaction with the %session variable.</Description>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+    try {
+	    set ..cgiData = ##class(EasyCSP.Core.ParameterList).%New()
+	    set ..requestData = ##class(EasyCSP.Core.ParameterList).%New()
+	    set ..sessionData = ##class(EasyCSP.Core.ParameterList).%New()
+	    
+	// ***********************************************************************************************
+	// *  MVB routines can't see "%request" because they're not extending the %CSP class.
+	// *  Make basic variable information available to MVBasic by copying contents to the Data
+	// *  property of this object. Obviously, this object must be instantiated before any MVB routine
+	// *  is run. Properly, that should happen in the app controller.
+	// ***********************************************************************************************/
+	
+    do ..requestData.set("pid", $J)
+    
+    // First retrieve the request data.
+    
+    set nextVar = $order( %request.Data(""))
+    
+    while nextVar '= "" {
+        
+        set nextValue = $order(%request.Data(nextVar,""))
+        
+        s values = ""
+        while nextValue '= "" {
+	        s values = values_$lb(%request.Data(nextVar,nextValue))
+	        s nextValue = $order(%request.Data(nextVar,nextValue))
+        }
+        
+        if $listValid(values) do ..requestData.set(nextVar,$listToString(values,$mvfm))
+    
+    	set nextVar = $order( %request.Data(nextVar))
+       
+    }
+        
+	do ..requestData.set("ContentType", %request.ContentType)
+	do ..requestData.set("PageName", %request.PageName)
+	do ..requestData.set("RequestId", %request.RequestId) ; * not implemented until after 2010
+	do ..requestData.set("URL", %request.URL)
+	do ..requestData.set("URLPrefix",%request.URLPrefix)
+	do ..requestData.set("UserAgent", %request.UserAgent)
+        
+	// * If a file was uploaded, make it available to the content-handling modules
+    If $isobject( %request.Content ) {
+        set ..uploadedContent = %request.Content
+    }
+    
+    //*
+    //* Then retrieve the raw CGI data. Some of these (such as request method, accept-language and accept-charset) have direct impact 
+    //* on the type of output the application will generate. Other values are extremely useful, such as cookie contents for continued
+    //* authorised access.
+    //*
+    
+    set nextVar = $order( %request.CgiEnvs(""))
+    
+    while nextVar '= "" {
+        
+	    d ..cgiData.set(nextVar,%request.CgiEnvs(nextVar))
+        
+    	set nextVar = $order( %request.CgiEnvs(nextVar))
+    }
+    
+    //*
+    //* Capture the session data here
+    //*
+    
+    set nextVar = $order( %session.Data(""))
+    
+    while nextVar '= "" {
+        
+        //set nextValue = $order(%session.Data(nextVar,""))
+        
+        //s values = ""
+        //while nextValue '= "" {
+	        //s values = values_$lb(%session.Data(nextVar,nextValue))
+	        //s nextValue = $order(%session.Data(nextVar,nextValue))
+        //}
+        //if $listValid(values) do ..sessionData.set(nextVar,values)
+        do ..sessionData.set(nextVar,%session.Data(nextVar))
+        
+    	set nextVar = $order(%session.Data(nextVar))
+    }
+        
+    } catch theException {
+		write theException.Name
+		write theException.Code
+    	// write theException.Description
+    	write theException.Location
+    }
+    
+    quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="getCGI">
+<FormalSpec>name:%String</FormalSpec>
+<Implementation><![CDATA[	quit ..cgiData.get(name)
+]]></Implementation>
+</Method>
+
+<Method name="getRequestData">
+<FormalSpec>name:%String</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[	quit ..requestData.get(name)
+]]></Implementation>
+</Method>
+
+<Method name="setSession">
+<FormalSpec>name,value</FormalSpec>
+<Implementation><![CDATA[
+	do ..sessionData.set(name,value)
+	if value '= "" {
+		set %session.Data(name) = value
+	} else {
+		kill %session.Data(name)
+	}
+]]></Implementation>
+</Method>
+
+<Method name="getSession">
+<FormalSpec>name:%String</FormalSpec>
+<Implementation><![CDATA[	quit ..sessionData.get(name)
+]]></Implementation>
+</Method>
+
+<Method name="saveToSession">
+<Implementation><![CDATA[
+	
+	set sessionData = ..sessionData.getAll()
+	set id = sessionData.Next("")
+	while id '= "" {
+		set def = sessionData.GetAt(id)
+		set %session.Data(id) = def
+		set id = sessionData.Next(id)
+	}
+]]></Implementation>
+</Method>
+</Class>
+</Export>

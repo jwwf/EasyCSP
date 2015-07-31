@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Mask.Rule">
+<Description><![CDATA[
+Describes a single mask rule such as attribute name ('CamelCase', 'DateToInternal', or some custom
+rule) for a single attribute.
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>
+]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63475,58007.220137</TimeChanged>
+<TimeCreated>63470,9362.789436</TimeCreated>
+
+<Property name="mask">
+<Description>
+The name of the mask to apply</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="direction">
+<Description>
+"I"nput, "O"output, or "IO" for both. "I" by itself may be used for conditioning
+and normalising data before it is stored in the attribute value. "O" by itself
+is usually used for query results for reporting. masks are applied automatically
+when the value is set or retrieved by the model base class.</Description>
+<Type>%List</Type>
+<Final>1</Final>
+</Property>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+<p>
+The mask is the name of a mask type to be used. Use one of the parameters in the
+EasyCSP.Mask.Conversion class to specify conversion type. ($PARAMETER() in
+COS or "EasyCSP.Mask.Conversion"->%GetParameter(<i>conversion_name</i>)
+Any known MV conversion mask may be directly specified (advanced). Know what your
+are converting and observe the result. The parameters are handy for Cache programmers
+who may not be familiar with CacheMV data conversion functions. Having the class to
+select the right code for the intended result is easier than looking it up and
+figuring out the CacheMV conversions. In general, one CacheMV conversion can eliminate
+five to 20 lines of COS/M code to do the same thing.
+</p>
+
+<p>
+The epoch defaults to "cache" to process Cache dates. To specify a different epoch
+such as for converting *nix or MV dates, use "unix" or "mv". The safest move is to
+retrieve the appropriate epoch value from ##class(EasyCSP.Mask.Conversion).$PARAMETER("asMV")
+for MV dates or ##class(EasyCSP.Mask.Conversion).$PARAMETER("asUnix"). See the
+<class>EasyCSP.Mask.Conversion</class> for parameter details, including
+epoch and types of conversions available. Use the conversion parameter names for
+conversion processes rather than the actual MV mask string.
+</p>
+
+<p>
+The direction parameter is a string consisting of either of the characters in the set
+{I,O,N} where I is for input masks (when a new value is set on an attribute)
+and O is for output masks (when a value is retrieved from an attribute). As mask 
+conversions may differ, use a different rule for input and output.  For obtaining an unmasked,
+raw image of the attribute, use the "N" (nomask) direction. Rules are only applied during
+a given scenario (update, insert, load, etc).
+</p>
+<p>
+The aforementioned scenario tells the model when to apply a rule to an attribute.
+The model will only apply a rule in the indicated circumstances, such as upon reading
+or writing an active record. The "*" scenario means to apply the rule in any scenario.
+This leaves room for user-written extensions to the Model.Base superclass, allowing
+any scenario to be defined.
+</p>
+<p>
+This method will return $$$OK if the rule could be applied. If the rule failed validation
+an error will be returned. It is up to the programmer to check success or failure in the
+addition of a new rule.
+</p>]]></Description>
+<FormalSpec>mask:%String,direction:%String,epoch:%String="cache",scenario:%String="*"</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+	if $get(direction) = "" set direction = "IO" // both input and output conversions will be applied.
+	set directionLength = $length(direction)
+	if $find(direction, "ION",1) = 0 quit $$$ERR("Direction must be I, IO, O, or N.")
+	set ..direction = direction
+	
+	if $get(scenario) = "" set scenario = "*" // "any"
+	
+	set maskValue = ##class(EasyCSP.Mask.Conversion).%GetParameter(mask)
+	if $get(maskValue) = "" quit $$$ERR("Mask value is invalid.")
+	
+	set ..mask = mask
+		
+	quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

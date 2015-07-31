@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Console.ErrorSummary">
+<Description>
+Console version of the web-form error summary</Description>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63622,61266.744873</TimeChanged>
+<TimeCreated>63622,46110.976382</TimeCreated>
+
+<Method name="run">
+<Description>
+Using a data model, generate a summer of the validation errors found in the model. This
+is often used in data-entry pages where users have submitted information and expect feedback
+after a form is submitted.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>model,sequence:%Integer=1</FormalSpec>
+<Implementation><![CDATA[
+	set output = ##class(%GlobalCharacterStream).%New()
+	
+	if '$isObject(model) quit output // return nothing
+	if 'model.hasErrors() quit output // no sense in writing an empty summary
+	
+	if +$get(sequence) = 0 set sequence = 1
+	
+	write "Please fix the following errors:",!!
+	set errorArray = model.getErrors() // retrieve all the errors in a lump
+	set idx = errorArray.Next("")
+	while idx '= "" {
+		set def = errorArray.GetAt(idx)
+		write $piece(def, $MVFM, 1)_": "_$piece(def, $MVFM, 2),!
+		set idx = errorArray.Next(idx)
+	}
+	
+	quit
+]]></Implementation>
+</Method>
+</Class>
+</Export>

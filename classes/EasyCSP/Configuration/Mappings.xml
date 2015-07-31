@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Configuration.Mappings">
+<Description><![CDATA[
+Map EasyCSP packages and globals so they're available to other namespaces
+<b>UNDER CONSTRUCTION</b>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63626,40478.814971</TimeChanged>
+<TimeCreated>63626,33005.961395</TimeCreated>
+
+<Method name="Packages">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>namespace:%String="%ALL"</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set startingNamespace = $zu(5)
+	zn "%SYS"
+	Set cfgnam=##class(Config.Configuration).StartupConfiguration()
+	Set cfg=##class(Config.Configuration).NameIndexOpen(cfgnam)
+	set storage = cfg.Storage
+	set configID = cfg.%Id()
+
+	set HasToAddPckMapping = 1
+
+	set dataExiste = $Data(^SYS("Config","DataStorageD",configID,"ClassLibMappings"))
+	if (dataExiste '= "")
+	{
+	        w "dataExiste = ", dataExiste, !
+	        if (dataExiste = 11) //the packagemapping is already defined
+	        {
+	                w "the packagemapping is defined ", !
+	                set HasToAddPckMapping = 0
+	        }
+	}
+	set namespace = "MYNAMESPACE"
+	set OK = 1
+	set sc = 0
+	if (HasToAddPckMapping = 1)
+	{
+        //should add the test whether there is already the package mapping of "package1"
+        set sc = cfg.Storage.AddClassLibMappingEx("package1", namespace)
+        set sc = cfg.Storage.AddClassLibMappingEx("package2", namespace)
+        set sc = cfg.Storage.AddClassLibMappingEx("package3", namespace)
+        set sc = cfg.Storage.AddClassLibMappingEx("package4", namespace)
+        set sc = cfg.Storage.AddClassLibMappingEx("package5", namespace)
+        set sc = cfg.Storage.AddClassLibMappingEx("package6", namespace)
+        set sc = cfg.Storage.AddClassLibMappingEx("package7", namespace)
+        set sc = cfg.Storage.AddClassLibMappingEx("package8", namespace)
+        set sc = cfg.Storage.AddClassLibMappingEx("package9", namespace)
+        set sc = cfg.Save()
+        set st = cfg.ActivateEx()
+        if ($$$ISERR(st))
+                {set OK = 0}
+	}
+	k cfgnam
+	k cfg
+	k storage
+	
+	zn startingNamespace
+	
+	quit OK
+]]></Implementation>
+</Method>
+
+<Method name="createALLNamespace">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	/*
+	/set db=##class(SYS.Database).%New()
+	set db.Directory=RootDir_DbName
+	set db.Size=60
+	Set sc=db.%Save()
+
+	set sc=##class(Config.Configuration).AddDatabase(DbName,RootDir_DbName,"",1)
+	*/
+
+	set startingNamespace = $zu(5)
+	zn "%SYS"
+	
+	set NSName = "%ALL"
+	Set sc=##class(Config.Configuration).AddNamespace(NSName,NSName,NSName)
+	
+	zn startingNamespace
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="getEasyCSPPackages">
+<ClassMethod>1</ClassMethod>
+<ReturnType>%List</ReturnType>
+<Implementation><![CDATA[	set packageList = ""
+]]></Implementation>
+</Method>
+</Class>
+</Export>

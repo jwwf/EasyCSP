@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Forms.FormElement">
+<Description><![CDATA[
+This is the abstract class for creating all kinds of form elements.
+It provides a way to get and set arbitrary html control attributes./// 
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63539,63479.087603</TimeChanged>
+<TimeCreated>63461,63105.360493</TimeCreated>
+
+<Property name="attributes">
+<InitialExpression>0</InitialExpression>
+<MultiDimensional>1</MultiDimensional>
+</Property>
+
+<Property name="parent">
+<Type>%ObjectHandle</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="visible">
+<Private>1</Private>
+</Property>
+
+<Method name="render">
+<Description>
+renders the current element</Description>
+</Method>
+
+<Method name="%OnNew">
+<Description>
+Deliver the config as a dynamic array. Separate name-value pairs with $MVAM (attribute mark). Separate the name from
+the value with $MVVM (value mark)</Description>
+<FormalSpec>config,parent</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+		d ..configure(config)
+		s ..parent = parent
+		q $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="configure">
+<Description>
+Deliver the config as a dynamic array. Separate name-value pairs with $MVAM (attribute mark). Separate the name from
+the value with $MVVM (value mark)</Description>
+<FormalSpec>config:%String</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+		if $get(config) = "" then return @true
+		
+		numberOfNVPairs = dcount(config, @am)
+		
+		Dim configuration()
+		configuration = 0
+		for idx = 1 to numberOfNVPairs
+			configuration += 1
+			configuration(config< idx, 1 >) = config< idx, 2 >
+		next
+		
+		@ME->config = configuration
+		
+		return @true
+]]></Implementation>
+</Method>
+
+<Method name="evaluateVisible">
+<Description>
+This method should be overridden by child class functions.</Description>
+<Abstract>1</Abstract>
+<Implementation><![CDATA[	q $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="getParent">
+<ReturnType>%ObjectHandle</ReturnType>
+<Implementation><![CDATA[	q ..parent
+]]></Implementation>
+</Method>
+
+<Method name="getVisible">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if '$data(..visible) {
+		s ..visible = ..evaluateVisible()
+	}
+	q ..visible
+]]></Implementation>
+</Method>
+
+<Method name="setAttribute">
+<FormalSpec>name:%String="",value:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	i $g(name) = "" q 0
+	
+	if $d(..attributes(name)) = 0 {
+		s ..attributes = $increment(..attributes)
+	}
+	
+	s ..attributes(name) = value
+]]></Implementation>
+</Method>
+
+<Method name="unsetAttribute">
+<FormalSpec>name</FormalSpec>
+<Implementation><![CDATA[
+	q:'$g(name)
+	
+	if $d(..attributes(name)) {
+		k ..attributes(name)
+		s ..attributes = ..attributes - 1
+	}
+]]></Implementation>
+</Method>
+
+<Method name="setVisible">
+<FormalSpec>value:%Boolean</FormalSpec>
+<Implementation><![CDATA[	set ..visible = value
+]]></Implementation>
+</Method>
+</Class>
+</Export>

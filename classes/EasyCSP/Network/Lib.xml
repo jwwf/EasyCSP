@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Network.Lib">
+<Description><![CDATA[
+<p>Common functions for handling networking operations: socket open, conversing, etc.</p>
+<p><strong>TODO:</strong> Fix tracing and hex dumps</p>/// 
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Abstract>1</Abstract>
+<Language>mvbasic</Language>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63616,44347.31821</TimeChanged>
+<TimeCreated>63368,71973.283504</TimeCreated>
+
+<Method name="Converse">
+<Description><![CDATA[
+<p>Converse with a connected telnet client who has connected to a Cache process listening
+via an %IO.ServerSocket.  This routine speaks first then listens for a response. "OutboundData"
+is expected to have a non-empty string value in it.</p>]]></Description>
+<FormalSpec>Handle:%IO.ServerSocket,OutboundData:%String="",WaitTime:%Numeric=5</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    
+    If Unassigned( @ME->debugging ) Then @ME->debugging = @false
+    IF Unassigned( @ME->extendedDebugging ) Then @ME->extendedDebugging = @false
+
+      IF UNASSIGNED( WaitTime ) THEN WaitTime = 0
+      
+      IF WaitTime = 0 THEN WaitTime = .25
+
+      ContentLength = LEN( OutboundData )
+      FOR Idx = 1 TO ContentLength STEP 4000
+         Chunk = OutboundData[ Idx, 4000 ]
+         ActualWriteSize = LEN( Chunk )
+         BlockingMode = @true
+         Handle->Write( Chunk, @true, RC )
+
+         IF @ME->debugging = @true Then
+            If $Get(%MVBTrace) <> "" Then
+                TheData = OutboundData
+                %MVBTrace->WriteEntry( 'Me:' )
+                %MVBTrace->PrintDump( OutboundData )
+            End
+         END
+
+    IF @ME->logging = @true THEN
+        "EasyCSP.Network.Log"->newEntry("smtp", OutboundData, "Converse() - outbound" )
+    End
+
+         IF RC <> 1 THEN
+
+            IF @ME->logging = @true THEN
+	        	"EasyCSP.Network.Log"->newEntry("smtp", "", "Converse() - bad return code ":dquote(RC) : ". Abandoning send." )
+            END
+
+            ASSIGN RC TO STATUS()
+            RETURN ""
+            
+         END
+
+      NEXT
+
+    SocketData = ""
+    ActualReadSize = 0
+    MaxReadSize = 0
+    BlockingMode = @true
+    
+    Nap 125 ; * pause just a breath for the other side to process
+    TheData = "MVBooster.Library"->ReadServerSocket( Handle, WaitTime, @false ) ; * do a quick "read any"
+
+    IF @ME->logging = @true THEN
+        "EasyCSP.Network.Log"->newEntry("smtp", TheData, "Converse() - inbound" )
+    End
+
+      RC = 1
+      Wait = @false
+      
+      Nap 125 ; * pause just a bit for the buffer to build if it's going to
+      
+      Loop While RC = 1 DO
+      
+         MaxReadSize = 32768
+         BlockingMode = @true
+         WaitTime = 2
+         SocketData = ""
+         ActualReadSize = 0
+         
+         SocketData = @ME->ReadServerSocket( Handle, WaitTime, Wait )
+
+         IF ( LEN( TheData ) > 0 ) THEN
+
+            TheData := SocketData
+            RC = 1
+
+		    IF @ME->logging = @true THEN
+		        "EasyCSP.Network.Log"->newEntry("smtp", TheData, "Converse() - inbound continued" )
+		    End
+
+         End
+
+      Repeat
+
+      RETURN( TheData )
+]]></Implementation>
+</Method>
+
+<Method name="FormatIP">
+<Description><![CDATA[
+Input a dotted-quad IP address in "IPAddress" and a normalized string 'nnn.nnn.nnn.nnn' will be
+returned in "FormattedIP".  If a mask is provided with the IP address (either dotted quad or bitcount)
+then the mask will be formatted as well.  Otherwise, a default mask is provided in <b>FormattedMask</b>
+ Various other formats are provided for ease of use.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>IPAddress:%String,*FormattedIP:%String,*FormattedMask:%String,*HexAddress:%String,*LowIP:%String,*HexLowIP:%String,*HighIP:%String,*HexHighIP:%String</FormalSpec>
+<Implementation><![CDATA[
+     
+   FormattedIP = "" ; HexAddress = "" ; LowIP = "" ; HexLowIP = ""
+   Binary = '0000.0001.0010.0011.0100.0101.0110.0111'
+   Binary := '.1000.1001.1010.1011.1100.1101.1110.1111'
+   CONVERT '.' TO @fm IN Binary
+   Hex = '0123456789ABCDEF'
+*
+   Address = FIELD( IPAddress, '/', 1 )
+   Mask = FIELD( IPAddress, '/', 2 )
+   IF Mask = "" THEN Mask = '32'
+
+*  format the IP portion
+
+   GOSUB FormatAddress
+   IF STATUS() <> @ME->successful Then Return
+
+   FormattedIP = FormattedAddress
+   HexAddress = HexAddr
+
+*  Compute mask
+
+   Address = Mask
+   GOSUB FormatAddress
+   IF STATUS() <> @ME->successful Then
+      GOSUB ClearVars
+      Return
+   END
+   
+   FormattedMask = FormattedAddress
+*
+   HexLowIP = DTX( BITAND( XTD( HexAddress ), XTD( HexAddr ) ) ) 'R%8'
+   LowIP = FOLD( HexLowIP, 2 )
+   LowIP = FMTS( OCONVS( LowIP, 'MCXD' ), "R%3" )
+   CONVERT @fm TO '.' IN LowIP
+
+* Compute High IP
+
+* First compute the ones complement
+   BinValue = "EasyCSP.Conversions.XTB"->run(HexAddr )
+   CONVERT '0' TO '-' IN BinValue
+   CONVERT '1' TO '0' IN BinValue
+   CONVERT '-' TO '1' IN BinValue
+   MaskDiff = "EasyCSP.Conversions.XTB"->run( BinValue )
+   HexHighIP = DTX( BITOR( XTD( HexLowIP ), XTD( MaskDiff ) ) ) "R%8"
+   HighIP = FOLD( HexHighIP, 2 )
+   HighIP = FMTS( OCONVS( HighIP, 'MCXD' ), "R%3" )
+   CONVERT @fm TO '.' IN HighIP
+
+   RETURN
+
+********************************************************************
+FormatAddress:
+********************************************************************
+
+   @ME->ClearConditions()
+   
+   Identity = @ME->%class() : "->FormatIP::FormatAddress"
+   
+   FormattedAddress = ""
+
+   BEGIN CASE
+
+      CASE Address MATCHES "3N'.'3N'.'3N'.'3N"
+
+         FormattedAddress = Address      ; * formatted. turn around and go back.
+
+         HexAddr = OCONVS( CONVERT( '.', @fm, Address ), 'MCDX' )
+         HexAddr = FMTS( HexAddr, "R%2" )
+         CONVERT @fm TO "" IN HexAddr
+
+      CASE Address MATCHES "1N0N'.'ý1N0N'.'1N0N'.'ý1N0N'.'1N0N'.'1N0N'.'ý1N0N'.'1N0N'.'1N0N'.'1N0N"
+
+         FormattedAddress = CONVERT( '.', @fm, Address ) : @fm : '0' : @fm : '0' : @fm : '0'
+         FormattedAddress = FIELD( FormattedAddress, @fm, 1, 4 )
+         FormattedAddress = FMTS( FormattedAddress, "R%3" )
+         CONVERT @fm TO '.' IN FormattedAddress
+
+         HexAddr = OCONVS( CONVERT( '.', @fm, FormattedAddress ), 'MCDX' )
+         HexAddr = CONVERT( @fm, "", FMTS( HexAddr, 'R%2' ) )
+
+      CASE Address MATCHES '1N0N'
+
+         IF Address > 32 THEN
+            @ME->SetCondition( @ME->unsuccessful, "Invalid single-number address.", Identity )
+            Return
+         END
+
+         Mask = STR( '1', Address ) 'L%32'
+         Mask = FOLD( Mask, 4 )          ; * one attribute per hex digit
+
+         FOR Digit = 1 TO 8
+            LOCATE( Mask< Digit >, Binary; AMC ) THEN
+               FormattedAddress := DTX( AMC - 1 )
+            END ELSE
+            @ME->SetCondition( @ME->unsuccessful, "Invalid hexadecimal address.", Identity )
+               Return
+            END
+         NEXT Digit
+
+         HexAddr = FormattedAddress "R%8"
+         FormattedAddress = FOLD( FormattedAddress, 2 )
+         FormattedAddress = OCONVS( FormattedAddress, 'MCXD' )
+         FormattedAddress = FMTS( FormattedAddress, 'R%3' )
+         CONVERT @fm TO '.' IN FormattedAddress
+
+      CASE @true
+            @ME->SetCondition( @ME->unsuccessful, "Invalid IP address.", Identity )
+
+   END CASE
+
+   RETURN
+
+********************************************************************
+ClearVars:
+********************************************************************
+
+   FormattedIP = ""
+   HexAddress = ""
+   LowIP = ""
+   HexLowIP = ""
+   HighIP = ""
+   HexHighIP = ""
+
+   Return
+]]></Implementation>
+</Method>
+
+<Method name="FindMX">
+<Description>
+Search an "nslookup" query to find a mail exchanger (MX) record, then return the most likely mail exchanger host.</Description>
+<FormalSpec>Domain:%String=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    
+    If Unassigned( Domain ) Then Domain = ""
+    
+    If $get(Domain) = "" Then Return ""
+    
+    PCPerform 'nslookup -type=mx ' : Domain Capturing TCL.Reply
+
+    IF @ME->logging = @true THEN
+        "EasyCSP.Network.Log"->newEntry("findMX", TCL.Reply, "FindMX result" )
+    End
+
+      RawReply = DOWNCASE( TRIM( TCL.Reply, @fm ) )
+
+      Occurrence = 1
+      PossibleExchangers = ""
+
+      LOOP
+
+         FINDSTR 'exchanger =' IN RawReply, Occurrence SETTING AMC THEN
+            PossibleExchangers< -1 > = RawReply< AMC >
+            Occurrence += 1
+         END ELSE
+            EXIT
+         END
+
+      REPEAT
+
+      IF PossibleExchangers = "" THEN
+         ASSIGN -1 TO STATUS()
+         RETURN( "" )
+      END
+
+      Preferences = ""
+      Exchangers = ""
+      PossibleExchangers.Count = DCOUNT( PossibleExchangers, @fm )
+
+      FOR Idx = 1 TO PossibleExchangers.Count
+      
+        Preference = ""
+
+         Line = PossibleExchangers< Idx >
+
+         IX = INDEX( Line, 'exchanger =', 1 ) + 11
+         TheExchanger = TRIM( Line[ IX, 999 ] )
+
+         IF RIGHT( TheExchanger, 1 ) = '.' THEN
+            TheExchanger = LEFT( TheExchanger, LEN( TheExchanger ) - 1 )
+         END ELSE
+            If DCount( TheExchanger, "." ) < 2 Then
+                TheExchanger := '.' : Domain
+            End
+         END
+         
+         BEGIN CASE
+
+            CASE TheExchanger MATCHES "1N0N' '1X0X"
+            
+                Preference = FIELD( TheExchanger, ' ', 1 )
+                TheExchanger = FIELD( TheExchanger, ' ', 2 )
+
+            CASE Line MATCHES "0X'preference = '1N0N' '0X"
+            
+                IX = INDEX( Line, 'preference =',1 ) + 12
+                Preference = FIELD( TRIM( Line[ IX, 5 ] ), ',', 1 )
+
+         END CASE
+         
+         If Preference = "" Then
+            IX = Index( Line, 'preference =', 1 ) + 12
+            Preference = Trim( Field( Line[ IX, 99 ], ",", 1 ) )
+            If Not( Preference Matches "1N0N" ) Then Preference = 99 ; * always append servers to the end
+         End
+
+         LOCATE( Preference, Preferences; AMC; 'AR' ) THEN NULL
+         INS Preference BEFORE Preferences< AMC >
+         INS TheExchanger BEFORE Exchangers< AMC >
+
+      NEXT
+
+      TheExchanger = Exchangers< 1 >     ; * pick the most likely
+
+      RETURN( TheExchanger )
+]]></Implementation>
+</Method>
+
+<Method name="NetworkIP">
+<Description>
+Given an IP address and a mask, return the network portion</Description>
+<FormalSpec>IPAddress:%String,Mask:%String</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    EQU MVBooster.Network TO "MVBooster.Library->Network(IPAddress As %String, Mask As %String) as %String"
+    
+     IF UNASSIGNED( IPAddress ) OR UNASSIGNED( Mask ) THEN
+        @ME->SetCondition( -1, 'Invalid address ' : DQUOTE( IP ), MVBooster.Network )
+        RETURN( "" )
+     END
+
+    @ME->FormatIP( IPAddress : '/' : Mask, DottedQuad, ReformattedMask, HexAddress, LowIP, HexLowIP, HighIP, HexHighIP )
+ 
+ IF STATUS() <> @ME->successful THEN
+    Result = ""
+ END ELSE
+    Result = LowIP
+ END
+
+ RETURN( Result )
+]]></Implementation>
+</Method>
+
+<Method name="ReadClientSocket">
+<Description><![CDATA[
+Generalized Client Socket Read function.  Supply an open server socket, (optionally) a timeout value, (and optionally) a
+boolean flag whether or not to wait.  This function will throw several exception if things are not in the right order, so
+you will need to wrap your call in a Try...Catch...End Try structure.  When exceptions are thrown, they are of the
+MVBooster.MVBException type so you can catch an instance of this object if you so desire.  Otherwise, the same information is
+stored in the MVBooster environment in the usual @ME->ErrorNumber/@ME->ErrorDescription/%MVBErrorRaisedBy variables and in STATUS()
+if you only care to have the MVBooster subsystem "just handle it" and go on.  Since this throws an instance of "MVBooster.MVBException"
+if a MVBooster.Trace Syslog is running, the exception with traceback info will be logged in the appropriate system log.]]></Description>
+<FormalSpec>TheSocketHandle:%IO.Socket,Timeout:%Numeric=.250,Wait:%Boolean=1</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    If $Get( %MVBCommon ) = "" Then %MVBCommon = "MVBooster.Common"->%New()
+    
+    If Wait <> @true Then Wait = @false ; * block only if we're told to
+    
+    MaxReadSize = 32768 ; * always read a max block then return whatever we get
+    
+    If $Get( TheSocketHandle ) = "" Then
+        Throw "EasyCSP.Core.Exception"->%New( "No client socket handle", 680, "", "No valid server socket handle was supplied for the Read function." )
+        Return ""
+    End
+    
+    If Index( $Get( TheSocketHandle ), "%IO.Socket", 1 ) = 0 Then
+        Throw "EasyCSP.Core.Exception"->%New( "Not a client socket handle", 681, "", "The handle variable provided does not contain a valid server socket object.")
+        Return ""
+    End
+    
+    If TheSocketHandle->IsOpen = @false Then
+        Throw "EasyCSP.Core.Exception"->%New( "Client Socket Not Open", 682, "", "The server socket provided is not currently open." )
+        Return ""
+    End
+    
+    SocketData = ""
+    SocketReturnCode = 0
+    
+    If Wait = @true Then
+    
+        Try
+            SocketData = TheSocketHandle->Read( MaxReadSize, Timeout, SocketReturnCode )
+        Catch SocketException
+            Throw "EasyCSP.EasyCSP.Core.Exception"->%New( "Client Socket Exception", 683, "", "An exception occurred on server socket read. Examine the inner exception.", SocketException )
+            Return ""
+        End Try
+        
+    End Else
+    
+        Nap 250
+    
+        Try
+            SocketData = TheSocketHandle->ReadAny( MaxReadSize, Timeout, SocketReturnCode )
+        Catch SocketException
+            Throw "EasyCSP.Core.Exception"->%New( "Client Socket Exception", 683, "", "An exception occurred on server socket read. Examine the inner exception.", SocketException )
+            Return ""
+        End Try
+    
+    End
+    
+    IF $Get( SocketData ) = "" THEN SocketData = "" ; * if the buffer comes back "undefined" then set it to nil
+    
+    Begin Case
+    
+        Case SocketReturnCode = "%SYSTEM.Status"->OK()
+        
+            If SocketData = "" Then
+                @ME->SetCondition( -1, "Normal timeout, no data" )
+            End Else
+                @ME->ClearConditions()
+            End
+            
+        Case Else
+            
+            If SocketData = "" Then
+                @ME->SetCondition( -2, "Socket error, no data" )
+            End Else
+                RC = SocketReturnCode * -1
+                @ME->SetCondition( RC, "Socket error, some data returned" )
+            End
+    
+    End Case
+            
+            
+    Return SocketData
+]]></Implementation>
+</Method>
+
+<Method name="ReadServerSocket">
+<Description><![CDATA[
+Generalized Server Socket Read function.  Supply an open server socket, (optionally) a timeout value, (and optionally) a
+boolean flag whether or not to wait.  This function will throw several exception if things are not in the right order, so
+you will need to wrap your call in a Try...Catch...End Try structure.  When exceptions are thrown, they are of the
+MVBooster.MVBException type so you can catch an instance of this object if you so desire.  Otherwise, the same information is
+stored in the MVBooster environment in the usual @ME->ErrorNumber/@ME->ErrorDescription/%MVBErrorRaisedBy variables and in STATUS()
+if you only care to have the MVBooster subsystem "just handle it" and go on.  Since this throws an instance of "EasyCSP.Core.Exception"
+if a MVBooster.Trace Syslog is running, the exception with traceback info will be logged in the appropriate system log.]]></Description>
+<FormalSpec>TheSocketHandle:%IO.ServerSocket,Timeout:%Numeric=.250,Wait:%Boolean=1</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    
+    If Wait <> @true Then Wait = @false ; * block only if we're told to
+    
+    MaxReadSize = 32768 ; * always read a max block then return whatever we get
+    
+    If $Get( TheSocketHandle ) = "" Then
+        Throw "EasyCSP.Core.Exception"->%New( "No Server Socket Handle", 690, "", "No valid server socket handle was supplied for the Read function." )
+        Return ""
+    End
+    
+    If Index( $Get( TheSocketHandle ), "%IO.ServerSocket", 1 ) = 0 Then
+        Throw "EasyCSP.Core.Exception"->%New( "Not a server socket handle", 691, "", "The handle variable provided does not contain a valid server socket object.")
+        Return ""
+    End
+    
+    If TheSocketHandle->IsOpen = @false Then
+        Throw "EasyCSP.Core.Exception"->%New( "Server Socket Not Open", 692, "", "The server socket provided is not currently open." )
+        Return ""
+    End
+    
+    If $Get( %MVBTrace ) <> "" Then
+        %MVBTrace->WriteEntry( "Setting up server socket read with wait = " : Wait )
+    End
+    
+    If Wait = @true Then
+    
+        Try
+            SocketData = TheSocketHandle->Read( MaxReadSize, Timeout, SocketReturnCode )
+        Catch SocketException
+            Throw "EasyCSP.Core.Exception"->%New( "Server Socket Exception", 693, "", "An exception occurred on server socket read. Examine the inner exception.", SocketException )
+            Return ""
+        End Try
+        
+    End Else
+    
+        Nap 250 ; * delay 1/4 second for a buffer's worth to come in
+    
+        Try
+            SocketData = TheSocketHandle->ReadAny( MaxReadSize, Timeout, SocketReturnCode )
+        Catch SocketException
+            Throw "EasyCSP.EasyCSP.Core.Exception"->%New( "Server Socket Exception", 693, "", "An exception occurred on server socket read. Examine the inner exception.", SocketException )
+            Return ""
+        End Try
+    
+    End
+    
+    IF $DATA( SocketData ) = 0 THEN SocketData = "" ; * if the buffer comes back "undefined" then set it to nil
+    
+    Begin Case
+    
+        Case SocketReturnCode = "%SYSTEM.Status"->OK()
+        
+            If SocketData = "" Then
+                @ME->SetCondition( 7110, "Normal timeout, no data", "" )
+            End Else
+                @ME->ClearConditions()
+            End
+            
+        Case Else
+            
+            If SocketData = "" Then
+                @ME->SetCondition( RC, "Socket error, no data", "" )
+            End Else
+                @ME->SetCondition( RC, "Socket error, some data returned", "" )
+            End
+    
+    End Case
+    
+    If $Get( %MVBTrace ) <> "" Then
+        If @ME->ErrorNumber <> 0 Then %MVBTrace->WriteError()
+    End
+            
+            
+    Return SocketData
+]]></Implementation>
+</Method>
+</Class>
+</Export>

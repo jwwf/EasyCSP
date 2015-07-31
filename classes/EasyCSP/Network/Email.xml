@@ -1,0 +1,818 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Network.Email">
+<Description><![CDATA[
+<p><strong>Fair warning</strong>: this class is in transition away from pure MV and eventually will support
+systems using either MV or legacy Cache globals. Configuration information will be moved
+into the config package (also under development). Support files such as extension-to-MIME-type
+will also be moved to regular globals. MV users can still access these globals through classes.</p>
+<br /><hr><br />
+<p>Provides a wrapper to accommodate the legacy SMTP services so one could either
+can leverage Cache native SMTP without having to change currently-ported programs
+drastically or one could choose to use
+the extended capabilities this class provides.  The native Cache email class only can
+relay through a smart host and only allows a single attachment.  It is barely compliant
+with any RFC. </p>
+<p>Conversely, this MVBooster.Email class can relay without the need of a smart host and can
+accommodate as many attachments as you care to add.  It accommodates any many TO, CC, and
+BCC addresses as you need.  It is also fully RFC compliant. </p>
+<p><b>NOTES</b></p>
+<ul>
+<li>This version does NOT support ESMTP transfer.</li>
+<li>This class requires the EXT2MIME MV file (supplied with this project).
+    You don't have to copy the file to each account.  A Q-Pointer will do.</li>
+<li>References:  RFC's 1521, 1806, 2045, 2046, 2047, 2049, 2183, 2821, 2822</li>
+</ul>
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Language>mvbasic</Language>
+<Super>%Persistent,EasyCSP.Network.Lib</Super>
+<TimeChanged>63749,47561.998159</TimeChanged>
+<TimeCreated>63460,36142.482839</TimeCreated>
+<LegacyInstanceContext>1</LegacyInstanceContext>
+
+<Property name="messageId">
+<Description>
+Message ID</Description>
+<Type>%String</Type>
+<Final>1</Final>
+<SqlFieldName>messageId</SqlFieldName>
+</Property>
+
+<Property name="author">
+<Description>
+The author (username) of the sender</Description>
+<Type>%String</Type>
+<SqlFieldName>author</SqlFieldName>
+</Property>
+
+<Property name="senderUID">
+<Description>
+Sender's UID. For system-generated messages the value is "system"</Description>
+<Type>%String</Type>
+<SqlFieldName>sender_uid</SqlFieldName>
+</Property>
+
+<Property name="senderAddress">
+<Description>
+Sender's email address</Description>
+<Type>%String</Type>
+<SqlFieldName>senderAddress</SqlFieldName>
+</Property>
+
+<Property name="senderName">
+<Description>
+Sender's common name</Description>
+<Type>%String</Type>
+<SqlFieldName>senderName</SqlFieldName>
+</Property>
+
+<Property name="recipients">
+<Description><![CDATA[
+Recipient addresses
+This is an array with two nodes: the leftmost is the delivery type (TO, CC, or BCC) and the
+rightmost is the order of a subarray of TO, CC, or BCC recipients. These will be remapped later
+in association with the appropriate exchanger for each recipients domain. (See <property>domainMap</property>.)]]></Description>
+<Type>EasyCSP.Core.ParameterList</Type>
+<Final>1</Final>
+<Collection>array</Collection>
+<SqlFieldName>toAddresses</SqlFieldName>
+<SqlListType>SUBNODE</SqlListType>
+</Property>
+
+<Property name="subject">
+<Description>
+Message subject</Description>
+<Type>%String</Type>
+<SqlFieldName>subject</SqlFieldName>
+</Property>
+
+<Property name="textMessage">
+<Description>
+Plain-text rendition of the message.  A message "may" also have an equivalent HTML
+rendition.  This property "should" never be blank.</Description>
+<Type>%Net.MailMessagePart</Type>
+<SqlFieldName>textMessage</SqlFieldName>
+</Property>
+
+<Property name="htmlMessage">
+<Description>
+HTML-formatted message.  The caller is responsible for properly formatting the
+message in HTML.  This is sent as a separate bodypart in a MIME multipart message.</Description>
+<Type>%Net.MailMessagePart</Type>
+<SqlFieldName>htmlMessage</SqlFieldName>
+</Property>
+
+<Property name="Attachments">
+<Description>
+Attachments</Description>
+<Type>EasyCSP.Network.EmailAttachment</Type>
+<Collection>array</Collection>
+<Private>1</Private>
+<SqlFieldName>attachments</SqlFieldName>
+<SqlListType>SUBNODE</SqlListType>
+</Property>
+
+<Property name="completeMessage">
+<Description>
+The mail message object where all the parts will be assembled</Description>
+<Type>%Net.MailMessage</Type>
+<Private>1</Private>
+<Transient>1</Transient>
+</Property>
+
+<Property name="sendDate">
+<Description>
+Send Date</Description>
+<Type>%Date</Type>
+<Final>1</Final>
+<SqlFieldName>sendDate</SqlFieldName>
+</Property>
+
+<Property name="sendTime">
+<Description>
+Send Time</Description>
+<Type>%Time</Type>
+<Final>1</Final>
+<SqlFieldName>sendTime</SqlFieldName>
+</Property>
+
+<Property name="smtpDomain">
+<Description>
+local host's domain</Description>
+<Type>%String</Type>
+<Final>1</Final>
+<SqlFieldName>smtpDomain</SqlFieldName>
+</Property>
+
+<Property name="smtpCredentials">
+<Description>
+Credentials for smart host if required</Description>
+<Type>%String</Type>
+<Final>1</Final>
+<Transient>1</Transient>
+</Property>
+
+<Property name="rejectedExchangers">
+<Description>
+Reject List reveals recipients that were rejected either because they were malformed or did not resolve.
+The instantiating process will need to check this field to find addresses that didn't deliver.</Description>
+<Type>EasyCSP.Core.ParameterList</Type>
+<Final>1</Final>
+<Collection>array</Collection>
+<SqlFieldName>rejectedExchangers</SqlFieldName>
+<SqlListType>SUBNODE</SqlListType>
+</Property>
+
+<Property name="deliveryList">
+<Description>
+Domain List - this is used internally by this class to track which domains are destined for traffic.  This is
+used in the absence of a smart host, when this routine is expected to do direct delivery.
+Domain List is a list of exchangers, the addressees that will be delivered to it, and what class each is (TO/CC/BCC)
+There are two indices: ( Domain, Class ) and the contents at "class" will be a multivalued (@fm-delimited) string
+of addresses to deliver at each delivery type for each domain.</Description>
+<Type>%String</Type>
+<Final>1</Final>
+<MultiDimensional>1</MultiDimensional>
+<SqlFieldName>deliveryList</SqlFieldName>
+<SqlListType>SUBNODE</SqlListType>
+</Property>
+
+<Property name="domainMap">
+<Description>
+Domain Map - maps email domains to the exchanger.  This cuts down on MX lookups.  This is a multivalued (@fm-delimited)
+string containing the email domain, a value mark, and the exchanger once per attribute.</Description>
+<Type>EasyCSP.Network.DomainMap</Type>
+<Final>1</Final>
+<Collection>array</Collection>
+<Private>1</Private>
+<Transient>1</Transient>
+</Property>
+
+<Property name="outboundHeaders">
+<Description>
+Delivery addresses for each host and the message delivery addresses (by RFC) are two different lists and two different
+formats.  The outboundHeaders private property holds the message delivery (pretty-printed) delivery addresses.</Description>
+<Type>%String</Type>
+<Final>1</Final>
+<Collection>array</Collection>
+<SqlFieldName>outboundHeaders</SqlFieldName>
+<SqlListType>SUBNODE</SqlListType>
+</Property>
+
+<Property name="logging">
+<Description>
+This is set OnNew to match the system logging setting. You may override this after instantiation.</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+<Transient>1</Transient>
+</Property>
+
+<Property name="socketHandle">
+<Description>
+Socket Handle used globally inside this object to communicate with an SMTP server</Description>
+<Type>%IO.Socket</Type>
+<Final>1</Final>
+<Private>1</Private>
+<Transient>1</Transient>
+</Property>
+
+<Method name="%OnNew">
+<Language>cache</Language>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+            
+    set smtpDomain = ##class(EasyCSP.Configuration.Settings).getSetting("smtpDomain")
+    
+    If smtpDomain = "" {
+        do ..SetCondition( 2502, "Sender domain must be set in the configuration file or by setting the smtpDomain property before using SMTP." )
+        quit $$$OK
+    }
+    
+    set ..smtpDomain = smtpDomain
+    
+    set ..logging = ##class(EasyCSP.Configuration.Settings).getSetting("logSMTP")
+    set ..smtpCredentials = ##class(EasyCSP.Configuration.Settings).getSetting("smtpCredentials")
+    
+    if $get(%EasyCSPApp)["Web.Application" { // this class is being instantiated by a web application
+    	set uid = %EasyCSPApp.sessionData.get("u")
+    	if ##class(EasyCSP.Models.Users).isUser(uid) {
+	    	set users = ##class(EasyCSP.Models.Users).%New()
+	    	do users.Read(uid)
+	    	set ..senderName = users.getAttributeValue("firstname") _ " " _ users.getAttributeValue("surname")
+	    	set ..senderAddress = users.getAttributeValue("emailaddress")
+    	}
+    }
+    
+    set ..textMessage = ##class(%Net.MailMessagePart).%New()
+    set ..textMessage.ContentType = "text/plain"
+    set ..textMessage.TextData.RemoveOnClose = 1
+    
+    set ..htmlMessage = ##class(%Net.MailMessagePart).%New()
+    set ..htmlMessage.ContentType = "text/html"
+    set ..htmlMessage.IsHTML = 1
+    set ..htmlMessage.TextData.RemoveOnClose = 1
+        
+    quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="addAttachment">
+<Description><![CDATA[
+<p>Attach a file to the email.  You can attach as many as you like (just make sure the destination eachangers will
+allow as large a transfer as you intend to make.</p>
+<p>The arguments are as follows:</p>
+<ul>
+<li><b>FromFile</b> is the name of the file where the attachment is stored.  It could be either a directory (UV Type 1/19 or Cache type MV) or typical multivalue file.
+If the FromFile is a pathname, the complete path plus the file name (ie, /path/file) should be supplied here.</li>
+<li><b>FromItemID</b> is the key to the item to be attached to the email. If the attachment is in a DIR file, this is ignored.</li>
+<li><b>SendAsName</b> is the name the file will have when it is attached.  If this argument is empty, the Item ID will be used.</li>
+<li><b>SendAsExtension</b> is the extension (like .txt or .rtf etc) the file should have when it is attached.</li>
+<li><b>ConvertFMToCrLf</b> If this argument is set to @true then Pick attribute marks will be converted to CRLF sequences as most of the
+world expects.  If this value is set to @false then one could send Pick items as-is to other Pick recipients, ready to plop into a multivalue file.
+</ul>
+<p>There is one extra fake extension that this method supports: "pre".  This is to ship preformatted plain text enclosed
+in HTML as a &lt;pre> section.  This is intended for such purposes as shipping reports directly from a spool job to an email
+such that the contents will be (more-or-less) read-only when viewed.</p>]]></Description>
+<FormalSpec>FromFile:%String="",FromItemID:%String="",SendAsName:%String="",SendAsExtension:%String="",ConvertFMToCrLf:%Boolean=0</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+    
+    If FromFile = "" {
+        do ..SetCondition( 2530, "Can't attach a file without specifying which file it's coming from." )
+        quit 0
+    }
+
+    set Slash = ..getslash()
+    
+    if FromFile [ Slash {
+        set sourceFile = ##class(EasyCSP.Models.Sequential).%New( FromFile )
+        set isSequential = 1
+    } else {
+        set sourceFile = ##class(EasyCSP.Models.GenericMV).%New( 0, 1, FromFile )
+        set isSequential = 0
+    }
+    
+    if sourceFile.hasConditions() {
+        quit 0 ; * error code is already set
+    }
+    
+    // Lint-check is complete. Load the parameters into an attachment object.
+    set thisAttachment = ##class(EasyCSP.Network.EmailAttachment).%New()
+    
+    if 'isSequential {
+    
+        if FromItemID = "" {
+            do ..SetCondition( 2531, "Which Item ID in " _ FromFile _ " is supposed to be attached?" )
+            quit 0
+        }
+    
+    }
+    
+    If $get(SendAsName) = "" {
+        If FromItemID [ "." {
+            set thisAttachment.itemId = $piece( FromItemID, ".", 1 )
+        }  else {
+            set thisAttachment.itemId = FromItemID
+        }
+    } else {
+	    set thisAttachment.name = SendAsName
+    }
+    
+    set SendAsExtension = $mvoconv( SendAsExtension, "mcl" )
+    If $get(SendAsExtension) = "" {
+        If FromItemID [ "." {
+            set thisAttachment.extension = $piece( FromItemID, ".", $length( FromItemID, "." ) )
+        } Else {
+            set thisAttachment.extension = "txt" ; * default
+        }
+    }
+    
+
+	// If the extension is "pre" then it's a preformatted report in plain text, but the sender
+	// wants it presented as HTML so it will be read-only (so our darlings won't play with the numbers).
+
+    set AttachmentMIMEType = ""
+
+    If SendAsExtension '= "pre" {
+        set AttachmentMIMEType = ##class(EasyCSP.Models.MIMETypes).getType(SendAsExtension)
+    }
+    
+    set couldAttach = 1
+    Try {
+	    if isSequential {
+		    do thisAttachment.content.CopyFrom(sourceFile.ToStream())
+	    } else {
+		    do thisAttachment.content.Write($replace(sourceFile.record,$mvfm,..crlf))
+	    }
+    } catch {
+	   set couldAttach = 0
+    }
+    
+    if 'couldAttach {
+	    do ..SetCondition(510, "Could not attach "_SendAsName_", "_FromFile)
+        quit 0
+    }
+        
+    do sourceFile.close() // * okay, the item exists.
+    
+    do ..Attachments.SetAt(thisAttachment,..Attachments.Count() + 1)
+    
+    quit 1
+]]></Implementation>
+</Method>
+
+<Method name="addHeader">
+<Description>
+add a message header portion</Description>
+<FormalSpec>Header:%String</FormalSpec>
+<Language>cache</Language>
+<Private>1</Private>
+<Implementation><![CDATA[
+    If Header = "" quit
+    do ..outboundHeaders.SetAt(Header, ..outboundHeaders.Count() + 1)
+]]></Implementation>
+</Method>
+
+<Method name="addRecipient">
+<Description>
+add addresses to the send-to list</Description>
+<FormalSpec>recipientType:%String="",address:%String</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(recipientType) = "" set recipientType = "TO"
+	set recipientType = $mvoconv(recipientType, "MCU")
+	set recipientTypes = $listBuild("TO", "CC", "BCC")
+	if $listFind(recipientTypes, recipientType) = 0 quit 0
+    
+    If ##class(EasyCSP.Validator.Validators.Email).run( address ) {
+    	set parm = ##class(EasyCSP.Core.ParameterList).%New()
+    	do parm.set("recipientType", recipientType)
+    	do parm.set("address", address)
+    	do ..recipients.SetAt(parm, ..recipients.Count() + 1)
+    } else {
+        do ..SetCondition( 2503, "The "_recipientType_" address """ _ address _ """ does not conform to RFC standard." )
+        quit 0
+    }
+    
+    return 1
+]]></Implementation>
+</Method>
+
+<Method name="addPlainMessageText">
+<Description>
+Concatenate (with @fm's) onto the text message body</Description>
+<FormalSpec>Text:%String</FormalSpec>
+<Language>cache</Language>
+<Implementation><![CDATA[    do ..textMessage.TextData.WriteLine(Text)
+]]></Implementation>
+</Method>
+
+<Method name="addHTMLMessageText">
+<Description>
+Concatenate (with @fm's) onto the HTML message body</Description>
+<FormalSpec>Text:%String</FormalSpec>
+<Language>cache</Language>
+<Implementation><![CDATA[    do ..htmlMessage.TextData.WriteLine(Text)
+]]></Implementation>
+</Method>
+
+<Method name="ClearPlainMessage">
+<Description>
+Clear the text message body</Description>
+<Language>cache</Language>
+<Implementation><![CDATA[	do ..textMessage.TextData.Clear()
+]]></Implementation>
+</Method>
+
+<Method name="ClearHTMLMessage">
+<Description>
+Clear the HTML message body</Description>
+<Language>cache</Language>
+<Implementation><![CDATA[    do ..htmlMessage.TextData.Clear()
+]]></Implementation>
+</Method>
+
+<Method name="FilterDomains">
+<Description>
+Go through a list of addresses in an address-type and pick out the domains.
+At the end, a work-global ^EmailDomainMap($j) will have all the recipients
+grouped by exchanger. This reduces the number of connections, especially for
+mail-handling front-enders like Google or Yahoo! that accept mail for other
+domains (like wildblue.net and exede.net handled by GMail or att.net handled by Yahoo!.)</Description>
+<Language>cache</Language>
+<Private>1</Private>
+<Implementation><![CDATA[
+	set ..deliveryList = ""
+    set ..domainMap = ""
+    set ..rejectedExchangers = ""
+    
+    set pid = ..getPID()
+        
+	/*  
+	*  First, just pick out the domains, because we'll need to make
+	*  a single FindMX call (and eventual connection) for each domain.
+	*  One exchanger may handle any number of domains, so in order to
+	*  limit the number of connections, we'll have to map addresses to
+	*  domains to physical exchangers.
+	*/
+
+	set nextRecipient = ""
+	for  { 
+		set nextRecipient = ..recipients.Next(nextRecipient)	
+	    quit:nextRecipient=""
+	
+		set addrConfig = ..recipients.GetAt(nextRecipient)
+		set addressee = addrConfig.get("address")
+     
+     	set domain = $piece( $piece( addressee, "@", 2 ), " ", 1 )
+     	set domain = $change(domain, ">", "")
+    	
+     
+     	// if this domain hasn't been resolved then do that now.
+     	
+    	if ..domainMap.IsDefined(domain) = 0 {
+	    	set map = ##class(EasyCSP.Network.DomainMap).%New()
+    		set exchanger = ..FindMX( domain )
+	    	set map.exchanger = exchanger
+    	
+	    	if exchanger = "" {
+	    		do ..rejectedExchangers.SetAt(addrConfig, ..rejectedExchangers.Count() + 1)
+	    		continue
+	     	}
+	     	
+    	} else {
+	    	set map = ..domainMap.GetAt(domain)
+    	}
+        
+        do map.recipients.SetAt( addrConfig, map.recipients.Count() + 1)
+        do ..domainMap.SetAt(map,domain)
+        
+	}
+
+  quit
+]]></Implementation>
+</Method>
+
+<Method name="send">
+<Description>
+Send the email. Work through the list of exchangers and add the correct list
+of recipients for that exchanger to the %Net.MailMessage object. Create a new
+instance of a MailMessage object for each exchanger.</Description>
+<Language>cache</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	
+	// Has the email domain-map been created yet? Do a quick sanity-check
+	set pid = ..getPID()
+	
+    If ..senderAddress = "" {
+        do ..SetCondition( 2505, "Sender's email address must be specified.  Mail was not sent." )
+        quit 0
+    }
+    
+    set ..senderAddress = $change(..senderAddress, "<", "")
+    set ..senderAddress = $change(..senderAddress, ">", "")
+    
+    if ..subject = "" {
+    	if ..Attachments.Count() = 0 {
+	        do ..SetCondition( 2506, "No subject and no attachments." )
+       		quit 0
+    	}
+    }
+    
+    if ..recipients.Count() = 0 {
+        do ..SetCondition( 2507, "There are no addressees. To whom are you sending an email?" )
+        quit 0
+    }
+    
+    set credentials = ..smtpCredentials
+    set smtpUser =  $piece(credentials, $mvfm, 1)
+    set smtpPass = $piece(credentials, $mvfm, 2)
+    
+    if ((smtpUser '= "") & (smtpPass = "" )) {
+        do ..SetCondition( 2508, "An SMTP user id was supplied but no SMTP password.  Correct the configuration." )
+        quit 0
+    }
+    
+    do ..FilterDomains()
+	
+	// Process one domain/exchanger at a time. The map for exchangers and addresses should
+	// already have been built. The structure is a work global: ^EmailDomainMap(pid, domain, exchanger, nextSlot) = addrConfig
+    
+	if ..domainMap.Count()=0 { // nope; there are no addressees for which to build a map.
+		do ..SetCondition(2509, "No valid addresses were found. Check your recipient list.")
+		quit 0
+	}
+	
+	if (..textMessage.TextData.Size = 0),(..htmlMessage.TextData.Size = 0) {
+		if ..Attachments.Count() > 0 {
+			do ..textMessage.TextData.WriteLine("See the attached files.")
+		} else {
+			do ..SetCondition(2510, "No text, no html text, and no attachments. Why are you sending an email?")
+			quit 0
+		}
+	}
+	
+    do ..%Save() // preserve a record of the encounter
+    set recordId = ..%Id()
+    
+	set nextDomain = ""
+	for  {
+		set nextDomain = ..domainMap.Next(nextDomain)
+		quit:nextDomain=""
+		
+		set domainConfig = ..domainMap.GetAt(nextDomain)
+		
+		set exchanger = domainConfig.exchanger
+	
+		set completeMessage = ##class(%Net.MailMessage).%New() // This is the outermost container. Plain and HTML messages plus any attachments will be inserted.
+		
+		set completeMessage.Sender = ..senderName
+		set completeMessage.From = ..senderAddress
+		set completeMessage.Charset = "utf-8"
+		set completeMessage.MultiPartType = "related"
+		
+		// Locate and add the recipients for this exchanger. Those will have been mapped in the FilterDomains method above.
+		set configKey = ""
+		for  {
+			set configKey = domainConfig.recipients.Next(configKey)
+			quit:configKey=""
+			
+			set recipient = domainConfig.recipients.GetAt(configKey)
+			set recipientType = recipient.get("recipientType")
+			set address = recipient.get("address")
+			
+			if recipientType = "TO" do completeMessage.To.Insert("To "_address)
+			if recipientType = "CC" do completeMessage.Cc.Insert("Cc "_address)
+			if recipientType = "BCC" do completeMessage.Bcc.Insert("Bcc "_address)
+		}
+		
+		if (..textMessage.TextData.Size > 0) & (..htmlMessage.TextData.Size > 0) {
+			do completeMessage.Headers.SetAt("multipart/mixed","Content-Type")
+		}
+		
+		if 'completeMessage.Headers.IsDefined("reply-to") {
+			do completeMessage.Headers.SetAt(..senderAddress,"reply-to")
+		}
+		
+			// The plain-text message and the html message are MessagePart objects
+		Set partalt=##class(%Net.MailMessagePart).%New()
+		Set partalt.IsMultiPart=1
+		Set partalt.MultiPartType="alternative"
+		
+		If ..textMessage.TextData.Size>0 {
+			Do partalt.Parts.SetAt(..textMessage, partalt.Parts.Count()+1)
+		}
+
+		// add html alternative and save text data
+		If ..htmlMessage.TextData.Size>0 {
+			Do partalt.Parts.SetAt(..htmlMessage, partalt.Parts.Count()+1)
+		}
+	
+		// include alternative messages into main
+		Do completeMessage.Parts.SetAt(partalt, completeMessage.Parts.Count()+1)
+		
+		// riffle through the attachments if there are any
+		set attachmentCount = ..Attachments.Count()
+		for idx = 1:1:attachmentCount {
+			set att = ..Attachments.GetAt(idx)
+			do completeMessage.Parts.SetAt(att, completeMessage.Parts.Count() + 1)
+		}
+	
+		// Send the message
+		set mail = ##class(EasyCSP.Network.SMTP).%New()
+		set mail.smtpserver = exchanger
+		set mail.timezone = "LOCAL"
+		set mail.Debug = 1
+		set sc = mail.Send(completeMessage)
+		
+		if $$$ISERR(sc) {
+			write mail.Error,!
+			set messages = $SYSTEM.Status.GetErrorText(sc)
+			do ..SetCondition(500, "Message failed to send to exchanger "_exchanger_": "_messages)
+		}
+		
+	}
+]]></Implementation>
+</Method>
+
+<Method name="TestsmartHost">
+<Description>
+TODO: Rejuvenate and repurpose this test. Leave as "private" until then.</Description>
+<Private>1</Private>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    
+      Response = ""
+      @ME->ClearConditions()
+*
+      IF @ME->smartHost = "" THEN
+         Response = "The Test button is only for testing when a smart host is specified. Otherwise, MVBooster will use direct MX delivery."
+         ASSIGN @ME->unsuccessful TO STATUS()
+         RETURN( Response )
+      END
+*
+*  Test Connection at the net layer
+*
+    @ME->socketHandle = "%IO.Socket"->%New()
+
+    Try
+        @ME->socketHandle->Open( @ME->smartHost, 25, 10, SocketStatus )
+    Catch
+        @ME->SetCondition( 12009, 'Destination host ' : DQUOTE( @ME->smartHost ) : ' could not be reached.', "MVBooster.Email->TestsmartHost" )
+        Return( %MVBErrorDescription )
+    End Try
+
+    IF "%SYSTEM.Status"->IsError( SocketStatus ) Then
+    
+        IF @ME->logging then "EasyCSP.Network.Log"->newEntry("smtp", "", 'SMTP could not connect to smart host ' : @ME->smartHost )
+                
+        @ME->SetCondition( 12009, 'Destination host ' : DQUOTE( @ME->smartHost ) : ' could not be reached.', "MVBooster.Email->TestsmartHost" )
+        Return( %MVBErrorDescription )
+        
+    END
+
+
+********************************************************************
+* Get server greeting
+********************************************************************
+
+   IF @ME->logging then "EasyCSP.Network.Log"->newEntry("smtp", "", "Listening for server greeting" )
+
+    Greeting = ""
+    
+    For Idx = 1 To 5
+    
+        Try
+            SocketData = @ME->socketHandle->Read( 32768, 1, RC )
+        Catch SocketError
+            @ME->SetCondition( SocketError->Code, "Mail socket read abort on getting initial greeting, reason:" : @fm : SocketError->Name )
+            Return( %MVBErrorDescription )
+        End Try
+    
+        Greeting := SocketData
+        
+        If Greeting[ Len( Greeting ) - 1, 2 ] = @ME->crlf Then Exit ; * we got the whole greeting; go on.
+    
+    Next
+    
+    if @ME->logging then "EasyCSP.Network.Log"->newEntry("smtp", "EasyCSP.Conversions.HexDump"->run(Greeting))
+
+
+    IF @ME->UseExtendedGreeting = @true THEN Hello = 'EHLO' ELSE Hello = 'HELO'
+    SocketData = Hello : " " : @ME->smtpDomain : @ME->crlf
+*
+*  Some greeting was supplied.  Try to send a hello and see what happens.
+*
+    Response< -1 > = SocketData
+    ReturnData = @ME->Converse( SocketData, 2, "" )
+    Response< -1 > = ReturnData
+*
+    IF LEFT( ReturnData, 3 ) <> '250' THEN       ; * This ain't a mail server
+        ASSIGN -3 TO STATUS()
+        RC = @ME->CloseTheSocket()
+        Response< -1 > = "The server didn't like our greeting (problem with own host name?)"
+        RETURN( Response )
+    END
+*
+*  Back out gracefully
+*
+    SocketData = 'RSET' : @ME->crlf
+    Response< -1 > = SocketData
+    ReturnData = @ME->Converse( SocketData, 2, "" )
+    Response< -1 > = SocketData
+    *
+    SocketData = "QUIT" : @ME->crlf
+    ReturnData = @ME->Converse( SocketData, 2, "" )
+    *
+    RC = @ME->CloseTheSocket()
+    ASSIGN @ME->successful TO STATUS()
+    *
+    RETURN Response
+]]></Implementation>
+</Method>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^EasyCSP.Network.EmailD</DataLocation>
+<DefaultData>EmailDefaultData</DefaultData>
+<IdLocation>^EasyCSP.Network.EmailD</IdLocation>
+<IndexLocation>^EasyCSP.Network.EmailI</IndexLocation>
+<StreamLocation>^EasyCSP.Network.EmailS</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="Attachments">
+<Attribute>Attachments</Attribute>
+<Structure>subnode</Structure>
+<Subscript>"Attachments"</Subscript>
+</Data>
+<Data name="EmailDefaultData">
+<Value name="1">
+<Value>%%CLASSNAME</Value>
+</Value>
+<Value name="2">
+<Value>messageId</Value>
+</Value>
+<Value name="3">
+<Value>author</Value>
+</Value>
+<Value name="4">
+<Value>senderUID</Value>
+</Value>
+<Value name="5">
+<Value>senderAddress</Value>
+</Value>
+<Value name="6">
+<Value>senderName</Value>
+</Value>
+<Value name="7">
+<Value>subject</Value>
+</Value>
+<Value name="8">
+<Value>textMessage</Value>
+</Value>
+<Value name="9">
+<Value>htmlMessage</Value>
+</Value>
+<Value name="10">
+<Value>sendDate</Value>
+</Value>
+<Value name="11">
+<Value>sendTime</Value>
+</Value>
+<Value name="12">
+<Value>smtpDomain</Value>
+</Value>
+</Data>
+<Data name="outboundHeaders">
+<Attribute>outboundHeaders</Attribute>
+<Structure>subnode</Structure>
+<Subscript>"outboundHeaders"</Subscript>
+</Data>
+<Data name="recipients">
+<Attribute>recipients</Attribute>
+<Structure>subnode</Structure>
+<Subscript>"recipients"</Subscript>
+</Data>
+<Data name="rejectedExchangers">
+<Attribute>rejectedExchangers</Attribute>
+<Structure>subnode</Structure>
+<Subscript>"rejectedExchangers"</Subscript>
+</Data>
+</Storage>
+</Class>
+</Export>

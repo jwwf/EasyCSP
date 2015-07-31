@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Models.Sequential">
+<Description>
+Work with sequential files</Description>
+<Language>mvbasic</Language>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63615,35609.443448</TimeChanged>
+<TimeCreated>63614,32014.267605</TimeCreated>
+
+<Property name="fileName">
+<Description>
+The file name in the VOC or system path</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="fileHandle">
+<Description>
+The file handle used to read and write</Description>
+<Type>%MV.File</Type>
+</Property>
+
+<Property name="record">
+<Description>
+A copy of the last record read from the file</Description>
+<Type>%String</Type>
+</Property>
+
+<Method name="recordSet">
+<Description><![CDATA[
+Reflect change in <property>recordHasChanged</property>]]></Description>
+<Final>1</Final>
+<FormalSpec>value:%String=""</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    set i%record = value
+    set i%recordHasChanged = 1
+]]></Implementation>
+</Method>
+
+<Property name="stream">
+<Description>
+Block/Binary reads will be stored in this property. For block/binary writes, the contents
+of this stream will be written to the file.</Description>
+<Type>%Stream</Type>
+</Property>
+
+<Property name="recordHasChanged">
+<Description>
+This is set to TRUE if the last operation (Get, Set, or Read) changes the contents of this property</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+</Property>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+<p>
+There are several ways of opening up sequential file in Basic.  One could specify a file name and a record in it
+(OpenSeq) or one could specify an OS pathname.  For this abstract (and the object that inherits it), if the
+<b>Pathname</b> argument contains a commma (MYFILE,SOME.SEQ.FILE.IN.IT) this method will interpret the result
+is to execute an OpenSeq.  If the <b>Pathname</b> argument contains either a forward- or backslash, the SetupSequential
+method will interpret this to mean that an OpenPath command should be executed.  Either way, the execution and result
+will be completely transparent to the caller.
+</p>
+
+<p>
+The <b>CreateIfNotFound</b> argument indicates whether the sequential file should be created (with the Basic CREATE
+command).  If the file does not exist and <b>CreateIfNotFound</b> argument is false, (1) Status() will be set to an
+"unsuccessful" value, (2) the %MVBError* variables will have conditions/messages set, and (3) the object will fail to
+instantiate.
+</p>
+
+<p>The <b>NoBuffering</b> argument defaults to true, but if you need to turn file buffering off, set this value to false</p>
+
+<p>The <b>AppendMode</b> argument allows automatic seeking to the end of a sequential file so data may be appended.</p>
+
+<p>The file, if successfully opened, can be set read-only by setting the <b>ReadOnly</b> argument to @true.  (It defaults
+to @false.)
+</p>]]></Description>
+<FormalSpec>PathOrMVDictName:%String="",CreateIfNotFound:%Boolean=1,ReadOnly:%Boolean=0,NoBuffering:%Boolean=1,AppendMode:%Boolean=0</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+ 
+* Any files that get opened up to support MV file access/locking/etc should be filtered out here to prevent endless recursion
+        
+    If Pathname = "" Then
+        @ME->SetCondition( 1,  "Missing file name for sequential file from " : @ME->getCaller() )
+        return "%SYSTEM.Status"->OK()
+    End
+    
+    @ME->CanWrite = ( ReadOnly = @false )
+
+* Simply testing which platform we're on isn't sufficient.  Code may have been ported and not
+* updated. A user might type in the opposite sort of slash.  Other vagaries often occur. This
+* method will cover the eventuality and let the process run.
+    Slash = ""
+    TheCorrectSlash = @ME->getSpoolerJobNumber()
+    Convert '/\' To TheCorrectSlash : TheCorrectSlash In Pathname
+    
+    If Index( Pathname, ",", 1 ) > 0 Then
+    
+        Path = Field( PathName, ",", 1 )
+        File = Field( PathName, ",", 2 )
+        
+        FailedToOpen = @false
+        
+* Open the MV projection of the file just enough to determine the file type.  If it's not a DIR file,
+* then sequential records can't be placed in it. U2 and other MV RDBMS's allow opening a sequentail file
+* with the VOC name and a record in it.  Allowing a comma syntax straddles the OpenPath syntax while
+* keeping this method simple.
+        
+        Try
+        
+            Open Path To Test On Error
+                FailedToOpen = @true
+            End Then
+            
+                ActualPath = FileInfo( Test, 2 ) ; * if this is a DIR file it'll have a slash in it
+                
+                If Index( ActualPath, "|", 1 ) > 0 Then
+                    @ME->SetCondition( 1, "The requested path is not a DIR file." )
+                    Return "%SYSTEM.Status"->OK()
+                End
+                
+                Close Test
+                Test = "" ; * close and destroy the handle
+                
+            End Else
+                FailedToOpen = @true
+            End
+            
+        Catch TheException
+            FailedToOpen = @true
+        End Try
+        
+        If FailedToOpen = @true Then
+            @ME->SetCondition( 404, "The file indicated is not a valid file in the VOC" )
+            Return "%SYSTEM.Status"->OK()
+        End
+        
+        Pathname = ActualPath : TheCorrectSlash : File
+        
+    End
+    
+    @ME->fileName = Pathname
+    
+* Access a Cache array.  This allows MVBasic to handle standard Cache sparse multidimensional arrays where
+* there could be any number of subscripts and the subscripts can be meaningful names.  In this case, the
+* subscripts for the file handle array is the name of the file with "DICT_" or "DATA_" prepended.  This makes
+* it very easy to search the array for already-open files so we don't have to go through long setup procedures
+* more than once.  The file handle cache is kept in a Cache thread global (in many ways like named COMMON
+* in RDBMS.  In order for MV to view a Cache multidimensional array, DIM the array as you would a standard
+* MV dimensioned array but don't give any subscript range.  MVBasic takes this to mean "access or create a
+* standard Cache array".
+        
+    @ME->ClearConditions()
+
+    fileHandle = ""                   ; * clean it up, first
+
+    OpenSeq Pathname TO fileHandle Locked
+    
+        @ME->SetCondition( 503, Pathname : " is locked by another process and cannot be opened for sequential access at this time." )
+        
+    End On Error
+    
+        @ME->SetCondition( 504, Pathname : " cannot be opened for sequential access at this time due to a system error." )
+            
+    End Else
+    
+        If Status() = -1 Then ; * if the file does not exist
+    
+            If CreateIfNotFound = @true Then
+        
+                Create fileHandle Else
+                    @ME->SetCondition('502','Unable to create a sequential file! Check permissions and file availability.' )
+                    Return "%SYSTEM.Status"->OK()
+                End
+            
+            End Else
+                @ME->SetCondition( @ME->%GetParameter( "OpenErrorsNotAFile" ), "The requested sequential file does not exist and it may not be automatically created." )
+                Return "%SYSTEM.Status"->OK()
+            End
+            
+        End Else
+        
+            @ME->SetCondition( 510, Pathname : " cannot be opened for sequential access at this time due to a system error." )
+        
+        End
+        
+    End
+
+    @ME->fileHandle = fileHandle
+    
+    If NoBuffering = @true Then
+        NoBuf @ME->fileHandle Else Null
+    End
+    
+    If AppendMode = @true Then
+        SEEK @ME->fileHandle, 0, 2 THEN NULL ; * seek to the end of the file
+    End Else
+        SEEK @ME->fileHandle, 0, 0 THEN NULL ; * seek to the beginning of the file
+    End
+    
+    @ME->IsOpen = @true
+        
+    @ME->ClearConditions()
+    
+    Return "%SYSTEM.Status"->OK()
+]]></Implementation>
+</Method>
+
+<Method name="close">
+<Description>
+Close and release the sequential file</Description>
+<Implementation><![CDATA[
+
+    @ME->ClearConditions()
+    
+    CloseSeq @ME->fileHandle
+    @ME->fileHandle = "" ; * remove the oref
+    
+    Return
+]]></Implementation>
+</Method>
+
+<Method name="flush">
+<Description>
+Flush any remaining buffer out to disk</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+    flush @ME->fileHandle Else return @false
+    return @true
+]]></Implementation>
+</Method>
+
+<Method name="ReadLine">
+<Description>
+Read one line from a sequential file</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+    
+    @ME->record = ""
+    OK = 1
+    
+    ReadSeq Line From @ME->fileHandle On Error
+    
+        St = Status()
+        @ME->SetCondition( St, "A system error occurred whilst reading " : @ME->fileName )
+         
+    End Then
+    
+        @ME->record = Line
+        
+    End Else
+     
+        St = Status()
+        
+         If St = 1 Then ; * EOF
+             @ME->SetCondition( 1, "EOF in " : @ME->fileName )
+         End Else
+             @ME->SetCondition( St, "An error occurred whilst reading " : @ME->fileName )
+             OK = 0
+         End
+         
+         Return OK
+         
+     End
+     
+     @ME->recordHasChanged = @false
+     
+     Return
+]]></Implementation>
+</Method>
+
+<Method name="ToStream">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+
+	if not(isobject(@ME->stream)) then
+		@ME->stream = "%GlobalBinaryStream"->%New()
+	end
+	
+	loop
+		ReadBlk Block From @ME->fileHandle, 65536 Then
+			@ME->stream->Write(Block)
+		End Else
+
+			If Status() = 0 Then ; * EOF
+				Exit
+			end Else
+				@ME->SetCondition( 1, "A system error occurred whilst reading " : @ME->fileName )
+				Return @false
+			end
+
+		end
+
+	repeat
+
+	@ME->ClearConditions()
+
+	return @true
+]]></Implementation>
+</Method>
+
+<Method name="ReadBlock">
+<FormalSpec>blockSize=65536</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	Block = ""
+	ReadBlk Block From @ME->fileHandle, 65536 Then
+		return Block
+	End Else
+
+		If Status() = 0 Then ; * EOF
+			@ME->SetCondition(99, "EOF")
+			return ""
+		end Else
+			@ME->SetCondition( 1, "A system error occurred whilst reading " : @ME->fileName )
+			Return ""
+		end
+
+	end
+]]></Implementation>
+</Method>
+
+<Method name="WriteLine">
+<Description>
+Write a line to the sequential file.</Description>
+<FormalSpec>Text:%String</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+        writeseq Text TO @ME->fileHandle ELSE return @false
+        @ME->Flush()
+        return @true
+]]></Implementation>
+</Method>
+</Class>
+</Export>

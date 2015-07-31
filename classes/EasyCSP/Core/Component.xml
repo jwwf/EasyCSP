@@ -1,0 +1,702 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Core.Component">
+<Description><![CDATA[
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Abstract>1</Abstract>
+<Language>mvbasic</Language>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63617,44745.957189</TimeChanged>
+<TimeCreated>63371,37535.117979</TimeCreated>
+
+<Property name="Debugging">
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Property name="errors">
+<Type>EasyCSP.Core.Error</Type>
+<Collection>array</Collection>
+<Transient>1</Transient>
+</Property>
+
+<Property name="extendedDebugging">
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Transient>1</Transient>
+</Property>
+
+<Property name="crlf">
+<Type>%String</Type>
+<Final>1</Final>
+<Calculated>1</Calculated>
+<SqlComputeCode> set {crlf} = $char(13)_$char(10) </SqlComputeCode>
+<SqlComputed>1</SqlComputed>
+<Transient>1</Transient>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="dataLevel">
+<Type>%String</Type>
+<InitialExpression>"DATA"</InitialExpression>
+<Transient>1</Transient>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="dictLevel">
+<Type>%String</Type>
+<InitialExpression>"DICT"</InitialExpression>
+<Transient>1</Transient>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="nil">
+<Description>
+The empty string</Description>
+<Type>%String</Type>
+<Final>1</Final>
+<Transient>1</Transient>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="nul">
+<Description>
+The NUL value</Description>
+<Type>%Char</Type>
+<Final>1</Final>
+<Calculated>1</Calculated>
+<SqlComputeCode> set {nul} = $char(0) </SqlComputeCode>
+<SqlComputed>1</SqlComputed>
+<Transient>1</Transient>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="successful">
+<Description>
+A value used throughout the MVB system to denote the successful
+completion of any operation.</Description>
+<Type>%SmallInt</Type>
+<Final>1</Final>
+<InitialExpression>1</InitialExpression>
+<Transient>1</Transient>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="unsuccessful">
+<Description>
+An arbitrary value used throughout the MVB system to denote an unsuccessful
+completion of any operation</Description>
+<Type>%SmallInt</Type>
+<Final>1</Final>
+<InitialExpression>0</InitialExpression>
+<Transient>1</Transient>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Method name="getCaller">
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	Stack = @ME->getProgramCallStack()
+	return Stack< DCount(Stack, @fm ) - 1 >
+]]></Implementation>
+</Method>
+
+<Method name="getPID">
+<Language>cache</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    quit $j
+]]></Implementation>
+</Method>
+
+<Method name="getMVSystemDelimiters">
+<Description>
+PICK traditional system delimiters + the Prime Information set of system delimiters.  Includes
+the set of characters from 240 through 255</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	delimiters = ""
+	for idx = 240 to 255
+		delimiters := char(idx)
+	next
+	return delimiters
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+Names for System functions to make code more readable
+*/
+]]></Content>
+</UDLText>
+
+<Method name="getPrinterIsOn">
+<Description>
+System(1) - is the printer on?</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(1)
+]]></Implementation>
+</Method>
+
+<Method name="getCurrentPageWidth">
+<Description>
+System(2) - Current page width</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(2)
+]]></Implementation>
+</Method>
+
+<Method name="getCurrentPageDepthGet">
+<Description>
+System(3) - Current page depth</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(3)
+]]></Implementation>
+</Method>
+
+<Method name="getLinesRemainingOnPage">
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(4)
+]]></Implementation>
+</Method>
+
+<Method name="getCurrentPageNumber">
+<Description>
+System(5) - The current page number</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(5)
+]]></Implementation>
+</Method>
+
+<Method name="getCurrentLineNumber">
+<Description>
+System(6) - The current line number on the page</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(6)
+]]></Implementation>
+</Method>
+
+<Method name="getTerminalTypeCode">
+<Description>
+System(7) - The terminal type-code</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(7)
+]]></Implementation>
+</Method>
+
+<Method name="getCPUMillisecondsUsed">
+<Description>
+System(9) The number of CPU milliseconds consumed</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(9)
+]]></Implementation>
+</Method>
+
+<Method name="getDataStackIsActive">
+<Description>
+System(10) Set @true if a data stack is active</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(10)
+]]></Implementation>
+</Method>
+
+<Method name="getSelectListActive">
+<Description>
+System(11) Set @true if a select list is active</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(11)
+]]></Implementation>
+</Method>
+
+<Method name="getMillisecondsSinceMidnight">
+<Description>
+System(12) The number of milliseconds since today's midnight</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(12)
+]]></Implementation>
+</Method>
+
+<Method name="RQM">
+<Description>
+System(13) Release Quantum - causes a one-second sleep</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(13)
+]]></Implementation>
+</Method>
+
+<Method name="getTypeaheadCountGet">
+<Description>
+System(14) The number of characters remaining in the typeahead buffer</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(14)
+]]></Implementation>
+</Method>
+
+<Method name="getCommandLineOptionCodes">
+<Description>
+System(15) A string containing the character options from the command line</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(15)
+]]></Implementation>
+</Method>
+
+<Method name="getRunningFromPROCGet">
+<Description>
+System(16) Set @true if the current program was initiated from a PROC</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(16)
+]]></Implementation>
+</Method>
+
+<Method name="getSTOPCodeForChildProcessGet">
+<Description>
+System(17) Stop code for a child process</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(17)
+]]></Implementation>
+</Method>
+
+<Method name="getMyPortNumber">
+<Description>
+System(18) Contains the port number for this process</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(18)
+]]></Implementation>
+</Method>
+
+<Method name="getLoginNameGet">
+<Description>
+System(19) Contains the login name for this process</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(19)
+]]></Implementation>
+</Method>
+
+<Method name="getSpoolerJobNumber">
+<Description>
+System(20) Contains the current (or last) spooler job number if the printer is open</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(20)
+]]></Implementation>
+</Method>
+
+<Method name="getEXECUTELevelNumber">
+<Description>
+System(22) Contains the level number for the current nesting of EXECUTE</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(22)
+]]></Implementation>
+</Method>
+
+<Method name="getTerminalBreakKeyOn">
+<Description>
+System(23) Set to @true if the terminal BREAK key is available</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(23)
+]]></Implementation>
+</Method>
+
+<Method name="getTerminalEchoOn">
+<Description>
+System(24) Set to @true if terminal echo is on</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(24)
+]]></Implementation>
+</Method>
+
+<Method name="getThisProcessIsAPhantom">
+<Description>
+System(25) Set to @true if the current process is a phantom</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(25)
+]]></Implementation>
+</Method>
+
+<Method name="getInputPromptCharacter">
+<Description>
+System(26) Contains the current input prompt string</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(26)
+]]></Implementation>
+</Method>
+
+<Method name="getLicenseCode">
+<Description>
+System(31) Contains the system license code</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(31)
+]]></Implementation>
+</Method>
+
+<Method name="getMVDirectoryPath">
+<Description>
+System(32) The physical MV directory path</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(32)
+]]></Implementation>
+</Method>
+
+<Method name="getCommandStack">
+<Description>
+System(33) A copy of the command stack</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(33)
+]]></Implementation>
+</Method>
+
+<Method name="getInputStackDataPending">
+<Description>
+System(34) Set @true if there are data yet pending in the input stack</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(34)
+]]></Implementation>
+</Method>
+
+<Method name="getCurrentNumberOfMVUsers">
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(35)
+]]></Implementation>
+</Method>
+
+<Method name="getThisMVBASICProgramName">
+<Description>
+System(40) The global name of this MVBasic routine</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(40)
+]]></Implementation>
+</Method>
+
+<Method name="getCacheVersionNumber">
+<Description>
+System(41) Cache version number</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(41)
+]]></Implementation>
+</Method>
+
+<Method name="getLockHolderPortNumber">
+<Description>
+System(43) Port number of the process holding the lock last inquired upon</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(43)
+]]></Implementation>
+</Method>
+
+<Method name="getProgramCallStack">
+<Description>
+System(49) Program call stack</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(49)
+]]></Implementation>
+</Method>
+
+<Method name="getRunningWindows">
+<Description>
+Boolean: @true if this Cache instance is running on Windows</Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[    return ( SYSTEM(91) = 1 )
+]]></Implementation>
+</Method>
+
+<Method name="getslash">
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    IF SYSTEM(91) = 0 THEN RETURN( "/" ) ELSE RETURN( "\")
+]]></Implementation>
+</Method>
+
+<Method name="getUniversalTime">
+<Description>
+System(99) Universal time; the number of seconds since December 31, 1970. This is the same as the *nix epoch.</Description>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(99)
+]]></Implementation>
+</Method>
+
+<Method name="getCacheNamespace">
+<Description>
+System(1052) The Cache namespace in which this process is running</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(1052)
+]]></Implementation>
+</Method>
+
+<Method name="getClientIPAddress">
+<Description>
+System(1053) The client's IP address</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(1053)
+]]></Implementation>
+</Method>
+
+<Method name="getCacheManagerDirectoryPath">
+<Description>
+System(1054) The physical path to the Cache instance mgr directory</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(1054)
+]]></Implementation>
+</Method>
+
+<Method name="getCurrentNamespacePath">
+<Description>
+System(1055) The current Cache namespace in which this process is running</Description>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[    return SYSTEM(1055)
+]]></Implementation>
+</Method>
+
+<Method name="getUnixMidnightToday">
+<Description>
+Return the Unix epoch integer date for midnight 0000Z today.</Description>
+<ReturnType>%BigInt</ReturnType>
+<Implementation><![CDATA[    RETURN INT( SYSTEM(99) - TIME() )
+]]></Implementation>
+</Method>
+
+<Method name="ClearConditions">
+<Description>
+Clear the global errorCode, errorDescription, and errorRaisedBy variables
+and further set the value of the STATUS() function to 0 (integer zero).</Description>
+<Implementation><![CDATA[
+    
+	idx = ""
+	loop
+		idx = @ME->errors->Next(idx)
+	while idx <> "" do
+		@ME->errors->RemoveAt(idx)
+	repeat
+
+	ASSIGN 0 TO STATUS()
+]]></Implementation>
+</Method>
+
+<Method name="copyConditions">
+<FormalSpec>sourceConditionArray</FormalSpec>
+<Language>cache</Language>
+<Implementation><![CDATA[
+	if '$isobject(sourceConditionArray) quit
+	set idx = sourceConditionArray.Next("")
+	while idx '= "" {
+		do ..errors.SetAt(sourceConditionArray.GetAt(idx), ..errors.Count() + 1)
+	}
+]]></Implementation>
+</Method>
+
+<Method name="formatConditions">
+<Language>cache</Language>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	set rtn = ##class(%GlobalCharacterStream).%New()
+	set idx = ..errors.Next("")
+	while idx '= "" {
+		set errorObj = ..errors.GetAt(idx)
+		set line = $mvfmt(errorObj.code, "10 R") _ " - " _ $mvfmt(errorObj.message, "80 L") _ " - " _ errorObj.occurredIn
+		do rtn.WriteLine(line)
+		set idx = ..errors.Next(idx)
+	}
+	
+	do rtn.Rewind()
+	
+	quit rtn
+]]></Implementation>
+</Method>
+
+<Method name="hasConditions">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[	return (@ME->errors->Count() > 0)
+]]></Implementation>
+</Method>
+
+<Method name="SetCondition">
+<Description>
+Set up the Error code, description, and routine reporting system-wide variables.
+These are conditioned so as not to break any multivalue constraints.</Description>
+<FormalSpec>errorCode:%Integer=0,errorDescription:%String="",occurredIn:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<Implementation><![CDATA[
+    if errorCode = 0 then
+    	@ME->ClearConditions()
+		return
+	end
+            
+	* If an error description was provided by the System DecomposeStatus call it has crlf's in it
+	errorDescription = EREPLACE( errorDescription, @ME->crlf, @VM )
+
+	if $get(occurredIn) = "" then
+		errorRaisedBy = @ME->getCaller()
+	end else
+		errorRaisedBy = occurredIn
+	end
+	
+	err = "EasyCSP.Core.Error"->%New(errorCode, errorDescription, errorRaisedBy)
+	@ME->errors->SetAt(err,@ME->errors->Count() + 1)
+
+	ASSIGN errorCode TO STATUS()
+
+	RETURN
+]]></Implementation>
+</Method>
+
+<Method name="hasMethod">
+<Description><![CDATA[
+Return a true or false indicting whether the current instance contains a method named in the <i>methodName</i> formal spec parameter.]]></Description>
+<Final>1</Final>
+<FormalSpec>methodName</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	q:$get(methodName)="" 0
+	q $s($d(^oddCOM($classname(),"m",methodName,44))#2:^(44),$d(^oddCOM($g(^(2),$classname()),"m",methodName,44))#2:^(44),1:$s($d(^oddDEF($g(^oddCOM($classname(),"m",methodName,2),$classname()),"m",methodName,44))#2:^(44),1:$g(^%qCacheObjectKey(1,"m",44))))
+]]></Implementation>
+</Method>
+
+<Method name="hasProperty">
+<Description><![CDATA[
+Return a true or false indicting whether the current instance contains a property named in the <i>propertyName</i> formal spec parameter.]]></Description>
+<Final>1</Final>
+<FormalSpec>propertyName</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	q:$get(propertyName)="" 0
+	s test = $s($d(^oddCOM($classname(),"a",propertyName,40))#2:^(40),$d(^oddCOM($g(^(2),$classname()),"a",propertyName,40))#2:^(40),1:$s($d(^oddDEF($g(^oddCOM($classname(),"a",propertyName,2),$classname()),"a",propertyName,40))#2:^(40),1:$g(^%qCacheObjectKey(1,"a",40))))
+	q (test'="")
+]]></Implementation>
+</Method>
+
+<Method name="getParameters">
+<Description><![CDATA[
+Return the parameters (or class constants, if you like) for the class named in the <i>className</i> formal spec parameter]]></Description>
+<Final>1</Final>
+<FormalSpec>className:%String=""</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[
+	if $get(className) = "" quit ""
+	
+	set rtn = ##class(%ArrayOfDataTypes).%New()
+	
+	set classDef = ##class(%Dictionary.CompiledClass).%OpenId(className)
+	
+	if '$isobject(classDef) quit ""
+	
+	if ($find(classDef.Super, "MV.Adaptor") > 0) ! ($find(classDef.Super, "MVModel.Base") > 0) {
+		set ..isMV = 1
+	}
+	
+	quit classDef.Parameters
+]]></Implementation>
+</Method>
+
+<Method name="getPrimaryKey">
+<Description>
+Find the primary key for the current %Persistent class. Return its compiled property definition if
+the key is located.</Description>
+<Final>1</Final>
+<Language>cache</Language>
+<ReturnType>%Dictionary.CompiledProperty</ReturnType>
+<Implementation><![CDATA[
+	set rtn = ""
+	if $get(^oddCOM($classname())) = "" quit "" // not defined or not compiled
+	set classDef = ##class(%Dictionary.CompiledClass).%OpenId($className())
+	if $find(classDef.Super, "%Persistent") = 0 quit rtn // This isn't a persistent class, ergo has no primary key.
+		
+	set o = $order(^oddCOM($classname(), "i", ""))
+	while o '= "" {
+		if $get(^oddCOM($classname(), "i", o, 5)) = "key" {
+			set pk = ^oddCOM($classname(), "i", o, "I", 23)
+			set properties = classDef.Properties
+			set idx = properties.Next("")
+			while idx '= "" {
+				s propertyDef = properties.GetAt(idx)
+				if propertyDef.Name = pk {
+					set rtn = propertyDef
+					quit
+				}
+				set idx = properties.Next(idx)
+			}
+		}
+		if rtn '= "" quit
+		set o = $order(^oddCOM($classname(), "i", o))
+	}
+	quit rtn
+]]></Implementation>
+</Method>
+
+<Method name="TimeStamp">
+<Description>
+Copied from Json.Common</Description>
+<FormalSpec><![CDATA[&Now,&DST,&TZ]]></FormalSpec>
+<Language>cache</Language>
+<Implementation><![CDATA[
+	// current times
+	set h=$horolog ; Local
+	set n=$now()   ; Local (no DST)
+	set u=$now(0)  ; UTC
+	
+	// convert to seconds
+	set hh=(86400*h)+$piece(h,",",2)
+	set nn=(86400*n)+$piece(n,",",2)
+	set uu=(86400*u)+$piece(u,",",2)
+	
+	// results
+	set Now=h_"."_$piece(n,".",2)
+	set DST=$justify((hh-nn)/3600,0,0)
+	set TZ=$justify((hh-uu)/3600,0,0)
+]]></Implementation>
+</Method>
+
+<Method name="instanceOf">
+<FormalSpec>oref,class</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(oref) = "" quit 0
+	if '$ISOBJECT(oref) quit 0
+	if $mvoconv($get(oref),"MCL") [ $mvoconv(class, "MCL") quit 1
+	quit 0
+]]></Implementation>
+</Method>
+
+<Method name="streamToString">
+<FormalSpec>stream:%Stream</FormalSpec>
+<Language>cache</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	set rtn = ""
+	if $get(stream) = "" quit rtn
+	if $get(stream) '[ "Stream" quit rtn
+	
+	while (stream.AtEnd '= 0) {
+		set len = 1024
+		set atend = 0
+		try {
+			set substr = stream.Read(.len)
+		} catch {
+			set atend = 1
+			quit
+		}
+		
+		quit:atend=1 // leave the loop if the string is full
+		set rtn = rtn _ substr
+		
+	}
+	
+	quit rtn
+]]></Implementation>
+</Method>
+</Class>
+</Export>

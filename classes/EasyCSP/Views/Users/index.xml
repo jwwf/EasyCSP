@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Users.index">
+<Description><![CDATA[
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63764,34135.293915</TimeChanged>
+<TimeCreated>63748,48851.242638</TimeCreated>
+
+<Method name="run">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+		
+	if '..data.isset("model") {
+		do ..SetCondition(404, "Please supply a data model for the login form.")
+		quit 0
+	}
+	
+	set model = ..data.get("model")	
+	
+	if ..instanceOf(model, "Users") = 0 {
+		do ..SetCondition(404,"The user data model should be an instance of a Users class.")
+		quit 0
+	}
+	
+	set queryId = ..data.get("queryId")
+	
+	if (queryId = "") {
+		do ..addContent("No items found. Check your query and try again. (code: "_queryId_")")
+		quit 1
+	}
+	
+	//do ..addContent("Query ID: "_queryId)
+	
+	set ..pageTitle = "Site User Maintenance"
+	
+	do ..addContent("<h2>Site User Maintenance</h2>")
+	
+	set url = %EasyCSPApp.getViewURL()
+	
+	set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+		
+    if model.hasErrors()!model.hasConditions() {
+		do htmlOptions.unsetAll()
+		do htmlOptions.set("id", "errors")
+		do htmlOptions.set("class", "clear errorSummary")
+		do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div",htmlOptions))
+		do:model.hasErrors() ..addStreamContent(##class(EasyCSP.Web.CHTML).formErrorSummary(model))
+		do:..hasConditions() ..addStreamContent(..formatConditions())
+	    do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div")) // end of "msgs" div
+    }
+	
+	set tableOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do tableOptions.set("queryId", queryId)
+	do ..addStreamContent(##class(EasyCSP.Web.ActiveTable).run(tableOptions))
+
+	quit 1
+]]></Implementation>
+</Method>
+</Class>
+</Export>

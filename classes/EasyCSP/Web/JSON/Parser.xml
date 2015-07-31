@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-05-29 10:22:41">
+<Class name="EasyCSP.Web.JSON.Parser">
+<Description>
+Stream-enabled JSON parser
+	TODO: still not picking up the second object in Tickets</Description>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63701,37358.348809</TimeChanged>
+<TimeCreated>63681,58468.291983</TimeCreated>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+	do ##class(JSON.StatusUpdateMessage).fromJSONFile()
+	
+	{
+    "Error": {
+        "Code": "null"
+    },
+    "MSISDN": "14039192311",
+    "Timestamp": "2015-01-12 11:58:27 -0700",
+    "InstallID": "a269cec1-3d52-4004-8d5c-3a38b69a4168",
+    "UUID": "H3IS3NB3RG07eb266300fd4dee",
+    "AppVersion": "1.1.0 Beta - Build 45",
+    "DeviceRooted": false,
+    "HandsetType": "Android",
+    "SessionEncrypted": false,
+    "PreReg": false,
+    "Data": {
+        "Tickets": [
+            {
+                "Code": "5324776",
+                "Period": "Single Trip",
+                "Type": "General Public",
+                "ActivationDate": "2015-01-12 13:57:45 -0500",
+                "ExpiryDate": "2015-01-12 15:02:45 -0500",
+                "Activated": true,
+                "TicketPart": 0
+            },
+            {%workArray("AppVersion")="1.1.0 Beta - Build 45"   <=== THERE
+%workArray("DeviceRooted")="false"
+%workArray("Error","Code")=1
+%workArray("Error","Code",1,"Code")="null"
+%workArray("HandsetType")="Android"
+%workArray("InstallID")="a269cec1-3d52-4004-8d5c-3a38b69a4168"
+%workArray("MSISDN")=14039192311
+%workArray("PreReg")="false"
+%workArray("SessionEncrypted")="false"
+%workArray("Tickets","Activated")=1
+%workArray("Tickets","Activated",1,"Activated")="true"
+%workArray("Tickets","ActivationDate")=1
+%workArray("Tickets","ActivationDate",1,"ActivationDate")="2015-01-12 13:57:45 -0500"
+%workArray("Tickets","Code")=1
+%workArray("Tickets","Code",1,"Code")=5324776
+%workArray("Tickets","ExpiryDate")=1
+%workArray("Tickets","ExpiryDate",1,"ExpiryDate")="2015-01-12 15:02:45 -0500"
+%workArray("Tickets","Period")=1
+%workArray("Tickets","Period",1,"Period")="Single Trip"
+%workArray("Tickets","Type")=1
+%workArray("Tickets","Type",1,"Type")="General Public"
+%workArray("Timestamp")="2015-01-12 11:58:27 -0700"
+%workArray("UUID")="H3IS3NB3RG07eb266300fd4dee"
+
+*/
+]]></Content>
+</UDLText>
+
+<Method name="loadFromJSON">
+<FormalSpec>inputStream:%String</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(inputStream) = "" then return 0
+	inputStream->Rewind()
+	
+	dim %workArray() ; * use a Cache-type array
+	$kill %workArray
+	
+	returnArray = "%ArrayOfDataTypes"->%New() ; * the topmost object is always an array of datatypes
+	
+	stack = ""; * each attribute is structure name : @vm : object type : parent
+	structureName = "root"
+	structureType = ""
+	parent = ""
+	
+	whiteSpace = " ":char(9):char(10):char(13)
+	quotes = "'":'"'
+	structureOpen = "[{"
+	structureClose = "]}"
+	newStructure = 0
+	
+	elementKey = ""
+	elementOpen = ":"
+	elementClose = structureClose:","
+	
+	withinQuotes = @false
+	
+	fragment = ""
+	
+	stringIndex = 0
+	lastCharRead = ""
+	inputIsStream = isobject(inputStream)
+	if inputIsStream then stringLength = inputStream->Size else stringLength = len(inputStream)
+	
+	* Find the start. Idle through white space and the leading quote, landing on the first character of the first key.
+	gosub getObjectStart
+	if atEnd then return 0 ; * end of input and no opening [ or {
+		
+	stack = "" ; * This will be the supercedent structure.
+	
+	gosub parse
+	
+	$xecute "zwrite %workArray"
+	
+	return
+	
+parse:
+	
+	loop until atEnd do
+	
+		* Find the first property or subscript token
+		seekingKey = 1
+		gosub getToken
+		if token = "" then return
+		
+		if endOfStructure then
+			*gosub stackPop
+			return
+			continue
+		end
+		
+		elementKey = token
+		
+		* open a new structure or element
+		gosub stackPush
+		
+		if newStructure then
+			gosub parse
+			continue
+		end
+		
+		* Otherwise collect a value
+		seekingKey = 0 ; * looking for a value or structure this time
+		stopChars = quotes:structureOpen:structureClose
+		*withinQuotes = (index(quotes, lastCharRead, 1) > 0)
+		gosub idleUntilStopChars
+		
+		if endOfStructure then
+			*gosub stackPop
+			return
+			continue
+		end
+		
+		if newStructure then
+			*gosub idleUntilStopChars
+			gosub parse
+			continue
+		end
+		
+		gosub getToken
+		
+		value = token
+		withinQuotes = 0
+		gosub pushValue
+	
+	repeat
+	
+	return 1
+	
+getOneChar:
+
+	if inputIsStream then
+	
+		len = 1
+		lastCharRead = inputStream->Read(len)
+		if len = 0 then
+			atEnd = 1
+			return
+		end
+		
+		if inputStream->AtEnd = 1 then
+			atEnd = 1 ; * hit the end
+			return
+		end
+		
+		stringIndex += 1
+		
+	end else
+	
+		stringIndex += 1
+		
+		if stringIndex > stringLength then
+			atEnd = 1
+			return
+		end
+		
+		lastCharRead = inputStream[stringIndex, 1]
+		
+	end
+		
+	crt lastCharRead: ; * for debugging
+		
+	return
+	
+getObjectStart:
+	
+	stopChars = whiteSpace:quotes:structureOpen
+	gosub idleUntilStopChars
+	structureType = ""
+	if atEnd then return ; * error: end found before a structure opener
+	
+	if index(structureOpen, lastCharRead, 1) = 0 then return ; * something's wrong
+	
+	structureType = if "{" then "a" else "l" ; * %ArrayOfDataTypes or %ListOfDataTypes
+	
+	return
+	
+idleUntilStopChars:
+	
+	atEnd = 0
+	lastCharRead = ""
+	if index(stopChars, structureOpen, 1) = 0 then stopChars := structureOpen
+	
+	loop until atEnd Do
+	
+		gosub getOneChar
+		
+		if index(whiteSpace, lastCharRead, 1) > 0 then continue ; * always ignore white space when idling
+		
+		newStructure = (index(structureOpen, lastCharRead, 1) > 0)
+		if newStructure then return
+		
+		if index(structureClose, lastCharRead,1) then
+			endOfStructure = 1
+			return
+		end
+		
+		if index(stopChars, lastCharRead, 1) > 0 then exit ; * found a start
+		
+		if (lastCharRead = oconv(lastCharRead, "MCA")) then
+			fragment := lastCharRead
+			exit
+		end
+		
+	repeat
+	
+	return
+	
+	
+gatherUntilStopChars:
+	
+	atEnd = 0
+	escaped = 0
+	lastCharRead = ""
+	
+	loop
+	
+		gosub getOneChar
+		
+		if atEnd then exit
+	
+		newStructure = (index(structureOpen, lastCharRead, 1) > 0)
+		if newStructure then return
+		
+		if index(structureClose, lastCharRead, 1) > 0 then
+			endOfStructure = 1
+			return
+		end
+		
+		if (index(quotes, lastCharRead, 1) > 0) then
+			if not(withinQuotes) and index(whiteSpace, lastCharRead, 1) > 0 then continue ; * always ignore white space when idling
+			withinQuotes = not(withinQuotes)
+			if not(withinQuotes) then return ; * that's the end of the token
+		end
+		
+		if withinQuotes and (index(quotes, lastCharRead, 1) > 0) and not(escaped)  then		
+			if index(stopChars, lastCharRead, 1) > 0 then 
+				withinQuotes = 0
+				exit ; * found a "quit looking" character
+			end
+		end else
+			if escaped then escaped = 0
+		end
+		
+		if fragment[1] = "\" then 
+			fragment = fragment[1, len(fragment) - 1)
+			escaped = 1
+		end
+		
+		if not(escaped) and (index(stopChars, lastCharRead, 1) > 0) then exit
+		
+		fragment := lastCharRead
+		
+	repeat
+	
+	return
+	
+*
+* Get one token. Depending on where a token is found it can be a key or a value.
+*
+getToken:
+
+	*fragment = ""
+	endOfStructure = 0
+	token = ""
+	
+* First, inch up to where the token starts. Quit looking if the the end of the structure is found.
+
+	if seekingKey then gosub idleUntilStopChars
+	
+	newStructure = (index(structureOpen, lastCharRead, 1) > 0)
+	if newStructure then 
+		token = ""
+		return
+	end
+	
+	endOfStructure = (index(structureClose, lastCharRead, 1) > 0)
+	if endOfStructure then 
+		gosub stackPop
+		token = ""
+		return
+	end
+	
+	stopChars = quotes:structureOpen:structureClose
+	if fragment <> "" then 
+		stopChars:=elementClose
+	end else
+		withinQuotes = (index(quotes, lastCharRead, 1) > 0) or (lastCharRead = oconv(lastCharRead, "MCA"))
+	end
+	
+	gosub gatherUntilStopChars
+	if atEnd then return 
+	
+	token = fragment
+	fragment = ""
+	withinQuotes = 0
+	
+	return
+	
+* each attribute is structure name : @vm : element name : @vm : object type : parent
+stackPush:
+	
+	stack<-1> =  elementKey
+		
+	return
+	
+stackPop:
+	
+	stackDepth = dcount(stack, @fm)
+	del stack<stackDepth>
+	stackDepth -= 1
+	return
+	
+
+pushValue:
+	stackDepth = dcount(stack,@fm)
+	if stackDepth > 1 then
+		dataNode = dquote(stack<stackDepth>)
+		subNodes = field( stack, @fm, stackDepth - 1)
+		subNodes = cats(reuse('"'),subNodes)
+		subNodes = cats(subNodes,reuse('"'))
+		locators = convert(@fm, ",", subNodes)
+		subscripts = locators:",":dataNode
+		cos = "set %workArray(":subscripts:") = +$get(%workArray(":subscripts:"))+1 set %nodeDepth = $get(%workArray(":subscripts:"))"
+		$xecute cos
+		cos = "set %workArray(":subscripts:",":%nodeDepth:",":dataNode:")=":dquote(value)
+		$xecute cos
+	end else
+		%workArray(stack) = value
+	end
+	
+	*parentage = convert(@fm, "|", stack)
+	*workDepth = $get(%workArray) + 1
+	*%workArray = workDepth
+	*%workArray(workDepth, parentage) = value
+	gosub stackPop
+	return
+]]></Implementation>
+</Method>
+
+<Method name="unitTest">
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	set xDataDef = ##class(%Dictionary.CompiledXData).%OpenId($classname(1)_"||unitTestData")
+	do ##class(EasyCSP.Web.JSON.Parser).loadFromJSON(xDataDef.Data)
+]]></Implementation>
+</Method>
+
+<XData name="unitTestData">
+<Data><![CDATA[
+<root>
+{
+    "Error": {
+        "Code": "null"
+    },
+    "MSISDN": "14039192311",
+    "Timestamp": "2015-01-12 11:58:27 -0700",
+    "InstallID": "a269cec1-3d52-4004-8d5c-3a38b69a4168",
+    "UUID": "H3IS3NB3RG07eb266300fd4dee",
+    "AppVersion": "1.1.0 Beta - Build 45",
+    "DeviceRooted": false,
+    "HandsetType": "Android",
+    "SessionEncrypted": false,
+    "PreReg": false,
+    "Data": {
+        "Tickets": [
+            {
+                "Code": "5324776",
+                "Period": "Single Trip",
+                "Type": "General Public",
+                "ActivationDate": "2015-01-12 13:57:45 -0500",
+                "ExpiryDate": "2015-01-12 15:02:45 -0500",
+                "Activated": true,
+                "TicketPart": 0
+            },
+            {
+                "Code": "4033504",
+                "Period": "Single Trip",
+                "Type": "General Public",
+                "Activated": false,
+                "TicketPart": 0
+            }
+        ]
+    }
+}
+		</root>
+]]></Data>
+</XData>
+</Class>
+</Export>

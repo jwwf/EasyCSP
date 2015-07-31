@@ -1,0 +1,739 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.CJSON">
+<Description><![CDATA[
+Stream-enabled JSON parser. Create an instance of this parser object then
+call <method>decode</method>. The result will be returned in <property>decodedResult</property>.
+The decoder will accept either a stream or a string as input in the formal spec.
+ 
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>
+  ]]></Description>
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63747,33526.467262</TimeChanged>
+<TimeCreated>63701,37533.101756</TimeCreated>
+
+<Property name="atEnd">
+<Description>
+Indicates whether the end of the input stream or string has been reached.</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="currentIdentifier">
+<Description>
+The JSON identifier for this current structure</Description>
+<Type>%String</Type>
+</Property>
+
+<Property name="decodedResult">
+<Description>
+The structure in the process of being built. If a substructure is detected then
+this structure is pushed onto the stack until all of a substructure has been
+parsed from the input.</Description>
+<Private>1</Private>
+</Property>
+
+<Property name="elementKey">
+<Description>
+The name of an element; the JSON token to the left of a full colon.</Description>
+<Type>%String</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="elementClose">
+<Description>
+These characters close an element or substructure.</Description>
+<Type>%String</Type>
+<Private>1</Private>
+<SqlComputeCode>set elementClose = "]},"</SqlComputeCode>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="elementOpen">
+<Description>
+This character indicate the end of an element key and the start of the value or substructure.</Description>
+<Type>%String</Type>
+<InitialExpression>":"</InitialExpression>
+<Private>1</Private>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="endOfStructure">
+<Description>
+TRUE if the end of a structure has been reached. This is set to FALSE each time either
+idle or gather is called.</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="fragment">
+<Description>
+The current line/token fragment being evaluated</Description>
+<Type>%String</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="inputIsStream">
+<Description>
+Remember the input object type across the various internal methods</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="inputStream">
+<Description>
+The input stream or string</Description>
+<Type>%CacheString</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="lastCharRead">
+<Description>
+The last character read from the input stream or string.</Description>
+<Type>%String</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="newStructure">
+<Description>
+TRUE when a new substructure is encountered.</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="result">
+<Description>
+The return value after the JSON string is parsed.</Description>
+<Type>%ArrayOfDataTypes</Type>
+<Private>1</Private>
+<SqlComputeCode>set result = ##class(%ArrayOfDataTypes).%New()</SqlComputeCode>
+<SqlComputed>1</SqlComputed>
+</Property>
+
+<Property name="structureIsOpen">
+<Description>
+TRUE when a structure is open. Set back to false when the (sub)structure is closed.</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="quotes">
+<Description>
+Value quote characters.</Description>
+<Type>%String</Type>
+<InitialExpression>"'"""</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="stack">
+<Description>
+Keeps track of the current node and its parents</Description>
+<Type>%ListOfDataTypes</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="stringIndex">
+<Description>
+Tracks the position of the pointer within the input string/stream</Description>
+<Type>%Integer</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="stringLength">
+<Description>
+The length of the input object</Description>
+<Type>%Integer</Type>
+<InitialExpression>0</InitialExpression>
+</Property>
+
+<Property name="structureClose">
+<Description>
+These characters end a structure</Description>
+<Type>%String</Type>
+<InitialExpression>"]}"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="structureName">
+<Description>
+The structure being parsed</Description>
+<Type>%String</Type>
+<InitialExpression>"root"</InitialExpression>
+<Private>1</Private>
+</Property>
+
+<Property name="structureOpen">
+<Description>
+These characters begin a structure</Description>
+<Type>%String</Type>
+<InitialExpression>"[{"</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="structureType">
+<Description>
+Informs various methods in this class of the type of structure being parsed. A JSON object
+with attributes (a structure surrounded by {}) becomes an %ArrayOfDataTypes. A JSON array
+(ordered name-value pairs, enclosed by []) becomes a %ListOfDataTypes..</Description>
+<Type>%String</Type>
+<Private>1</Private>
+</Property>
+
+<Property name="whiteSpace">
+<Description>
+Characters ignored as white space. This parser will accept either minified (no whitespace) or prettified
+(copious whitespaace and new lines) formats.</Description>
+<Type>%String</Type>
+<InitialExpression>" "_$char(9, 10, 13)</InitialExpression>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Property name="withinQuotes">
+<Description>
+Informs the various methods in this class that the current parse-point is inside quotes and contents will be
+taken literally. Escaped quotes will be automatically unescaped.</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+<Private>1</Private>
+<ReadOnly>1</ReadOnly>
+</Property>
+
+<Method name="decode">
+<Description><![CDATA[
+Public entry point to run the engine. <variable>inputStream</variable> may be either a %String or a %Stream.
+The return will be in the <property>result</property> property. This method returns a %Boolean TRUE (1) if
+the parse is successful all the way through.]]></Description>
+<FormalSpec>inputStream:%String</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(inputStream) = "" then return 0
+	
+	@ME->inputStream = inputStream
+	
+	dim %workArray() ; * use a Cache-type array
+	$kill %workArray
+	
+	@ME->lastCharRead = ""
+	@ME->inputIsStream = isobject(inputStream)
+	if @ME->inputIsStream then
+		@ME->inputStream->Rewind()
+		@ME->stringLength = inputStream->Size 
+	end else 
+		@ME->stringLength = len(inputStream)
+	end
+	
+	* Find the start. Idle through white space and the leading quote, landing on the first character of the first key.
+	stopChars = @ME->whiteSpace:@ME->quotes:@ME->structureOpen
+	@ME->idleUntilStopChars(stopChars)
+	
+	if @ME->atEnd then return ; * error: end found before a structure opener
+	
+	if index(@ME->structureOpen, @ME->lastCharRead, 1) = 0 then return 0 ; * something's wrong
+	
+	@ME->structureType = if @ME->lastCharRead = "{" then "a" else "l" ; * %ArrayOfDataTypes or %ListOfDataTypes
+	
+	
+	if @ME->structureType = "a" then
+		@ME->decodedResult = "%ArrayOfDataTypes"->%New()
+	end else
+		@ME->decodedResult = "%ListOfDataTypes"->%New()
+	end
+	
+	@ME->newStructure = @false ; * the new structure was just created; now seek a key or substructure
+	
+	@ME->result = @ME->decodedResult
+	
+	@ME->parse(@false, @true)
+			
+	return
+]]></Implementation>
+</Method>
+
+<Method name="parse">
+<Description>
+Break apart the objects and arrays in the JSON input and set them in
+the return array at the proper depth. Recurse if necessary.</Description>
+<FormalSpec>recursing:%Boolean=0,seekingKey:%Boolean=1</FormalSpec>
+<Language>mvbasic</Language>
+<Private>1</Private>
+<Implementation><![CDATA[
+	if $get(recursing) = "" then recursing = 0 
+	if $get(seekingKey) = "" then seeingKey = 1
+	token = ""
+	
+	loop until @ME->atEnd do
+		
+		doContinue = @false
+	
+		begin case
+		
+			case @ME->endOfStructure
+				@ME->stackPop() ; * and merge the current structure into its parent
+				seekingKey = @false
+				return ; * end the recurse
+				continue ; * after the return
+				
+			case @true
+				@ME->fragment = ""
+				@ME->getToken(seekingKey) ; * get the next token for a key
+				key = @ME->fragment
+				if len(key) > 0 then 
+					seekingKey = @false
+					@ME->getToken(seekingKey)
+				end
+				
+				* if the pointer crossed a boundary into a new structure
+				if @ME->newStructure then ; * this is a new structure, not a name-value pair
+					newObjectType = if @ME->lastCharRead = "{" then "a" else "l" 
+					@ME->stackPush(newObjectType, key)
+					seekingKey = @true
+					@ME->parse(@true, @true) ; * new sub-level
+					continue
+				end 
+				
+				* elseif the pointer stopped at the end of a structure
+				if @ME->endOfStructure then
+					@ME->stackPop()
+					@ME->endOfStructure = @false
+					return
+				end
+				
+				* finally
+				@ME->pushValue(key,@ME->fragment)
+				
+			
+		end case
+	
+	repeat
+	
+	return
+	
+evaluate:
+
+	return
+]]></Implementation>
+</Method>
+
+<Method name="getOneChar">
+<Description>
+Get the next character in the input. Manage EOF flag when input is a string vs a stream.</Description>
+<Private>1</Private>
+<Implementation><![CDATA[
+
+	if ..inputIsStream {
+	
+		set len = 1
+		set ..lastCharRead = ..inputStream.Read(len)
+		if len = 0 {
+			set ..atEnd = 1
+			quit ""
+		}
+		
+		if ..inputStream.AtEnd = 1 {
+			set ..atEnd = 1 ; * hit the end
+			quit ""
+		}
+		
+		set ..stringIndex = ..stringIndex + 1
+		
+	} else {
+	
+		set ..stringIndex = ..stringIndex + 1
+		
+		if ..stringIndex > ..stringLength {
+			set ..atEnd = 1
+			quit ""
+		}
+		
+		set ..lastCharRead = $extract(..inputStream, ..stringIndex, ..stringIndex + 1)
+		
+	}
+		
+	write ..lastCharRead ; * for debugging
+		
+	quit
+]]></Implementation>
+</Method>
+
+<Method name="idleUntilStopChars">
+<FormalSpec>stopChars=""</FormalSpec>
+<Language>mvbasic</Language>
+<Private>1</Private>
+<Implementation><![CDATA[
+	
+	@ME->atEnd = 0
+	@ME->endOfStructure = 0
+	@ME->lastCharRead = ""
+	@ME->newStructure = 0
+	
+	if index(stopChars, @ME->structureOpen, 1) = 0 then stopChars := @ME->structureOpen
+	
+	loop until @ME->atEnd Do
+	
+		@ME->getOneChar()
+		
+		lastChar = @ME->lastCharRead
+		
+		if index(@ME->whiteSpace, lastChar, 1) > 0 then continue ; * always ignore white space when idling
+		
+		@ME->newStructure = (index(@ME->structureOpen, lastChar, 1) > 0)
+		if @ME->newStructure then
+			@ME->structureType = if @ME->lastCharRead = "{" then "a" else "l" ; * %ArrayOfDataTypes or %ListOfDataTypes
+			return
+		end
+		
+		if index(@ME->structureClose, lastChar,1) then
+			@ME->endOfStructure = 1
+			return
+		end
+		
+		if index(stopChars, lastChar, 1) > 0 then exit ; * found a start
+		
+		if index("fnt", lastChar, 1) > 0 then exit ; * "false", "null", "true" are allowed bare, unquoted tokens
+		
+		if lastChar = oconv(lastChar, "MCN") then exit ; * integers don't need to be quoted
+		
+	repeat
+	
+	return
+]]></Implementation>
+</Method>
+
+<Method name="gatherUntilStopChars">
+<Description>
+Accumulate a string until a stop-character is encountered.</Description>
+<FormalSpec>stopChars:%String="",withinQuotes:%Boolean=0</FormalSpec>
+<Language>mvbasic</Language>
+<Private>1</Private>
+<Implementation><![CDATA[
+	@ME->atEnd = 0
+	escaped = 0
+	@ME->fragment = ""
+	
+	loop
+	
+		@ME->getOneChar()
+		
+		if @ME->atEnd then exit
+		
+		lastChar = @ME->lastCharRead
+	
+		newStructure = (index(@ME->structureOpen, lastChar, 1) > 0)
+		if @ME->newStructure then return
+		
+		if index(@ME->structureClose, lastChar, 1) > 0 then
+			endOfStructure = 1
+			return
+		end
+		
+		if (index(@ME->quotes, lastChar, 1) > 0) then
+			if not(withinQuotes) and index(@ME->whiteSpace, lastChar, 1) > 0 then continue ; * always ignore white space when idling
+			withinQuotes = not(withinQuotes)
+			if not(withinQuotes) then return ; * that's the end of the token
+		end
+		
+		if withinQuotes and (index(@ME->quotes, lastChar, 1) > 0) and not(escaped)  then		
+			if index(stopChars, lastChar, 1) > 0 then 
+				withinQuotes = 0
+				exit ; * found a "quit looking" character
+			end
+		end else
+			if escaped then escaped = 0
+			if index(stopChars, lastChar, 1) > 0 then return ; * bare-naked values stop at white-space or structure-end
+		end
+		
+		
+		if @ME->fragment = "" then 
+			@ME->fragment = lastChar
+			continue
+		end
+		
+		* Look for an escape. Remove it.
+		fragment = @ME->fragment
+		if fragment[1] = "\" then 
+			fragment = fragment[1, len(fragment) - 1)
+			escaped = 1
+			@ME->fragment = fragment
+		end
+		
+		if not(escaped) and (index(stopChars, lastChar, 1) > 0) then exit
+		
+		@ME->fragment = @ME->fragment : lastChar
+		
+	repeat
+	
+	return
+]]></Implementation>
+</Method>
+
+<Method name="getToken">
+<Description>
+
+Get one token. Depending on where a token is found it can be a key or a value.
+</Description>
+<FormalSpec>seekingKey:%Boolean=0</FormalSpec>
+<Language>mvbasic</Language>
+<Private>1</Private>
+<Implementation><![CDATA[
+
+	fragment = ""
+	endOfStructure = 0
+	token = ""
+	withinQuotes = 0
+	
+* First, inch up to where the token starts. Quit looking if the the end of the structure is found.
+
+	@ME->idleUntilStopChars(@ME->quotes:@ME->structureOpen)
+	
+* There's a special case for three bare tokens: "false", "null", and "true". These are legal
+* javascript values and are not quoted. Likewise, integers don't need quoting.
+	if (index("fnt", @ME->lastCharRead, 1) > 0) or (@ME->lastCharRead = oconv(@ME->lastCharRead, "MCN")) then
+		firstChar = @ME->lastCharRead ; * hold on to it and go get the rest
+		stopChars = @ME->whiteSpace:@ME->structureClose:","
+		@ME->gatherUntilStopChars(stopChars, @false)
+		@ME->fragment = firstChar:@ME->fragment
+		return
+	end
+	
+	@ME->newStructure = (index(@ME->structureOpen, @ME->lastCharRead, 1) > 0)
+	if @ME->newStructure then 
+		return
+	end
+	
+	endOfStructure = (index(@ME->structureClose, @ME->lastCharRead, 1) > 0)
+	if endOfStructure then 
+		*@ME->stackPop()
+		return
+	end
+	
+	stopChars = @ME->quotes:@ME->structureOpen:@ME->structureClose:","
+	if fragment <> "" then 
+		stopChars := @ME->elementClose
+	end else
+		withinQuotes = (index(@ME->quotes, @ME->lastCharRead, 1) > 0) or (@ME->lastCharRead = oconv(@ME->lastCharRead, "MCA"))
+	end
+	
+	@ME->gatherUntilStopChars(stopChars, withinQuotes)
+	token = @ME->fragment
+		
+	return
+]]></Implementation>
+</Method>
+
+<Method name="stackPush">
+<FormalSpec>newObjectType,newIdentifier:%String=""</FormalSpec>
+<Implementation><![CDATA[
+	if $get(newObjectType) = "" {
+		throw ##class(%Exception.General).%New("MissingObject",1,,"No new JSON object was passed in to stack.")
+		quit
+	}
+	
+	set descriptor = ..newStackEntry(newObjectType)
+	set descriptor.name = ..currentIdentifier
+	set descriptor.object = ..decodedResult
+	do ..stack.Insert(descriptor)
+	
+	set x = ..decodedResult
+	
+	if newObjectType = "a" {
+		set ..decodedResult = ##class(%ArrayOfDataTypes).%New()
+	} else {
+		set ..decodedResult = ##class(%ListOfDataTypes).%New()
+	}
+	
+	set ..currentIdentifier = newIdentifier
+]]></Implementation>
+</Method>
+
+<Method name="newStackEntry">
+<Description>
+each attribute is structure name : @vm : element name : @vm : object type : parent</Description>
+<FormalSpec>type:%String="a"</FormalSpec>
+<Private>1</Private>
+<ReturnType>%RegisteredObject</ReturnType>
+<Implementation><![CDATA[
+	set newObject = ##Class(EasyCSP.Web.JSONObjectDescriptor).%New()
+	
+	if type = "a" {
+		set newObject.object = ##class(%ArrayOfDataTypes).%New()
+	} else {
+		set newObject.object = ##class(%ListOfDataTypes).%New()
+	}
+		
+	quit newObject
+]]></Implementation>
+</Method>
+
+<Method name="stackPop">
+<Description>
+The current object/array has been closed. </Description>
+<Private>1</Private>
+<Implementation><![CDATA[
+	
+	// prepare for the merge
+	set currentObject = ..decodedResult
+	set currentIdentifier = ..currentIdentifier
+	
+	// recall the saved structure
+	set depth = ..stack.Count()
+	
+	quit:depth=0 ; nothing to pop/merge
+	
+	set descriptor = ..stack.GetAt(depth)
+	do ..stack.RemoveAt(depth)
+	
+	set ..currentIdentifier = descriptor.name
+	set ..decodedResult = descriptor.object
+	
+	set x = descriptor.object
+	
+	// merge
+	if ..instanceOf(..decodedResult, "ListOf") { // is this a list or an array of data types?
+		do ..decodedResult.Insert(currentObject)
+	} else {
+		if currentIdentifier = "" set currentIdentifier = ..decodedResult.Count()+1
+		do ..decodedResult.SetAt(currentObject, currentIdentifier)
+	}
+	
+	quit
+]]></Implementation>
+</Method>
+
+<Method name="pushValue">
+<Description>
+Push a name-value or name-object pair into the return array</Description>
+<FormalSpec>key:%String,value:%String=""</FormalSpec>
+<Private>1</Private>
+<Implementation><![CDATA[
+	if ..instanceOf(..decodedResult, "%List") {
+		do ..decodedResult.SetAt(value, ..decodedResult.Count() + 1)
+	} else {
+		do ..decodedResult.SetAt(value, key)
+	}
+	
+	
+	return
+]]></Implementation>
+</Method>
+
+<Method name="unitTest">
+<ClassMethod>1</ClassMethod>
+<Implementation><![CDATA[
+	set className = ##class(EasyCSP.Web.CJSON).%ClassName(1)
+	set xDataDef = ##class(%Dictionary.CompiledXData).%OpenId(className_"||unitTestData")
+	set outputStream = xDataDef.Data
+	
+	// Break the plain text out of the XML node wrapping
+	set textReader = ""
+	set sc = ##class(%XML.TextReader).ParseStream(outputStream, .textReader)
+	
+	set inbound = ##class(%GlobalCharacterStream).%New()
+	while (textReader.Read()) {
+		set chunk = textReader.Value
+		//write chunk,!
+		do inbound.Write(chunk)
+	}
+	
+	do inbound.Rewind()
+	
+	set decoder = ##class(EasyCSP.Web.CJSON).%New() ; create a JSON engine
+	do decoder.decode(inbound) ; then call the decode method to process the input stream
+	
+	w !!!,"Result",!
+	
+	do decoder.dump()
+	set result = decoder.decodedResult
+	set data = result.GetAt("Data")
+	set tickets = data.GetAt("Tickets")
+	do decoder.dump(tickets)
+]]></Implementation>
+</Method>
+
+<Method name="dump">
+<FormalSpec>obj=""</FormalSpec>
+<Implementation><![CDATA[
+	if obj = "" {
+		set obj = ..decodedResult
+	}
+	
+	write !!, "================================= New Object ===================================",!
+	d $System.OBJ.Dump(obj)
+	
+	set pointer = ""
+	for {
+		
+		set pointer = obj.Next(pointer)
+		quit:pointer=""
+		
+		write !, "--------------------------------- ", pointer, " -----------------------------------",!
+		set thing = obj.GetAt(pointer)
+		if $isObject(thing) {
+			do ..dump(thing)
+		} else {
+			write "value = '",thing,"'",!
+		}
+	}
+]]></Implementation>
+</Method>
+
+<XData name="unitTestData">
+<Data><![CDATA[
+<root>
+{
+    "Data": {
+        "Tickets": [
+            {
+                "Code": "5324776",
+                "Period": "Single Trip",
+                "Type": "General Public",
+                "ActivationDate": "2015-01-12 13:57:45 -0500",
+                "ExpiryDate": "2015-01-12 15:02:45 -0500",
+                "Activated": true,
+                "TicketPart": 0
+            },
+            {
+                "Code": "4033504",
+                "Period": "Single Trip",
+                "Type": "General Public",
+                "Activated": false,
+                "TicketPart": 0
+            }
+        ]
+    },
+    "MSISDN": "14039192311",
+    "Timestamp": "2015-01-12 11:58:27 -0700",
+    "InstallID": "a269cec1-3d52-4004-8d5c-3a38b69a4168",
+    "UUID": "H3IS3NB3RG07eb266300fd4dee",
+    "AppVersion": "1.1.0 Beta - Build 45",
+    "DeviceRooted": false,
+    "HandsetType": "Android",
+    "SessionEncrypted": false,
+    "PreReg": false,
+    "Error": {
+        "Code": null
+    },
+}
+		</root>
+]]></Data>
+</XData>
+</Class>
+</Export>

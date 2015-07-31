@@ -1,0 +1,754 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.CHTML">
+<Description><![CDATA[
+<p>
+Generate HTML controls for a web page. Use the class methods in this library class to generate
+good HTML rather than hand-coding tags.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63764,31237.781265</TimeChanged>
+<TimeCreated>63482,51310.671101</TimeCreated>
+
+<Parameter name="idPrefix">
+<Default>mvcf</Default>
+</Parameter>
+
+<Parameter name="errorSummaryCss">
+<Description>
+The supplied CSS contains styling for error summaries</Description>
+<Default>errorSummary</Default>
+</Parameter>
+
+<Parameter name="errorMessageCss">
+<Description>
+The supplied CSS contains styling for error messages</Description>
+<Default>errorMessage</Default>
+</Parameter>
+
+<Parameter name="errorCss">
+<Description>
+CSS class to use for errors</Description>
+<Default>error</Default>
+</Parameter>
+
+<Parameter name="errorContainerTag">
+<Description>
+Container for errors</Description>
+<Default>div</Default>
+</Parameter>
+
+<Parameter name="requiredCss">
+<Description>
+What attribute to look for when creating labels or tooltips</Description>
+<Default>required</Default>
+</Parameter>
+
+<Parameter name="beforeRequiredLabel">
+<Description>
+Text to place before the label of a required field</Description>
+</Parameter>
+
+<Parameter name="afterRequiredLabel">
+<Description>
+Text to place after the label of a required field (usually a red asterisk)</Description>
+<Default><![CDATA[ <span class="required">*</span>]]></Default>
+</Parameter>
+
+<Parameter name="liveEvents">
+<Description>
+Allow live events</Description>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="closeSingleTags">
+<Description>
+Default: do close single tags.</Description>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="renderSpecialAttributesValue">
+<Description>
+Default: do render special attributes</Description>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="voidElements">
+<Description><![CDATA[
+The list of elements that consist of one, self-closed tag (for example: &lt;input ... /&gt;)]]></Description>
+<Type>%List</Type>
+<Expression>$lb("area","base","br","col","command","embed","hr","img","input","keygen","link","meta","param","source","track","wbr")</Expression>
+</Parameter>
+
+<Method name="addErrorCss">
+<Description>
+Locates the css for error display fields and adds it to the parameter list.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[&htmlOptions:EasyCSP.Core.ParameterList]]></FormalSpec>
+<Implementation><![CDATA[
+	set errorCss = ##class(EasyCSP.Web.CHTML).%GetParameter("errorCss")
+	quit:errorCss=""
+	
+	if htmlOptions.isset("class") {
+		set class = htmlOptions.get("class")_ " " _ errorCss
+	} else {
+		set class = errorCss
+	}
+	
+	do htmlOptions.set("class", class)
+]]></Implementation>
+</Method>
+
+<Method name="ajax">
+<Description>
+Assist with AJAX or RESTful calls. TODO - has not yet been thoroughly debugged or tested</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>options:EasyCSP.Core.ParameterList</FormalSpec>
+<Implementation><![CDATA[
+	
+	if $get(options) '[ "ParameterList" set options = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	if 'options.isset("url") {
+		do options.set("url", ##class(EasyCSP.Web.javascriptExpression).%New("location.href"))
+	}
+	
+	do:'options.isset("cache") options.set("cache",0)
+	
+	if ('options.isset("data")) & (options.isset("type")) {
+		do options.set("data", ##class(EasyCSP.Web.javascriptExpression).%New("jQuery(this).parents(""form"").serialize()"))
+	}
+	
+	set events = $listBuild("beforeSend","complete","error","success")
+	set ll = $listLength(events)
+	for idx = 1:1:ll {
+		set name = $listGet(events,idx)
+		if options.isset(name) {
+			if 'options.instanceOf(name, "javascriptExpression") {
+				do options.set(name, ##class(EasyCSP.Web.javascriptExpression).%New(options.get(name)))
+			}
+		}
+	}
+	
+	if options.isset("update") {
+		if 'options.isset("success") {
+			do options.set("success",##class(EasyCSP.Web.javascriptExpression).%New("function(html){jQuery("""_options.get("update")_""").html(html)"))
+		}
+		do options.unset("update")
+	}
+]]></Implementation>
+</Method>
+
+<Method name="cdata">
+<Description>
+Enclose text in a CDATA container</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>text:%String=""</FormalSpec>
+<Implementation><![CDATA[		quit "<![CDATA["_text_"]]]]><![CDATA[>"
+]]></Implementation>
+</Method>
+
+<Method name="clientChange">
+<Description>
+Sets up htmal options for handling AJAX or RESTful calls</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[event:%String,&htmlOptions:EasyCSP.Core.ParameterList]]></FormalSpec>
+<ReturnType>EasyCSP.Core.ParameterList</ReturnType>
+<Implementation><![CDATA[
+	if 'htmlOptions.isset("submit") & 'htmlOptions.isset("confirm") & 'htmlOptions.isset("ajax") quit
+	
+	if htmlOptions.isset("live") {
+		set live = htmlOptions.get("live")
+		do htmlOptions.unset("live")
+	} else {
+		set live = ##class(EasyCSP.Web.CHTML).%GetParameter("liveEvents")
+	}
+	
+	if htmlOptions.isset("return") & (htmlOptions.get("return") '=  "") {
+		set return = "return true"
+	} else {
+		set return = "return false"
+	}
+	
+	if htmlOptions.isset("on"_event) {
+		set handler = htmlOptions.get(event)
+		do htmlOptions.unset("on"_event)
+	}
+	
+	if 'htmlOptions.isset("name") {
+		do htmlOptions.set("name",$PARAMETER(,"idPrefix")_^MVCFUtil("scriptCount"))
+	}
+	
+	if htmlOptions.isset("id") {
+		set id = htmlOptions.get("id")
+	} else {
+		do htmlOptions.set("id", htmlOptions.get("name"))
+	}
+	
+	quit htmlOptions
+]]></Implementation>
+</Method>
+
+<Method name="closeTag">
+<Description>
+Closes a paired tag set.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>tag:%String=""</FormalSpec>
+<Implementation><![CDATA[		quit "</"_tag_">"
+]]></Implementation>
+</Method>
+
+<Method name="css">
+<Description>
+Generates a CSS style tag</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>text:%String="",media:%String=""</FormalSpec>
+<Implementation><![CDATA[
+	if $get(media) '= "" set media = " media="""_media_""""
+	quit "<style type=""text/css"""_media_">/*<![CDATA[*/"_text_"/*]]]]><![CDATA[>*/</style>"
+]]></Implementation>
+</Method>
+
+<Method name="cssFile">
+<Description>
+Generates a CSS link tag</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>url:%String="",media:%String=""</FormalSpec>
+<Implementation><![CDATA[
+	set media = $get(media)
+	quit ##class(EasyCSP.Web.CHTML).linkTag("stylesheet", "text/css", $get(url), media)
+]]></Implementation>
+</Method>
+
+<Method name="decode">
+<Description>
+Unescapes HTML</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>text:%String=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+		if $get(text) = "" quit ""
+		quit ##class(%CSP.Page).UnescapeHTML(text)
+]]></Implementation>
+</Method>
+
+<Method name="encode">
+<Description>
+Escapes HTML</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>text:%String=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+		if $get(text) = "" quit ""
+		quit ##class(%CSP.Page).EscapeHTML(text)
+]]></Implementation>
+</Method>
+
+<Method name="form">
+<Description>
+Generates a form tag. This is only the opening tag; not the entire form enclosure.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>action:%String="",method:%String="post",htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<Implementation><![CDATA[	quit ##class(EasyCSP.Web.CHTML).beginForm(action, method, htmlOptions)
+]]></Implementation>
+</Method>
+
+<Method name="beginForm">
+<Description>
+Generates an opening form tag with options</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>action:%String="",method:%String="post",htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	set form = ##class(%GlobalCharacterStream).%New()
+	set form.LineTerminator = $char(13)_$char(10)
+	
+	if $get(htmlOptions) '[ "ParameterList" set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do htmlOptions.set("action", action)
+	do htmlOptions.set("method", method)
+	do form.WriteLine(##class(EasyCSP.Web.CHTML).tag("form", htmlOptions, 0, 0))
+	
+	set hiddens = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	// If this is a GET form, add hidden fields to contain the name/value controls
+	// by parsing out the current query string. These name-value pairs are in the
+	// application environment requestData property. (This is a Cache collection
+	// created when the app is instantiated.) The values are already HTML-unencoded
+	// to internal representation.
+	if ($MVOCONV(method, "MCL") = "get") {
+		set keyList = %EasyCSPApp.environment.requestData.keys() // get a list of the keys
+		set ll = $listLength(keyList)
+		for idx = 1:1:ll {
+			set key = $listGet(keyList,idx,"")
+			do:key'="" hiddens.set(key, ##class(EasyCSP.Web.CHTML).hiddenField(key,%EasyCSPApp.environment.requestData.get(key)))
+		}
+	}
+	
+	if hiddens.length() > 0 {
+		set options = ##class(EasyCSP.Core.ParameterList).%New()
+		do options.set("style", "display: none;")
+		do form.WriteLine( ##class(EasyCSP.Web.CHTML).tag("div", options, 0,0))
+	}
+	
+	quit form
+]]></Implementation>
+</Method>
+
+<Method name="endForm">
+<Description>
+Closes a form tag block.</Description>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[	quit "</form>"
+]]></Implementation>
+</Method>
+
+<Method name="formErrorSummary">
+<Description>
+Using a data model, generate a summer of the validation errors found in the model. This
+is often used in data-entry pages where users have submitted information and expect feedback
+after a form is submitted.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>model,sequence:%Integer=1,summaryContainer:%String="div",summaryContainerOptions:EasyCSP.Core.ParameterList</FormalSpec>
+<ReturnType>%GlobalCharacterStream</ReturnType>
+<Implementation><![CDATA[
+	set output = ##class(%GlobalCharacterStream).%New()
+	set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	if '$isObject(model) quit output // return nothing
+	if 'model.hasErrors() quit output // no sense in writing an empty summary
+	
+	if $get(summaryContainer) = "" set summaryContainer = "div"
+	if +$get(sequence) = 0 set sequence = 1
+	
+	if $get(summaryContainerOptions) = "" set summaryContainerOptions = ##class(EasyCSP.Core.ParameterList).%New()
+		
+	// Open a tag for the outer container that controls visibility of the error summary
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).tag(summaryContainer,summaryContainerOptions,0,0))
+	set innerOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	//do innerOptions.set("id", "errorSummary")
+	//do innerOptions.set("class", "clear")
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).tag("div",innerOptions,"",0))
+	
+	// Add instructions to the viewer
+	do innerOptions.unsetAll()
+	do innerOptions.set("id", "error_header")
+	do innerOptions.set("style", "color: red;")
+	do innerOptions.set("class", "hidden")
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).tag("p", htmlOptions, "Please fix the following errors:", 1))
+	
+	// Add the container for the errors (open, write error message content, close)
+	do innerOptions.unsetAll()
+	do innerOptions.set("id", "errors"_sequence)
+	//do innerOptions.set("class", "clear")
+	do innerOptions.set("style", ..#errorCss)
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).tag("div", htmlOptions, "", 0))
+	
+	// Inside the error container, iterate through all the errors found in the model:
+	do innerOptions.unsetAll()
+	do innerOptions.set("style", ..#errorCss)
+	set errorArray = model.getErrors() // retrieve all the errors in a lump
+	set idx = errorArray.Next("")
+	while idx '= "" {
+		set def = errorArray.GetAt(idx)
+		do output.WriteLine(##class(EasyCSP.Web.CHTML).tag("p",htmlOptions,$piece(def, $MVFM, 1)_": "_$piece(def, $MVFM, 2),1))
+		set idx = errorArray.Next(idx)
+	}
+	
+	// Close the error container
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("div"))
+	
+	// Close the outer container
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("div")) // close the outer container
+	do output.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("div")) // close the outer container
+	
+	quit output
+]]></Implementation>
+</Method>
+
+<Method name="hiddenField">
+<Description>
+Generates an input with type "hidden"</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>name:%String="",value:%String="",htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<Implementation><![CDATA[
+	if $get(htmlOptions) '[ "ParameterList" set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	quit ##class(CHTML).inputField("hidden", name, value, htmlOptions)
+]]></Implementation>
+</Method>
+
+<Method name="getIdByName">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>name:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	name = ereplace(name, "[]", "")
+	name = ereplace(name, "][", "_")
+	name = ereplace(name, "[", "")
+	name = ereplace(name, " ", "_")
+	return name
+]]></Implementation>
+</Method>
+
+<Method name="image">
+<Description>
+Generates an image tag. Supply the src URL and the alt-text.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>src:%String="",alt:%String="",htmlOptions:EasyCSP.Core.ParameterList</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	do htmlOptions.set("src", $get(src))
+	do htmlOptions.set("alt", $get(alt))
+	do htmlOptions.set("title", $get(alt))
+	quit ##class(EasyCSP.Web.CHTML).tag("img", htmlOptions)
+]]></Implementation>
+</Method>
+
+<Method name="inputField">
+<Description><![CDATA[
+Generates the kind of input field requested in <i>type</i>. The field id will be
+generated automatically unless it is specified in <i>htmlOptons</i>.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>type:%String="",name:%String="",value:%String="",htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<Implementation><![CDATA[
+	if $get(htmlOptions) '[ "ParameterList" set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do:type'="" htmlOptions.set("type", type)
+	do:value'="" htmlOptions.set("value", value)
+	do:name'="" htmlOptions.set("name", name)
+	if 'htmlOptions.isset("id") {
+		do htmlOptions.set("id",..getIdByName(name))
+	} else {
+		if htmlOptions.get("id") = 0 {
+			do htmlOptions.unset("id")
+		}
+	}
+	quit $CLASSMETHOD("EasyCSP.Web.CHTML","tag", "input", htmlOptions)
+]]></Implementation>
+</Method>
+
+<Method name="label">
+<Description><![CDATA[
+Generate a label. Specify the id of the input this label is for in the <i>for</i> argument.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>label:%String="",labelFor:%String="",htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<Implementation><![CDATA[
+	if $get(htmlOptions) '[ "ParameterList" set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	if $get(labelFor) = 0 {
+		do htmlOptions.unset("for")
+	} else {
+		do htmlOptions.set("for", labelFor)
+	}
+	
+	if htmlOptions.isset("required") {
+		do htmlOptions.set("class", htmlOptions.get("class"))
+		set label = ..#beforeRequiredLabel_label_..#afterRequiredLabel
+		do htmlOptions.unset("required")
+	}
+	
+	quit $CLASSMETHOD("EasyCSP.Web.CHTML","tag", "label", htmlOptions, label)
+]]></Implementation>
+</Method>
+
+<Method name="link">
+<Description><![CDATA[
+<p>This function creates an HTML link from the parameters passed in:</p>
+<ul>
+<li><code>text</code> is the text that will display in a browser (the blue underlined bit)</li>
+<li><code>href</code> is the link location</li>
+<li><code>htmlOptions</code> is a core parameterlist object that should contain anchor tag attributes such as "style" or events.</li>
+<ul>]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>text:%String="",href:%String="#",htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(htmlOptions) '[ "ParameterList" set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	if $get(href) = "" set href = "#"
+	do htmlOptions.set("href", href)
+ 	quit ##class(EasyCSP.Web.CHTML).tag("a",htmlOptions,text)
+]]></Implementation>
+</Method>
+
+<Method name="routeLink">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>text:%String="",route:%String="",htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+		set baseUrl = %EasyCSPApp.getAppUrl()
+		quit ##class(EasyCSP.Web.CHTML).link(text,baseUrl_route,htmlOptions)
+]]></Implementation>
+</Method>
+
+<Method name="linkTag">
+<Description>
+Generates a link tag that can be inserted into the head section of an HTML page.
+Not to be confused with the link() function which generates a hyperlink.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>relation:%String="",type:%String="",href:%String="",media:%String="",options:EasyCSP.Core.ParameterList=""</FormalSpec>
+<Implementation><![CDATA[
+	if $get(options) '[ "ParameterList" set options = ##class(EasyCSP.Core.ParameterList).%New()
+	do:$get(relation)'="" options.set("rel", relation)
+	do:$get(type)'="" options.set("type", type)
+	do:$get(href)'="" options.set("href", href)
+	do:$get(media)'="" options.set("media", media)
+	
+	quit ##class(EasyCSP.Web.CHTML).tag("link", options)
+]]></Implementation>
+</Method>
+
+<Method name="mailto">
+<Description>
+Generates a mailTo type anchor field.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>text:%String="",address:%String="",options:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if ##class(EasyCSP.Validator.Validators.Email).run(address) = 0 quit ""
+	if $get(text) = "" set text = address
+	
+	quit ##class(EasyCSP.Web.CHTML).link("mailto:"_address,text,options)
+]]></Implementation>
+</Method>
+
+<Method name="metaTag">
+<Description>
+Generates a meta tag for page HEAD sections.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>content:%String="",name:%String="",httpEquiv:%String="",options:EasyCSP.Core.ParameterList=""</FormalSpec>
+<Implementation><![CDATA[
+	set content = $get(content)
+	set name = $get(name)
+	set httpEquiv = $get(httpEquiv)
+	
+	if $get(options) '[ "ParameterList" set options = ##class(EasyCSP.Core.ParameterList).%New()
+	do:name'="" options.set("name",name)
+	do:httpEquiv'="" options.set("http-equiv",httpEquiv)
+	do options.set("content", content)
+	quit ##class(EasyCSP.Web.CHTML).tag("meta", options)
+]]></Implementation>
+</Method>
+
+<Method name="normalizeUrl">
+<Description>
+If "url" is a non-empty string it is regarded as a valid URL (regardless
+of whether it is actually valid) and the url field will be return without change.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>url:%String="",parameters:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	quit:$data(url)=0 %EasyCSPApp.controller.createUrl(url, parameters)
+	
+	set target = url // Otherwise use the url that was supplied with the parameters supplied.
+]]></Implementation>
+</Method>
+
+<Method name="openTag">
+<Description>
+Opens an enclosure without closing it. This is used to surround otherwise larger blocks of
+text or control where the section will be closed later.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>tag:%String="",htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<Implementation><![CDATA[
+	
+	if $get(htmlOptions)'["ParameterList" set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	set required = ""
+	if htmlOptions.get("required") '= "" {
+		set required = " required"
+		do htmlOptions.unset("required")
+	}
+	
+	set tag = $MVOCONV(tag, "MCL") // to lower case
+	
+	if $listFind(..#voidElements,tag) > 0 {
+		set closure = " />"
+	} else {
+		set closure = ">"
+	}
+	
+	quit "<"_tag_##class(EasyCSP.Web.CHTML).renderAttributes(htmlOptions)_required_closure
+]]></Implementation>
+</Method>
+
+<Method name="pageStateField">
+<Description>
+Generate a hidden input field indicating the page state. Obviously, this must be enclosed within
+a form. The name is set to the class name of the currently-running controller.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>value:%String=""</FormalSpec>
+<Implementation><![CDATA[	quit "<input type='hidden', name='"_$classname(%EasyCSPApp.controller)_"' value='"_value_"' />"
+]]></Implementation>
+</Method>
+
+<Method name="renderAttributes">
+<Description><![CDATA[
+Parses the <i>options</i> argument (a Core.ParameterList of name-value pairs) and renders
+tag attributes.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>options:EasyCSP.Core.ParameterList</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(options)="" then return ""
+	if index($get(options),"ParameterList",1) = 0 then return "" ; * not a valid parameter list
+	
+	specialAttributes = convert(',', @fm, "async,autofocus,autoplay,checked,controls,declare,default,defer,disabled,formnovalidate,hidden,ismap,loop,multiple,muted,nohref,noresize,novalidate,open,readonly,rfequired,reversed,scoped,seamless,selected,typemustmatch")
+	
+	keyValuePairs = options->toString(0,1) ; * as key-value pairs in a dynarray
+	d = dCount(keyValuePairs, @fm)
+	
+	find "encode" in keyValuePairs setting fm, vm, svm then
+		raw = (keyValuePairs<fm,1> = 0)
+		del keyValuePairs<fm> ; * remove this option from the keylist
+	end
+	
+	html = "" ; * output
+	
+	for idx = 1 to d
+	
+		optionName = keyValuePairs<idx,1> ; * extract the next option
+		optionValue = keyValuePairs<idx,2>
+		
+		if optionValue = "" then continue
+		
+		find optionName in specialAttributes setting fm then
+			html<-1> = optionName : "=" : dquote("EasyCSP.CHTML"->encode(optionValue))
+		end else
+			html<-1> = optionName : "=" : dquote(optionValue)
+		end
+		
+	next
+	
+	if html <> "" then html = " " : html
+	return convert( @fm, ' ', html)
+]]></Implementation>
+</Method>
+
+<Method name="script">
+<Description><![CDATA[
+Encapsulates an in-line script. The script (without tags) is passed in via the <i>text</i> argument.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>text:%String,htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(htmlOptions) '[ "ParameterList" set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	if 'htmlOptions.isset("type") do htmlOptions.set("type","text/javascript")
+	//quit ##class(EasyCSP.Web.CHTML).tag("script",htmlOptions, "/*<![CDATA[*"_text_"/*]]]]><![CDATA[>*/")
+	quit ##class(EasyCSP.Web.CHTML).tag("script",htmlOptions, text)
+]]></Implementation>
+</Method>
+
+<Method name="scriptFile">
+<Description>
+Generates the URL for a script file on disk.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>url:%String,htmlOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(htmlOptions) '[ "ParameterList" set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	if 'htmlOptions.isset("type") do htmlOptions.set("type","text/javascript")
+	do htmlOptions.set("src", url)
+	quit ##class(EasyCSP.Web.CHTML).tag("script",htmlOptions, "")
+]]></Implementation>
+</Method>
+
+<Method name="statefulForm">
+<Description>
+sets up a form for stateful interaction with the server.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>action:%String="",method:%String="POST",htmlOptions:EasyCSP.Core.ParameterList</FormalSpec>
+<Implementation><![CDATA[
+	set tagParameters = ##class(EasyCSP.Core.ParameterList).%New()
+	do tagParameters.set("style", "display: none;")
+	quit ..form(action, method, htmlOptions) _ ..tag("div", tagParameters, ##class(EasyCSP.Web.CHTML).pageStateField())
+]]></Implementation>
+</Method>
+
+<Method name="activeTable">
+<Description>
+Create a table with an active ID link if an id is present in the attribute list.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>model:EasyCSP.Model.Base="",attributes:%List="",tableOptions:EasyCSP.Core.ParameterList="",rowOptions:EasyCSP.Core.ParameterList="",colOptions:EasyCSP.Core.ParameterList=""</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+</Method>
+
+<Method name="tableRow">
+<Description><![CDATA[
+Modeled after the SMX HTMLTableRow function. The attributes formal parameter is a list of attributes in the order in which
+they will be rendered from the model. Horizontal alignment is performed in accordance with each attribute's
+justification property. The conversions formal parameter is an array of ParameterList; the leftmost key is the same identifier
+as the attribute in <i>attributes</i> it's supposed to modify. Each of these nodes is an array of ParameterList (even if there
+is only one).]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>model,attributes:%List,rowHtmlOptions:EasyCSP.Core.ParameterList,colHtmlOptions:EasyCSP.Core.ParameterList</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(model) '[ "Models." quit ""
+	
+	// If "attributes" isn't a valid array of datatypes, create such an array of
+	// the entire model.
+	if $get(attributes) '[ "%ArrayOfDataTypes" {
+		set attributes = ##class(%ArrayOfDataTypes).%New()
+		set attributeTemp = model.getAttributes()
+		set idx = attributeTemp.Next("")
+		while idx '= "" {
+			do attributes.SetAt(attributeTemp.GetAt(idx),attributes.Count() + 1)
+		}
+	}
+	
+	// Examine each attribute, apply conversions as necessary. See MV OCONV for a list
+	// of conversions.
+]]></Implementation>
+</Method>
+
+<Method name="tag">
+<Description>
+Base method for generating tags. It may be called directly although it is usually called
+by a more friendly-name wrapper class.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>tag:%String="",options:EasyCSP.Core.ParameterList="",content:%String=0,closeTag:%Boolean=1</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if +$get(closeTag) '= 1 set closeTag = 0
+	
+	if $get(options)'["ParameterList" set options = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	set required = ""
+	if options.get("required") '= "" {
+		set required = " required"
+		do options.unset("required")
+	}	
+	
+	set html = "<" _ tag _ ##class(EasyCSP.Web.CHTML).renderAttributes(options) _ required
+	
+	set:$get(content)="" content = "" // if unassigned, not just empty
+	
+	if (($listFind(..#voidElements,tag,1) > 0) ! ($get(content) = 0)) & ..#closeSingleTags {
+		if closeTag {
+			quit html_" />"
+		} else {
+			quit html_">"
+		}
+	} else {
+		set html = html_">"_content
+		if closeTag set html = html_"</"_tag_">"
+		quit html
+	}
+]]></Implementation>
+</Method>
+</Class>
+</Export>

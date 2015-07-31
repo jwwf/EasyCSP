@@ -1,0 +1,1304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.SourceControl.StudioExtension">
+<Description>
+TODO finish export stand-up image</Description>
+<Super>EasyCSP.Core.Component,%Studio.Extension.Base</Super>
+<TimeChanged>63708,59137.283661</TimeChanged>
+<TimeCreated>63635,69773.149633</TimeCreated>
+
+<Property name="currentProject">
+<Type>%Studio.Project</Type>
+</Property>
+
+<Parameter name="Flags">
+<Description><![CDATA[
+Parameter Flags
+Used to control which dialogs appear in Studio, if the position is '1'
+then this dialog will appears and if it is '0' the <method>UserAction</method>
+will be called to determine what to do. This is included for backward compatibilty.
+The dialog are:<ul>
+<li>1 : Present dialog on check in</li>
+<li>2 : Present dialog on check out</li>
+<li>3 : Ask to add new item to source control</li>
+<li>4 : Ask to remove deleted item from source control</li></ul>]]></Description>
+<Type>STRING</Type>
+<Default>1111</Default>
+</Parameter>
+
+<XData name="Menu">
+<Description>
+The SourceMenu portion is displayed as "Source Control" at the top of the IDE. The "SourceContent"
+menu is displayed in a right-click context menu in the source tree.</Description>
+<Data><![CDATA[
+<MenuBase>
+<Menu Name="%SourceMenu" Type="0">
+<MenuItem Name="%CheckOut"/>
+<MenuItem Name="%UndoCheckout"/>
+<MenuItem Name="%CheckIn" Save="100"/>
+<MenuItem Name="%GetLatest"/>
+<MenuItem Name="%AddToSourceControl" Save="100"/>
+<MenuItem Name="Export All Code"/>
+<MenuItem Name="List Source Control"/>
+<MenuItem Name="Rebuild Source Control Global" />
+<MenuItem Name="Export All Globals" />
+<MenuItem Name="Make Stand-up Image" />
+</Menu>
+<Menu Name="%SourceContext" Type="1">
+<MenuItem Name="%CheckOut"/>
+<MenuItem Name="%UndoCheckout"/>
+<MenuItem Name="%CheckIn" Save="100"/>
+<MenuItem Name="%GetLatest"/>
+<MenuItem Name="%AddToSourceControl" Save="100"/>
+<MenuItem Name="Export All Code"/>
+<MenuItem Name="List Source Control"/>
+<MenuItem Name="Rebuild Source Control Global" />
+<MenuItem Name="Export All Globals" />
+<MenuItem Name="Make Stand-up Image" />
+</Menu>
+</MenuBase>
+]]></Data>
+</XData>
+
+<Parameter name="DirectoryFields">
+<Description>
+Columns returned from a directory query</Description>
+<Default>Name;Type;Size;DateCreated;DateModified;ItemName</Default>
+</Parameter>
+
+<Parameter name="exportDir">
+<Description>
+Default export topmost directory. Change this to match your file system and source control needs.</Description>
+<Type>%String</Type>
+<Default>C:\SourceControl</Default>
+</Parameter>
+
+<Property name="menuItems">
+<Description><![CDATA[
+List of the available menu items. This list is related value-for-value with the <property>menuActions</property>
+list. These lists are used to map menu display names to the actions they're to perform. Note: the order of these lists don't
+necessarily have to follow the order in the XData but the two lists must positionally agree on item
+name and the action it is to take.]]></Description>
+<Type>%List</Type>
+<InitialExpression>$lb("Checkout","UndoCheckout","CheckIn","GetLatest","AddToSourceControl","Export All Code", "List Source Control","Rebuild Source Control Global","Export All Globals", "Make Stand-up Imaage")</InitialExpression>
+</Property>
+
+<Property name="menuActions">
+<Description><![CDATA[
+List of the actions to perform when a user clicks a Source Control menu item. This list is related
+value-for-value with the <property>menuItems</property> list. Note: the order of these lists don't
+necessarily have to follow the order in the XData but the two lists must positionally agree on item
+name and the action it is to take.]]></Description>
+<Type>%List</Type>
+<InitialExpression>$lb(,,,,,"exportAll","listSourceControl","rebuildSourceControlGlobal","exportGlobals","makeStandup")</InitialExpression>
+</Property>
+
+<Property name="isStandup">
+<Description>
+This is set to TRUE when the developer clicks "Make Stand-up Image". This flag modifies the path for
+classes and globals to add "standup/mm-dd-yyyy-hh:mm:ss" as destination subfolders under the namespace
+folder on disk. This allows snapshotting of a particular namespace code and data image to make it easier
+to stand up the same namespace on another machine.</Description>
+<Type>%Boolean</Type>
+<InitialExpression>0</InitialExpression>
+</Property>
+
+<Method name="OnMenuItem">
+<Description><![CDATA[
+This is called for every menu item returned to Studio to allow the menu to be enabled/disabled without
+having to write a custom query for <query>MenuItems</query>. The <var>DisplayName</var> of this menu is
+also passed by reference and this may be modified to change the appearance of this menu item. The <var>MenuName</var>
+is the main menu name then the submenu name separated by a ','. If <var>Enabled</var> is set to -1 then it will remove
+this menu item from the list totally, 0 will gray the menu item out and the default 1 will display the menu item as normal.]]></Description>
+<FormalSpec><![CDATA[MenuName:%String,InternalName:%String,SelectedText:%String,&Enabled:%Boolean,&DisplayName:%String]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	/*
+	w !!,"OnMenuItem:",!
+	w "MenuName: "_MenuName,!
+	w "InternalName: "_ InternalName,!
+	w "SelectedText: "_SelectedText,!!
+	w "Enabled: "_Enabled,!
+	w "DisplayName: "_DisplayName,!!!
+	*/
+	
+	
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="UserAction">
+<Description><![CDATA[
+This is called when the user performs an action that may need to interact with
+the server, such as selecting a menu or adding a new document. This encompases what the deprecated Flags
+parameter did and allows additional flexibility.<p>
+The Type argument values are:<ul>
+<li>0 : Server defined menu item selected</li>
+<li>1 : Other Studio action</li></ul>
+When a menu item is selected the Name argument is the name of this menu item in the format
+'&lt;MainMenu&gt;,&lt;SubMenu&gt;'. For other Studio actions the Name argument is one of:<ul>
+<li>0 : User has tried to change a document that is locked in source control</li>
+<li>1 : User has created a new document</li>
+<li>2 : User has deleted a document</li>
+<li>3 : User has opened a document</li>
+<li>4 : User has closed a document</li>
+<li>5 : User has connected to a new namespace</li></ul>
+<li>6 : User has selected to import comma delimetered list of documents</li>
+<li>7 : User has saved a new document for the first time</li></ul>
+The InternalName argument is the name of the document about which this action occurs.
+If there is any selected text in the document which has focus this is sent in the SelectedText
+argument.
+The Action argument is set by this method to tell Studio what to do. Possible return
+values for this are:<ul>
+<li>0 : Do nothing, note that this method can still perform some action such as check
+an item out of source control, but Studio will not ask for user input.</li>
+<li>1 : Display the default Studio dialog with a yes/no/cancel button.
+The text for this dialog is provided in the 'Target' return argument.</li>
+<li>2 - Run a CSP page/Template. The Target is the full url to the CSP page/Template, as usual the page will be
+passed the current document name, any selected text, the project name, the namespace.</li>
+<li>3 - Run an EXE on the client. The Target is the name of an executable file on the client machine.
+It is the responsibility of the customer to ensure this EXE is installed in a suitable location.</li>
+<li>4 - Insert the text in Target in the current document at the current selection point</li>
+<li>5 - Studio will open the documents listed in Target, if there are multiple documents to open they
+will be separated with commas. If the document name is 'test.mac:label+10' it will open the document
+'test.mac' and goto 'label+10'.</li>
+<li>6 - Display an alert dialog in Studio with the text from the Target variable</li>
+<li>7 - Display a dialog with a textbox and Yes/No/Cancel buttons. The text for this dialog is
+provided by the 'Target' return argument. The initial text for the textbox is provided by the 
+'Msg' return argument.</li></ul>
+If the <var>Reload</var> argument is set to true then the current document will be reloaded in Studio,
+this is useful if you change the document to change its attribute so Studio will pick up these changes.]]></Description>
+<FormalSpec><![CDATA[Type:%Integer,Name:%String,InternalName:%String,SelectedText:%String,&Action:%String,&Target:%String,&Msg:%String,&Reload:%Boolean]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	/*
+	write !,"User Action",!,"-----------",!
+	write "Type: ",Type,!
+	write "Name: ",Name,!
+	write "InternalName: ",InternalName,!
+	write "Action: ",Action,!
+	write "Target: ",Target,!
+	write "Msg: ",Msg,!
+	write "Reload: ",Reload,!
+	write !!
+	*/
+	
+	if Type = 0 {
+		set function = $piece(Name, ",", 2)
+		quit ..mapActionToFunction(function)
+	}
+	
+	Set Target="",Reload=0
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="mapActionToFunction">
+<FormalSpec>Action:%String=""</FormalSpec>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	quit:$get(Action)="" $$$OK
+		
+	set position = $listFind(..menuItems, Action)
+	//write !,"task position is: ",position,!
+	if position > 0 {
+		set method = $listGet(..menuActions,position)
+		//write "method is: ",method,!
+		if ..hasMethod(method) quit $method(,method)
+	}
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="ExternalName">
+<Description>
+Convert the internal name, e.g. TEST.MAC to an external name that is used to export
+the routine/class/csp item. This is often a filename to write the file out to.</Description>
+<FormalSpec>InternalName:%String</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $get(InternalName) = "" {
+		write "Internal name is empty. Skipping.",!
+		quit ""
+	}
+	
+	//write "(EasyCSP.SourceControl.StudioExtension).ExternalName(): Internal name is: ",InternalName,!
+	set exportDirectory = ""
+	set externalName = ..pathFromClassname(exportDirectory, InternalName)
+	//write "External name will be ",externalName,!
+	
+	Quit externalName
+]]></Implementation>
+</Method>
+
+<Method name="setIOLocations">
+<FormalSpec><![CDATA[&exportDirectory:%String="",&slash:%String="",&location:%String="",&instanceName:%String="",&namespace:%String=""]]></FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	
+	set slash = ..slash()
+	set location = ..location()
+	set instanceName = $piece(location, slash, 1)
+	set namespace = $piece(location, slash, 2)
+	set OK = ..setExportDir(.exportDirectory)
+	quit OK
+]]></Implementation>
+</Method>
+
+<Method name="pathFromClassname">
+<Description>
+Returns a list with two pieces: the path to the class and the class name. The default is to
+create the folders and subfolders needed. The simple class name is returned as the second
+element in the list.</Description>
+<FormalSpec>exportDirectory:%String="",internalName:%String,isRoutine:%Boolean=0,create:%Boolean=1</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if $data(exportDirectory) = 0 then exportDirectory = ""
+	
+	*crt "pathFromClassname; input exportDirectory: ":exportDirectory
+	
+	if @ME->setIOLocations(suggestedExportDirectory, slash, location, instanceName, namespace) <> 1 then
+		return ""
+	end
+	
+	if exportDirectory = "" then exportDirectory = suggestedExportDirectory
+	
+	*crt "pathFromClassname; exportDirectory after setIOLocations: ":exportDirectory
+	
+	routineExtensions = $listBuild("int", "mac", "inc")
+	
+	stringToParse = convert( ".", @fm, internalName)
+	possibleExtension = downcase(stringToParse< dcount(stringToParse, @fm) >)
+	
+	begin case
+	
+		case $listFind(routineExtensions, possibleExtension) > 0
+			isRoutine = 1
+			externalName = internalName
+			
+		case possibleExtension = "cls"
+			isRoutine = 0 ; * this is a class definition
+			del stringToParse<dcount(stringToParse, @fm)> ; * remove the extension
+			externalName = stringToParse
+			
+		case @true
+			externalName = internalName			
+	
+	end case
+		
+	
+	rtn = exportDirectory
+	* if mapping a class, use the classes subdirectory else use routines for .mac and .int
+	rtn<-1> = if isRoutine then "routines" else "classes"
+	rtn<-1> = externalName
+	convert slash to @fm in rtn
+	rtn = trim(rtn, @fm)
+	
+	pathLength = dcount(rtn,@fm)
+	dirOnly = field(rtn, @fm, 1, pathLength - 1)
+	
+	*crt "pathFromClassname dir-only: ":dirOnly
+	
+	if not(@ME->mkdir(dirOnly)) then return "" ; * check and create dir if needed; return "" if it can't be found or created
+	simpleClassName = rtn<pathLength>
+	
+	convert @fm to slash in rtn
+	return rtn ; * then return the enclosing folder name and class name separately
+]]></Implementation>
+</Method>
+
+<Method name="slash">
+<Description>
+Return the correct path delimiter depending on the OS (Windows or *nix -- VMS is not supported here).</Description>
+<ClassMethod>1</ClassMethod>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	runningWindows = ( SYSTEM(91) = 1 )
+	slash = if runningWindows then "\" else "/"
+	return slash
+]]></Implementation>
+</Method>
+
+<Method name="setExportDir">
+<Description><![CDATA[
+Set the location of the OS export directory. Allow the value to be overridden so the export routines
+may be used from the command line for out-of-line code and global exports. If no formal argument is
+supplied in <var>exportDirectory</var> this method will first attempt to retrieve it from the SETTINGS
+global. If that has not been set then use the hard-coded <parameter>exportDir</parameter> parameter in this class.
+If the directory can be either located or created then a 1 (TRUE) will be returned along with the
+ByRef variable exportDirectory pointing to the finalized external directory path.]]></Description>
+<FormalSpec><![CDATA[&exportDirectory:%String]]></FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	set:$get(exportDirectory)="" exportDirectory = ##class(EasyCSP.Configuration.Settings).getSetting("exportDir") 
+	set:$get(exportDirectory)="" exportDirectory = ..#exportDir
+	
+	set slash = ..slash()
+	set instanceName = $P($zu(86),"*",2)
+	set exportDirectory = exportDirectory _ slash _ $zu(110) _ slash _ instanceName _ slash _ $zu(5)
+	if ..isStandup {
+		set date = $replace($zd($p($now(),",",1)),"/","-")
+		set time =  $replace($zt($p($now(),",",2)),":","-")
+		set exportDirectory = exportDirectory _ slash _ "standup" _ slash _ date _ "-" _ time
+	}
+	
+	quit ..mkdir(exportDirectory) ; check the entire path, create subdirs as needed
+]]></Implementation>
+</Method>
+
+<Method name="location">
+<Description>
+Return a string with the ready-for-use subpath to use under the topmost export directory. The two string pieces
+are: Cache instance name (delimiter) current namespace.</Description>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[	quit $p($zu(86),"*",2)_..slash()_$zu(5)
+]]></Implementation>
+</Method>
+
+<Method name="mkdir">
+<Description>
+For Windows, specify the drive-letter:\ portion explicitly. If the dir argument passed in
+does not have a drive specification then this routine will refuse to create it.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>dir:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(dir) = "" then return 0 ; * where is the new folder supposed to live?
+	slash = @ME->slash()
+	
+	convert "\/" to @fm:@fm in dir
+	runningWindows = (system(91) = 1)
+	
+	if runningWindows then
+		driveSpec = dir<1>
+		if not(driveSpec matches "1A':'") then return 0
+		rootDir = field(dir, @fm, 1, 2)
+		del dir<1> ; del dir<1> ; * start creating stems at the top then work on the subdirs below
+	end else
+		if dir<1> = "" then del dir<1>
+		rootDir = "/" : dir< 1 >
+		del dir<1>
+		startAt = 1
+	end
+	
+	convert @fm to slash in rootDir
+	
+	* if the topmost part of the directory path doesn't exist and can't be
+	* created then this process has to stop.
+	if @ME->checkdir( rootDir ) = 0 then
+		pcperform "mkdir " : rootDir
+		if @ME->checkdir( rootDir ) = 0 then return 0
+	end
+	
+	dirLength = dcount(dir, @fm)
+	
+	pieces = 1
+	for idx = 1 to dirLength
+		nextStem = rootDir : slash : field(dir, @fm, 1, idx)
+		convert @fm to slash in nextStem
+		if @ME->checkdir( nextStem ) = 0 then
+			pcperform "mkdir " : nextStem
+			if @ME->checkdir( nextStem ) = 0 then return 0
+		end
+	next
+	
+	return 1
+]]></Implementation>
+</Method>
+
+<Method name="checkdir">
+<Description>
+Using the MVBasic OPENPATH command, check the existence of an OS path (Windows or
+*nix -- VMS is not supported here). Return 1 (TRUE) if the path exists.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>pathname:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(pathname) = "" then return 0
+	
+	openpath pathname to dir on error return 0 else return 0
+	
+	close dir
+	
+	return 1
+]]></Implementation>
+</Method>
+
+<Method name="listSourceControl">
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set exportDirectory = "" ; use the default configured in the class for now
+	set sc = ..setIOLocations(.exportDirectory,.slash,.location,.instanceName,.namespace)
+	quit:sc'=1 $System.Status.Error("Unable to locate or create the source control export directory.")
+	
+	do ..ls(exportDirectory_slash_"classes","*.*", "", 1,1)
+	
+	zw ^EasySC(namespace,"dirlist","items")
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="ls">
+<Description><![CDATA[
+<p>
+Get a directory listing from the host file system.
+</p>
+
+<p>
+The return in the source control map global:
+<ol>
+<li>namespace</li>
+<li>"dirlist"</li>
+<ul>
+	<li>"columns" = the list of column headers</li>
+	<li>"directory" = the starting path of the search</li>
+	<li>"fileWildCard" = list of wildcards used in the search (default it *.*)</li>
+	<li>"listSubdirs" = search in subdirectories</li>
+	<li>"recurse" = set to 1 if the search is to descend into all subdirectories</li>
+	<li>"sortBy" = column name (from supplied) by which to sort entries</li>
+	<li>"rows", <i>n</i> = contents of each row
+</ul>
+</ul>
+</p>]]></Description>
+<Final>1</Final>
+<FormalSpec>directory:%String,fileWildcards:%String,sortBy:%String,listSubdirs:%Boolean=1,recurse:%Boolean=0</FormalSpec>
+<Implementation><![CDATA[
+	set namespace = $zu(5)
+	k ^EasySC(namespace,"dirlist")
+
+	if $get(SortBy)="" set SortBy="Name"
+
+	q:'..DirectoryFieldExists(SortBy) "FileHandler.DirectoryList : illegal SortBy '"_SortBy_"'"
+
+	set ^EasySC(namespace,"dirlist","rowCount") = 0
+	set ^EasySC(namespace,"dirlist","columns") = $listFromString(..#DirectoryFields, ";")
+	
+	set ^EasySC(namespace,"dirlist","directory")=directory
+	set ^EasySC(namespace,"dirlist","fileWildcards")=fileWildcards
+	set ^EasySC(namespace,"dirlist","sortBy")=sortBy
+	set ^EasySC(namespace,"dirlist","listSubdirs")=listSubdirs
+	set ^EasySC(namespace,"dirlist","recurse")=recurse
+	
+	do ..doLS(directory,fileWildcards,sortBy,listSubdirs,recurse)
+	quit 1
+]]></Implementation>
+</Method>
+
+<Method name="doLS">
+<Final>1</Final>
+<FormalSpec>directory:%String,fileWildcards:%String,sortBy:%String,listSubdirs:%Boolean=1,recurse:%Boolean=0</FormalSpec>
+<Private>1</Private>
+<Implementation><![CDATA[
+	set namespace = $zu(5)
+	
+	set rset=##class(%ResultSet).%New()
+	set rset.ClassName="%File",rset.QueryName="FileSet"
+	do rset.Execute(directory, fileWildcards, sortBy, listSubdirs)
+	set colCount=rset.GetColumnCount()
+    while rset.Next() {
+	    set rowCount = +$get(^EasySC(namespace, "dirlist", "rowCount")) + 1
+    	set ^EasySC(namespace,"dirlist","rowCount") = rowCount
+    	set row = ""
+    	set itemName = rset.GetData(1)
+    	for col=1:1:colCount { 
+    		set colName = rset.GetColumnName(col)
+    		set ^EasySC(namespace, "dirlist", "items", itemName,colName) = rset.GetData(col)
+    	}
+    	if (rset.Data("Type") = "D"),(recurse = 1) {
+			do ..doLS(rset.Data("Name"),fileWildcards,sortBy,listSubdirs,recurse)
+    	}
+    }
+    d rset.Close()
+    quit
+]]></Implementation>
+</Method>
+
+<Method name="DirectoryFields">
+<Description>
+ list of valid directory fields</Description>
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[        q ..#DirectoryFields
+]]></Implementation>
+</Method>
+
+<Method name="DirectoryFieldExists">
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>candidate</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[        q ";"_..#DirectoryFields_";"[candidate
+]]></Implementation>
+</Method>
+
+<Method name="DirectoryListDump">
+<Description>
+Display directory listing from result
+req:
+ entry as defined by classmethod DirectoryList</Description>
+<Final>1</Final>
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[&entry]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+        //n e,col,x 
+        f e=1:1:entry {
+                w "---------------------------------------"
+                f col=1:1:entry(-1) s x=entry(-2,col) w:x<4 ! w ?x,entry(-1,col),": ",entry(e,col)
+                w !
+        }
+        q $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="classnameFromPath">
+<Description>
+Return the (package[.package...].)classname from the path</Description>
+<FormalSpec>exportDir:%String="",internalName</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	if osPath = "" then
+		osPath = @ME->setExportDir()
+	end
+	
+	slash = @ME->slash()
+	convert slash to @fm in osPath
+	
+	if osPath<dcount(osPath,@fm)> <> "classes" then osPath< -1 > = "classes"
+]]></Implementation>
+</Method>
+
+<Method name="filterGenerated">
+<Description>
+Filter generated classes and routines out</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>name:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(name) = "" then return 0
+	
+	if name matches "'INFORMATION.SCHEMA'0X" then return 0
+	
+	excludePatterns = $listBuild("1x0x'.'1N0N'.INT'", 
+		"1X0X'.'1N0N'.MAC'", 
+		"...'.G'1N0N'.MAC'", 
+		"...'.T'1N0N'.'3A", 
+		"...'.MVI'",
+		"'cmql'0X")
+		
+	filter = $listToString(excludePatterns, @fm)
+	numberOfPatterns = dcount(filter, @fm)
+	
+	for idx = 1 to numberOfPatterns
+		if name matches filter<idx> then return 0
+	next
+	
+	return 1
+]]></Implementation>
+</Method>
+
+<Method name="rebuildSourceControlGlobal">
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set exportDirectory = "" ; use the default configured in the class for now
+	set sc = ..setIOLocations(.exportDirectory,.slash,.location,.instanceName,.namespace)
+	quit:sc'=1 $System.Status.Error("Unable to locate or create the source control export directory.")
+	
+	// First create a map of the classes to be exported. The output in ^EasySC(namespace can be used in a report.
+	kill ^EasySC(namespace, "classes")
+	kill ^EasySC(namespace, "routines")
+	set ^EasySC(namespace, "classes", "rowCount") = 0
+	// 
+	set result=##class(%ResultSet).%New()
+	set result.ClassName="%ClassDefinition"
+	set result.QueryName="ClassInfo"
+	do result.Execute("@") // retrieve classes that begin with "A" onward
+	
+	set colCount = result.GetColumnCount()
+	set colNames = ""
+	
+	// retrieve the column names in the order they were queried
+	set colNames = ""
+	for idx = 1:1:colCount {
+		set colNames = colNames _ $listBuild(result.GetColumnName(idx))
+	}
+	
+	set ^EasySC(namespace, "classes", "columns") = colNames
+	
+	set names = ""
+	
+	while result.Next() {
+    	
+    	set itemName = result.GetData(1)
+    	if ..filterGenerated(itemName) = 0 continue
+		
+	    set rowCount = +$get(^EasySC(namespace, "classes", "rowCount")) + 1
+    	set ^EasySC(namespace,"classes","rowCount") = rowCount
+    	
+    	set names = names _ $listBuild(itemName)
+    	
+    	for col=1:1:colCount { 
+    		set name = result.GetColumnName(col)
+    		set value = result.GetData(col)
+    		set ^EasySC(namespace, "classes", "desc", itemName, name) = value
+    	}
+    	
+		
+	}
+	
+	set ^EasySC(namespace, "classes", "names") = names
+	
+	do result.Close()
+	set result = ""
+	
+	// Next, find all the routines (.INT, .MAC, .MVB) and include them in the list to export
+	set ^EasySC(namespace, "routines", "columns") = $listFromString("Name,Ext Size,Last Modified,Language",",")
+	set ^EasySC(namespace, "routines", "rowCount") = 0
+	set result = ##class(%ResultSet).%New()
+	
+	set result.ClassName = "%Routine"
+	set result.QueryName = "RoutineList"
+	do result.Execute("*",1,0)
+	
+	set colCount = result.GetColumnCount()
+	set rowCount = 0
+	set colNames = ""
+	
+	// retrieve the column names in the order they were queried
+	set colNames = ""
+	for idx = 1:1:colCount {
+		set colNames = colNames _ $listBuild(result.GetColumnName(idx))
+	}
+	
+	set ^EasySC(namespace, "routines", "columns") = colNames
+	set names = ""
+	
+	while result.Next() {
+    	
+    	set row = ""
+    	set itemName = result.GetData(1)
+    	
+    	write !!,"considering ",itemName,!!
+    	if ..filterGenerated(itemName) = 0 {
+	    	write "skipping",!
+    		continue
+		}
+    	
+    	set names = names _ $listBuild(itemName)
+		
+	    set rowCount = +$get(^EasySC(namespace, "routines", "rowCount")) + 1
+    	set ^EasySC(namespace,"routines", "rowCount") = rowCount
+    	
+    	for col=1:1:colCount { 
+    		set name = result.GetColumnName(col)
+    		set value = result.GetData(col)
+    		set ^EasySC(namespace, "routines", "desc", itemName, name) = value
+    	}
+    	
+		
+	}
+	
+	set ^EasySC(namespace, "routines", "names") = names
+	
+	do result.Close()
+	
+	
+	//write "Source Control:",!,"----------------",!
+	//zwrite ^EasySC
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="export">
+<FormalSpec>InternalName:%String</FormalSpec>
+<Private>1</Private>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	
+	set sc = ..setExportDir(.exportDir)
+	
+	write !,"Saving "_InternalName_" to the source control directory.",!
+	set externalName = ..ExternalName(InternalName)
+		
+	if externalName '= "" {
+		set sc = $SYSTEM.OBJ.Export( InternalName, externalName_".xml")
+	}
+		
+	quit sc
+]]></Implementation>
+</Method>
+
+<Method name="exportAll">
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	do ..rebuildSourceControlGlobal()
+	
+	set namespace = $zu(5)
+	
+	set name = ""
+	
+	// Now create a directory tree that matches the packaging. Export classes in this section.
+	for  {
+		set name = $order(^EasySC(namespace, "classes", "desc", name))
+		quit:name=""
+		
+		if ..filterGenerated(name) = 0 continue
+		do ..export(name_".cls")
+	}
+	
+	// Export routines.
+	set name = ""
+	
+	// Now create a directory tree that matches the packaging. Export classes in this section.
+	for  {
+		set name = $order(^EasySC(namespace, "routines", "desc", name))
+		quit:name=""
+		
+		if ..filterGenerated(name) = 0 continue
+		do ..export(name)
+	}
+	
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="exportGlobals">
+<Description>
+Kill off work and query result scratch globals. Reset the globals that have tables by using SQL. This
+method contains a list with global names that are used as patterns.
+This method starts by finding all the globals in the namespace
+then picks out full global names based on the patterns in the list. This ensures that all
+related globals and subtables will be included in the dump.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set slash = ..slash()
+	set date = $replace($zd($p($now(),",",1)),"/","-")
+	set time =  $replace($zt($p($now(),",",2)),":","-")
+	set baseDir = ""
+	set sc = ..setExportDir(.baseDir)
+	set exportDirectory = baseDir _ slash _ "globals" _ slash _ date _ "-" _ time
+	set sc = ..mkdir(exportDirectory) ; check the path and create it if it doesn't exist
+	set namespace = $zu(5)
+	
+	// Now query the namespace to find the complete list of globals. Iterate through the list
+	// to find all the globals containing the target name-strings.
+	set allGlobalResults = ##class(%ResultSet).%New("%SYS.GlobalQuery:NameSpaceList")
+	do allGlobalResults.Execute(namespace,"*",1,"",,0)
+	
+	set exportList = ""
+	
+	while (allGlobalResults.Next()) {
+	
+		set exportFile = allGlobalResults.Data("Name")
+		
+		if '..filterGlobal(exportFile) continue
+		
+		set exportFileName = exportDirectory _ slash _ exportFile  _ ".gof"
+	
+		set sc = $$$OK
+		set sc = ##class(%Library.Global).Export(namespace, exportFile, exportFileName) // the rest of the options are Cache default
+		//write "Exporting ",namespace," ",exportFile," to ",exportFileName,!
+		if $$$ISERR(sc) {
+			write !
+			write $SYSTEM.Status.GetErrorText(sc),!
+			write !,"Could not make a backup file. Correct the error-causing condition ",!
+			Write "and try again. No globals have been changed."
+		}
+	}
+	
+	quit $$$OK // change after debugging!!
+]]></Implementation>
+</Method>
+
+<Method name="filterGlobal">
+<FormalSpec>globalName:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<Private>1</Private>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(globalName) = "" then return 0
+	
+	noWayNoHow = convert(",", @fm, "ROUTINE,CacheStream,CacheTemp,rBACKUP,rINC,rINCSAVE,rINDEX,rINDEXCLASS,rINDEXEXT,rINDEXSQL,rMAC,rMACSAVE,rMAP,rOBJ")
+	find globalName in noWayNoHow setting AMC then return 0
+	
+	if globalName[1,1] = "%" then return 0
+	if globalName[1,3] = "odd" then return 0
+	if globalName[1,3] = "MV." then return 0
+	if globalName[1,4] = "ISC." then return 0
+	if globalName[1,7] = "ROUTINE" then return 0
+	if globalName matches "1A0X'('1X0X')'0X" then return 0
+	if globalName = "CacheStream" then return 0
+	if  globalName matches "'CacheTemp'1X0X" then return 0
+	
+	return 1
+]]></Implementation>
+</Method>
+
+<Method name="makeStandup">
+<Description><![CDATA[
+Create a subdirectory of the on-disk source control directory and make a snapshot of
+all the code in the namespace with data globals. This closes the currently-open project
+in <property>project</property> and creates a new project named Standup_mm_dd_yyyy_hh_mm_ss.prj
+containing a deploy-ready image to stand up a new namespace or image.]]></Description>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $isobject(..currentProject) set ..currentProject = ""
+	
+	set date = $replace($zd($p($now(),",",1)),"/","_")
+	set namespace = $zu(5)
+	set time =  $replace($zt($p($now(),",",2)),":","_")
+		
+	set ..currentProject = ##class(%Studio.Project).%New()
+	set ..currentProject.Name = "Standup" _ namespace _ "_" _ date _ "_" _ time _ ".prj"
+	do ..rebuildSourceControlGlobal() // capture all classes and routines in this namespace
+	set ..isStandup = 1
+	
+	set exportDirectory = ""
+	do ..setExportDir(.exportDirectory)
+	
+	set c = ""
+	for  {
+		set c = $order(^EasySC($zu(5),"classes", "desc", c))
+		quit:c=""
+		set internalName =  ^EasySC(namespace, "classes", "desc", c, "name")
+		set className = internalName _ ".cls"
+		do ..currentProject.AddItem(className)
+		do ..export(internalName)
+	}
+	
+	set c = ""
+	for  {
+		set c = $order(^EasySC($zu(5),"routines", "desc", c))
+		quit:c=""
+		set internalName =  ^EasySC(namespace, "routines", "desc", c, "name")
+		set className = internalName
+		do ..currentProject.AddItem(className)
+		do ..export(internalName)
+	}
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+
+Method importOne(itemName As %String = "",
+	importToProject As %Boolean = 1) as %Boolean
+	{
+		try
+		{	
+			set sc = $System.OBJ.Load(..ExternalName(itemName), "-ck") //c = compile, k = dont delete int files
+			$$$EXCEP(sc)
+			
+			if ( importToProject )
+			{
+				set project = ##class(%Studio.Project).%OpenId(..projectName, 1, .sc)
+				$$$EXCEP(sc)
+				
+				set sc = project.AddItem(itemName)
+				$$$EXCEP(sc)
+				
+				set sc = project.%Save()
+				$$$EXCEP(sc)
+			}
+		}
+		catch e
+		{
+			$$$CATCH(e)
+		}
+		
+		q sc
+	}
+
+*/
+]]></Content>
+</UDLText>
+
+<UDLText name="T">
+<Content><![CDATA[/* ******************************************************************************************************************* */
+]]></Content>
+</UDLText>
+
+<UDLText name="T">
+<Content><![CDATA[/*                                                  Studio Events                                                      */
+]]></Content>
+</UDLText>
+
+<UDLText name="T">
+<Content><![CDATA[/* ******************************************************************************************************************* */
+]]></Content>
+</UDLText>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+/ These items were copied from the extension base class. TODO - finish-out the overrides.
+
+
+*/
+]]></Content>
+</UDLText>
+
+<Method name="OnBeforeLoad">
+<Description>
+This is called before the actual load of data to give the chance
+to load the item from an external format.</Description>
+<FormalSpec>InternalName:%String</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	kill %Project ; tip from cache group
+	write !,"(EasyCSP.SourceControl.StudioExtension).OnBeforeLoad(): The internal name is "_InternalName,!
+	
+	set InternalNamePieces = $listFromString(InternalName, ".")
+	if $listGet(InternalNamePieces,$listLength(InternalNamePieces)) = "PRJ" set ..currentProject = ##class(%Studio.Project).%OpenId(InternalName)
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+/// This is called after the item is loaded but before it is sent to Studio
+/// so you have a chance to modify this copy before it appears in the editor.
+/// It is passed a reference to the object that represents this item so it
+/// can be modified before Studio reads this information.
+Method OnAfterLoad(
+	InternalName As %String,
+	Object As %RegisteredObject = {$$$NULLOREF}) As %Status
+{
+	Quit $$$OK
+}
+
+*/
+]]></Content>
+</UDLText>
+
+<Method name="OnBeforeSave">
+<Description>
+Called before the item is saved to the Cache database it is passed
+a reference to the current temporary storage of this item so that it
+can be modified before the save completes. If you quit with an error
+value then it will abort the save.</Description>
+<FormalSpec>InternalName:%String,Location:%String="",Object:%RegisteredObject=$$$NULLOREF</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	//write !,"(EasyCSP.SourceControl.StudioExtension).OnBeforeSave(): The internal name is "_InternalName,!
+	//write "External name will be: ",..ExternalName(InternalName),!
+	//zwrite:Object'=$$$NULLOREF Object
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="OnAfterSave">
+<Description>
+This is called after the item has been saved to the database.
+It may be passed a reference to the object representing the item
+just saved. It can be use to export this documement to an external form for example.</Description>
+<FormalSpec>InternalName:%String,Object:%RegisteredObject=$$$NULLOREF</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="OnAfterStorage">
+<Description><![CDATA[
+This is called if you compile a class and the compilation updates the classes storage.
+It is called after the storage has been updated so you can determine how to deal with this
+change in the class. The <var>Location</var> is the global reference to the class definition that was changed.]]></Description>
+<FormalSpec>InternalName:%String,Location:%String=""</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="OnBeforeCompile">
+<Description>
+Called before the compile of the item is done.
+It is passed a qstruct which can be inspected and modified.</Description>
+<FormalSpec><![CDATA[InternalName:%String,&qstruct:%String]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+
+/// Called after the compile of the item is done.
+Method OnAfterCompile(InternalName As %String) As %Status
+{
+	Quit $$$OK
+}
+
+/// Called in the class compiler after we have resolved the list of classes to be compiled but
+/// before we have started the compile itself.
+/// <var>List</var> is a subscripted array of items that will be compiled.
+Method OnBeforeClassCompile(
+	List As %String,
+	Level As %Integer,
+	ByRef qstruct As %String) As %Status
+{
+	Quit $$$OK
+}
+*/
+]]></Content>
+</UDLText>
+
+<Method name="OnAfterClassCompile">
+<Description><![CDATA[
+Called in the class compiler after we have compiled all the classes before we exit
+<var>List</var> is a subscripted array of items that were compiled. <var>Status</var> is the current compile return
+error %Status, so the callback can check if there was any error in compiling the list of classes.]]></Description>
+<FormalSpec><![CDATA[List:%String="",Level:%Integer,&qstruct:%String,Status:%Status]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	w "OnAfterClassCompile",!,"-------------------",!
+	w "List:"
+	zw List
+	w !!
+	w "Level: ",Level,!
+	w !!
+	w "qstruct:",!
+	zw qstruct
+	w !!
+	w "Status",!
+	zw Status
+	
+	quit:$$$ISERR(Status) Status
+	
+	
+	set InternalName = ""
+	for  {
+		set InternalName = $order(List(InternalName))
+		quit:InternalName=""
+		write !,"Internal name: ",InternalName,!
+		
+		/*
+				
+		set saveables = $listbuild("cls", "inc", "int", "mac")
+		
+		set len = $length(InternalName, ".")
+		set extension = $mvoconv($piece(InternalName, ".", len),"MCL")
+		
+		if '$listFind(saveables, extension) continue
+		*/
+			 
+		do ..export(InternalName_".cls")
+	}
+	
+	w $get(%Project),!
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="OnBeforeAllClassCompile">
+<Description><![CDATA[
+Called in the activated source control class before starting a compile after we have resolved the list of classes
+but before we have started the compile itself. Note that this is a class method and it does not require the source
+control class to be instanciated in order for it to be called. By default it will call the <method>OnBeforeClassCompile</method>
+if there is a source control class instanciated, but you can override this to do whatever you require.
+Returning an error here will abort the compile.
+<var>List</var> is a subscripted array of items that will be compiled.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[List:%String,Level:%Integer,&qstruct:%String]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	Set sc=$$$OK
+	If $isobject($get(%SourceControl)) {
+		Set tmp=%SourceControl New %SourceControl
+		Set sc=tmp.OnBeforeClassCompile(.List,Level,.qstruct)
+	}
+	Quit sc
+]]></Implementation>
+</Method>
+
+<Method name="OnAfterAllClassCompile">
+<Description><![CDATA[
+Called in the activated source control class after we have compiled all the classes but before we exit.
+Note that this is a class method and it does not require the source
+control class to be instanciated in order for it to be called. By default it will call the <method>OnAfterClassCompile</method>
+if there is a source control class instanciated, but you can override this to do whatever you require.
+<var>List</var> is a subscripted array of items that were compiled. <var>Status</var> is the current compile return
+error %Status, so the callback can check if there was any error in compiling the list of classes.]]></Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec><![CDATA[List:%String,Level:%Integer,&qstruct:%String,Status:%Status]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	Set sc=$$$OK
+	If $isobject($get(%SourceControl)) {
+		Set tmp=%SourceControl New %SourceControl
+		Set sc=tmp.OnAfterClassCompile(.List,Level,.qstruct,.Status)
+	}
+	Quit sc
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+/// Called before an item is deleted. Returning an error code prevents the delete from occuring.
+Method OnBeforeDelete(InternalName As %String) As %Status
+{
+	Quit $$$OK
+}
+
+/// Called after an item is deleted.
+Method OnAfterDelete(InternalName As %String) As %Status
+{
+	Quit $$$OK
+}
+*/
+]]></Content>
+</UDLText>
+
+<Method name="GetStatus">
+<Description>
+Return information about this entity.</Description>
+<FormalSpec><![CDATA[InternalName:%String,&IsInSourceControl:%Boolean,&Editable:%Boolean,&IsCheckedOut:%Boolean,&UserCheckedOut:%String]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	Set Editable=1,IsCheckedOut=0,UserCheckedOut="",IsInSourceControl=0
+	quit:InternalName="" $$$OK
+	if $e(InternalName,1,1)="%" {
+		set Editable = 0
+		set IsInSourceControl = 0
+		quit $$$OK
+	}
+	
+	// write !,"(EasyCSP.SourceControl.StudioExtension).GetStatus(): The internal name is "_InternalName,!
+	// write "External name will be: ",..ExternalName(InternalName),!
+	Quit $$$OK
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+/// Return true if this item should be marked as read only.
+/// This is called when Studio opens a document. It is set to indicate
+/// that the user checked the 'read only' checkbox in the open
+/// dialog in Studio.
+Method IsReadOnly(InternalName As %String) As %Boolean
+{
+	Quit 0
+}
+
+/// Returns true if this item is in source control and false otherwise.
+Method IsInSourceControl(InternalName As %String) As %Boolean
+{
+	Set IsInSourceControl=0
+	Do ..GetStatus(InternalName,.IsInSourceControl)
+	Quit IsInSourceControl
+}
+
+/// Used to allow Studio to display different icons in open dialog or project window etc.
+/// Return values are:<ul>
+/// <li>0 - Not in source control</li>
+/// <li>1 - In source control, not checked out</li>
+/// <li>2 - In source control and checked out so item is editable</li></ul>
+Method ItemIconState(InternalName As %String) As %Integer
+{
+	Quit 0
+}
+
+/// Called before Studio checks for the timestamp of an item.
+Method OnBeforeTimestamp(InternalName As %String)
+{
+	Quit
+}
+
+/*
+/// Provide a list of the top level menu items that Studio will add when connecting to this namespace.
+/// For each of these top level menus Studio will call the <query>MenuItems</query> query to obtain the items in
+/// this menu when the top level menu is selected. Each top level menu has a 'Name' and a 'Type' the
+/// type is 0 for regular top level menus and 1 to specify the name of the context submenu that will
+/// be added to all the context menus.<p>
+/// Note that you can change the SQL statement or implement this query yourself this is just an example
+/// of where you can start.
+Query MainMenus(Classname As %String) As %SQLQuery [ SqlProc ]
+{
+SELECT Name, Type FROM %Studio_Extension.Menu WHERE MenuBase = :Classname
+}
+
+/// This query is called by Studio when the top level menu is selected and it returns the list of items
+/// that will appear on this menu. It is passed the name of the menu and the name of the current
+/// document that has focus or "" if there are no documents open. The fields returned are:<ul>
+/// <li>Name - Name of this menu item</li>
+/// <li>Enabled - True if this menu item is enabled, false to disable this menu item</li>
+/// <li>Save - Flag to see if the current document or all documents should be saved before running this item</li>
+/// <li>Separator - True if this is a menu separator</li></ul>
+/// Note that you can change the SQL statement or implement this query yourself this is just an example
+/// of where you can start.
+Query MenuItems(
+	Classname As %String,
+	MenuName As %String,
+	InternalName As %String,
+	SelectedText As %String) As %SQLQuery [ SqlProc ]
+{
+SELECT MenuItem_Name, MenuItem_Enabled, MenuItem_Save, MenuItem_Separator FROM %Studio_Extension.Menu_MenuItem WHERE Menu->MenuBase = :Classname AND Menu->Name = :MenuName
+}
+
+/// This is called for every menu item returned to Studio to allow the menu to be enabled/disabled without
+/// having to write a custom query for <query>MenuItems</query>. The <var>DisplayName</var> of this menu is
+/// also passed by reference and this may be modified to change the appearance of this menu item. The <var>MenuName</var>
+/// is the main menu name then the submenu name separated by a ','. If <var>Enabled</var> is set to -1 then it will remove
+/// this menu item from the list totally, 0 will gray the menu item out and the default 1 will display the menu item as normal.
+Method OnMenuItem(
+	MenuName As %String,
+	InternalName As %String,
+	SelectedText As %String,
+	ByRef Enabled As %Boolean,
+	ByRef DisplayName As %String) As %Status
+{
+	Quit $$$OK
+}
+
+/// This is called after the <method>UserAction</method> and after any template is run or dialog is displayed.
+/// For list of input arguments see <method>UserAction</method>
+/// In the case of the dialog the button pushed by the user is passed in Answer:<ul>
+/// <li>0 - No</li>
+/// <li>1 - Yes</li>
+/// <li>2 - Cancel</li></ul>
+/// For the dialog that contains a textbox field the text of this field is passed in 'Msg' argument.
+/// In the case of a template if the template was closed from the 'x' button then Answer=2 to indicate
+/// the user attempted to cancel the operation. Otherwise if the template closed normally by getting
+/// to the end Answer=1.
+/// For the cases where Studio did not perform any interaction this method is not called.
+/// The default implementation is to call the standard source control tags as Studio did in Cache 5.0.
+/// If the <var>Reload</var> argument is set to true by this method then the current document will be reloaded in Studio
+Method AfterUserAction(
+	Type As %Integer,
+	Name As %String,
+	InternalName As %String,
+	Answer As %Integer,
+	Msg As %String = "",
+	ByRef Reload As %Boolean) As %Status
+{
+	Set Reload=0
+	Quit $$$OK
+}
+
+/// Return 1 if you wish this item to appear as if it is 'generated' when opened in Studio,
+/// return 0 to force this item not to appear as 'generated' and return "" to use normal processing
+ClassMethod IsGenerated(Name As %String) As %String
+{
+	Quit ""
+}
+*/
+]]></Content>
+</UDLText>
+</Class>
+</Export>

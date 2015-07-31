@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.ExtractMatch">
+<Description><![CDATA[
+<p>
+Extract a substring embedded within another much larger string by using a match
+pattern. This is used to dig out gems of data such as phone numbers, social security
+numbers, credit card numbers deep within otherwise completely random strings. It is
+especially useful for gleaning data from poorly structured spreadsheets or text documents.
+</p>
+<p><code>stringToSearch</code> is some lump of text to search. <code>patternList</code>
+is one or more MV pattern-matching operators. Multiple operators are separated by @VM
+(value mark) characters.
+</p>
+<p>extractMatch returns a substring from the random, "noisy" string/// <br /><br />
+ For example, you have a multivalued "notes" attribute in a record.  Somewhere in there is a phone number.
+You could have that phone number returned by calling the EXTRACTMATCH() routine, thus:
+<br /><br />
+ Notes = SomeFileRec< smfile.notesattr ><br />
+Phonepattern = "3N'-'4N]'('3N') '3N'-'4N]3N'-'3N'-'4N" <br />
+Phone = EXTRACTMATCH( Notes, Phonepattern )<br />
+if STATUS = successful then ... ;* you got the number
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Language>mvbasic</Language>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63474,30228.410062</TimeChanged>
+<TimeCreated>63464,78378.040545</TimeCreated>
+
+<Property name="result">
+<Type>%String</Type>
+</Property>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>stringToSearch:%String="",patternList:%String=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+
+    if $get( stringToSearch ) = "" then stringToSearch = ""
+    if $get( patternList ) = "" then patternList = ""
+    
+    if stringToSearch = "" then
+       return ""
+    end
+ 
+    if patternList = "" then
+    	return ""
+    end
+ 
+    fullStringSize = LEN( stringToSearch )
+ 
+    startingPlace = 1
+    stringFound = @false
+ 
+    loop
+ 
+       remove pattern FROM patternList SETTING morePatterns
+ 
+       loop
+ 
+          testString = stringToSearch[ startingPlace, fullStringSize ]
+          if testString MATCHES pattern then
+             stringFound = @true
+             exit
+          end
+ 
+          if testString MATCHES pattern : '0X' then
+          
+             loop
+             
+                testString = testString[ 1, LEN( testString ) - 1 ]
+                
+                if testString MATCHES pattern then
+                   stringFound = @true
+                   exit
+                end
+                
+             while testString <> "" do repeat
+             
+          end
+ 
+          startingPlace += 1
+ 
+       until ( startingPlace > fullStringSize ) OR ( stringFound = @true ) DO repeat
+ 
+       if ( stringFound = @true ) then exit
+ 
+    while morePatterns do repeat
+ 
+    if stringFound = @false then testString = ""
+
+    if stringFound = @false then testString = ""
+ 
+ 	return testString
+]]></Implementation>
+</Method>
+</Class>
+</Export>

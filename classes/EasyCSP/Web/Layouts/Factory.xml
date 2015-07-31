@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Web.Layouts.Factory">
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63590,74777.290523</TimeChanged>
+<TimeCreated>63588,53815.751871</TimeCreated>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+Pass in the class name of the layout to create. This function will first look in the local namespace
+for a "Views.Layouts" package. If the class is not located there then the "EasyCSP.Views.Layouts.<i>controllerId</i>" package is searched
+next. Return 0 if the class can not be located or can not be instantiate. If the result is 1 then
+the "layout" parameter will have an instatiated layout object in it.]]></Description>
+<FormalSpec><![CDATA[&layout,className:%String="",data:EasyCSP.Core.ParameterList=""]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set layout = "" ; kill an existing oref
+	if $get(className)="" {
+		do ..SetCondition(19,"Supply the class base name for the layout to be instantiated.")
+		quit $$$OK
+	}
+	
+	set fqcn = "Views.Layouts."_className ; fully-qualified class name
+	set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+	if '$IsObject(def) {
+		set fqcn = "EasyCSP."_fqcn
+		set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+		if '$IsObject(def) {
+			do ..SetCondition(20, "There is no layout named "_className_".")
+			quit $$$OK
+		}
+	}
+		
+	set layout = $CLASSMETHOD(fqcn, "%New",data)
+	if ..instanceOf(layout,"Layouts") = 0 {
+		do ..SetCondition(21, "The layout class name "_fqcn_" appears to be valid but can not be instantiated.")
+		set layout = ""
+		quit $$$OK
+	}
+	
+		
+	quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

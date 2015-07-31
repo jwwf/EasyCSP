@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Views.Factory">
+<Super>EasyCSP.Core.Component</Super>
+<TimeChanged>63620,75117.641588</TimeChanged>
+<TimeCreated>63541,80046.507063</TimeCreated>
+
+<Method name="%OnNew">
+<Description><![CDATA[
+Pass in the class name of the view to create. This function will first look in the local namespace
+for a "Views.<i>controllerId</i>" package. If the class is not located there then the "EasyCSP.Views.<i>controllerId</i>" package is searched
+next. Return 0 if the class can not be located or can not be instantiate. If the result is 1 then
+the "view" parameter will have an instatiated view object in it.]]></Description>
+<FormalSpec><![CDATA[&view,className:%String="",controllerId:EasyCSP.Core.ParameterList="",data:EasyCSP.Core.ParameterList=""]]></FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set view = "" ; kill an existing oref
+	if $get(className)="" {
+		do ..SetCondition(19,"Supply the class base name for the view to be instantiated.")
+		quit $$$OK
+	}
+	
+	set fqcn = "Views."_controllerId_"."_className ; fully-qualified class name
+	set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+	if '$IsObject(def) {
+		
+		set fqcn = "Views."_controllerId_"."_$mvoconv(className, "MCT")
+		set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+		
+		if '$isobject(def) {
+			
+			set fqcn = "EasyCSP.Views."_controllerId_"."_className
+			set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+			
+			if '$isobject(def) { 
+		
+				set fqcn = "EasyCSP.Views."_controllerId_"."_$mvoconv(className, "MCT")
+				set def = ##class(%Dictionary.ClassDefinition).%OpenId(fqcn)
+				if '$IsObject(def) {
+					do ..SetCondition(20, "There is no view named "_className_" for controller "_controllerId)
+					quit $$$OK
+				}
+			}
+		}
+	}
+		
+	set view = $CLASSMETHOD(fqcn, "%New",data)
+	if ..instanceOf(view,"Views") = 0 {
+		do ..SetCondition(21, "The view class name "_fqcn_" appears to be valid but can not be instantiated.")
+		set view = ""
+		quit $$$OK
+	}
+	
+		
+	quit $$$OK
+]]></Implementation>
+</Method>
+</Class>
+</Export>

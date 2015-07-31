@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.HTTPDate">
+<Description><![CDATA[
+Returns a date in standard RFC format.  If no date is supplied in the call-line,
+today's date and the current time are assumed.
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63474,31123.244315</TimeChanged>
+<TimeCreated>63464,79851.244812</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>TheDate:%Integer=0</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    
+    If TheDate = 0 Then TheDate = system(99)
+
+    Time = REM( TheDate, 86400 )
+    Days = INT( ( TheDate - Time ) / 86400 ) + 732
+    MessageDate = "Date: " : OCONV( Days, "DWAL" )[ 1, 3 ] : ', ' : OCONV( Days, 'D4' ) : " " : OCONV( Time, "MTS" ) : " GMT"
+
+    RETURN( MessageDate )
+]]></Implementation>
+</Method>
+</Class>
+</Export>

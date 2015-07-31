@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Class name="EasyCSP.Views.Site.Login">
+<Description><![CDATA[
+<p>
+Default site login view. Clone and modify, place in the local "Views.Site" package. Do
+not modify this as changes will be overwritten on package upgrade.
+</p>
+
+<p>Note: this is the ugliest page in the system. It was the first written and has a lot
+of custom twists to it. Most views do exactly one thing one way and can be generated from
+the stock view generator. As the framework evolves one of the TODOs to work off is simplify
+stuffing the parameter lists. For this iteration I left the boilerplate in an XData section
+which may be a convenient technique for future programmers to use. Doing an addContent
+line-by-line for boilerplate is prohibitively tedious and not necessary for static markup.
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Super>EasyCSP.Views.Base</Super>
+<TimeChanged>63678,26347.63996</TimeChanged>
+<TimeCreated>63541,31504.474773</TimeCreated>
+
+<Method name="run">
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if '..data.isset("model") {
+		do ..SetCondition(404, "Please supply a data model for the login form.")
+		quit 0
+	}
+	
+	set loginModel = ..data.get("model")	
+	
+	if ..instanceOf(loginModel, "LoginForm") = 0 {
+		do ..SetCondition(404,"The login data model should be an instance of a LoginForm model.")
+		quit 0
+	}
+	
+	set url = %EasyCSPApp.getViewURL()
+	
+	if $mvoconv(url,"MCL")["register" {
+		set ..pageTitle = "New User Registration"
+		set presentation = "reg"
+	} else {
+		set ..pageTitle = "Log In"
+		set presentation = "login"
+	}
+	
+	// This page has some boilerplate for the masthead. It's easiest to store this as XML
+	// data since it's static. Read this out of the XData section below and toss it into
+	// the page stream whole.
+	do ..xDataToContent("siteLoginHeader")
+	
+	
+	/* ****************************************** Login Form ************************************* */
+	
+	set htmlOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do htmlOptions.set("id", "mobile-form")
+	do htmlOptions.set("enableAjaxValidation", 0)
+	do htmlOptions.set("enctype", "multipart/form-data")
+	set formStream = ##class(EasyCSP.Web.CHTML).beginForm(url, "post", htmlOptions)
+	do ..addStreamContent(formStream)
+	
+	// the div inside the clear panel in the page
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("class", "container")
+	do htmlOptions.set("style", "float: left; width: 90%")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div",htmlOptions))
+	
+	
+	/* **************** Start the form elements. Surround the visible elements with a fieldset. *** */
+	do htmlOptions.set("style", "width: 90%;margin:0 15px;")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("fieldset",htmlOptions))
+	
+		
+	/* ************* This small inner div is for displaying error messages from the script *********** */
+	// The login page leverages a good deal of client-side validation, managed by a JQuery script. That
+	// script is added to the page-build by the login layout.
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("id", "msgs")
+	do htmlOptions.set("class", "clear errorSummary hidden")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div",htmlOptions))
+    do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div")) // end of "msgs" div
+    /* *********************************** End of msgs div ******************************************** */
+    
+    
+    /* **************** This is an inner div that displays model validation errors if there are any **** */
+    // After submission all the fields in the form are loaded into the model then validated. If any field
+    // fails to pass validation the form is redisplayed with the errors for each invalid field displayed
+    // under the blank. The data is kept in the model so the fields will be filled. (See the Web.ControlGroup
+    // class for further details.)
+    if loginModel.hasErrors()!..hasConditions() {
+		do htmlOptions.unsetAll()
+		do htmlOptions.set("id", "errors")
+		do htmlOptions.set("class", "clear errorSummary")
+		do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div",htmlOptions))
+		do:loginModel.hasErrors() ..addStreamContent(##class(EasyCSP.Web.CHTML).formErrorSummary(loginModel,2))
+		do:..hasConditions() ..addStreamContent(..formatConditions())
+	    do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div")) // end of "msgs" div
+    }
+	
+	
+	/* ************************************ div for existing user *************************** */
+	// This div encloses the entire form. The inner div for new users is displayed if the
+	// user clicks the "need a new logon" button
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("id", "existinguser")
+	do htmlOptions.set("style", "width:100%; margin: 5px 5px 5px 5px;")
+	do htmlOptions.set("class", "fleft")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div", htmlOptions))
+	
+	/* ******************************* Fields for existing users ***************************** */
+	/* ***************************** form input formatting options *************************** */
+	
+	// This form relies on CSS for formatting. These optional parameter lists are being created
+	// here for demonstration. 
+	set outerEnclosureOptions = ##class(EasyCSP.Core.ParameterList).%New()	
+	set labelContainerOptions = ##class(EasyCSP.Core.ParameterList).%New()	
+	set labelOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	set inputOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	
+	/* *************************************************************************************** */
+	/* ********************** Start the existing user div ************************************ */
+	/* *************************************************************************************** */
+	
+	// All the options are set up. Loop through the list of attributes to make inputs for:
+	for attributeName="rememberme","username","upassword" {
+		do ..addStreamContent(##class(EasyCSP.Web.ControlGroup).addControlGroup(loginModel.getAttribute(attributeName),0,outerEnclosureOptions,labelContainerOptions,labelOptions,inputOptions))
+	}
+	
+	
+	/* *************************************************************************************** */
+	/* ++++++++++++++++++++++++ Innermost div: hidden "new user" signup input ++++++++++++++++ */	
+	/* *************************************************************************************** */
+	// The login page consists of one big form but the entire form is only displayed if the
+	// user doesn't have a login and wants to create one.	
+	/* *************************************************************************************** */
+	
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("id", "newuser")
+	do:presentation="login" htmlOptions.set("style", "visibility:visible !important; display:none; opacity:1;")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div",htmlOptions))
+	
+	for attributeName="cpassword","email","firstname","lastname" {
+		do labelOptions.set("required",1)
+		if attributeName = "cpassword" do inputOptions.set("data-equals","upassword")
+		do ..addStreamContent(##class(EasyCSP.Web.ControlGroup).addControlGroup(loginModel.getAttribute(attributeName),0,outerEnclosureOptions,labelContainerOptions,labelOptions,inputOptions))
+		do htmlOptions.unset("data-equals")
+	}
+    
+	/* ********************* end the innermost new-user div ********************************** */
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div"))
+	/* *************************************************************************************** */
+	
+	
+	/* *************************************************************************************** */
+	/* ********************** End of existing user div *************************************** */
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div"))
+	/* *************************************************************************************** */
+		
+	
+	/* **************************** end the inner container div ****************************** */
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div"))
+	
+	/* *********************************** Submit Button ************************************* */
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("style","float: left; width: 10%;")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div", htmlOptions))
+	
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("class", "blue")
+	do htmlOptions.set("id", "registersubmit")
+	do htmlOptions.set("name", "registersubmit")
+	do htmlOptions.set("style","float: left; margin: 20px")
+	
+	if presentation = "login" {
+		do htmlOptions.set("value","Login")
+		do ..addContent(##class(EasyCSP.Web.CHTML).tag("button", htmlOptions, "Log In"))
+	} else {
+		do htmlOptions.set("value","Register")
+		do ..addContent(##class(EasyCSP.Web.CHTML).tag("button", htmlOptions, "Register"))
+	}
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div"))
+	
+	
+	/* ***************************** end the form ******************************************** */
+	do ..addContent(##class(EasyCSP.Web.CHTML).endForm())
+	
+	
+	/* *************************************************************************************** */
+	/* ********************************** New User button ************************************ */
+	/* *************************************************************************************** */
+	do htmlOptions.unsetAll()
+	
+	if presentation = "login" {
+		do htmlOptions.set("class", "inline row stretched fright")
+	} else {
+		do htmlOptions.set("class", "hidden")
+	}
+	
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("fieldset"))
+	
+	/* ************************ Start over/Existing User button ****************************** */
+    
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("id", "togglePresentation")
+	do htmlOptions.set("class", "inline row")
+	do htmlOptions.set("style", "width: 100%;")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("div", htmlOptions))
+	
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("style", "list-style-type: none;")
+	do ..addContent(##class(EasyCSP.Web.CHTML).openTag("ul",htmlOptions))
+	
+	/* ******************************** view toggle button *********************************** */
+	set buttonOptions = ##class(EasyCSP.Core.ParameterList).%New()
+	do buttonOptions.set("class", "blue")
+	do buttonOptions.set("id", "viewType")
+	do buttonOptions.set("onclick", "return false;")
+	
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("class", "inline row stretched fright")
+	
+	if presentation = "reg" {
+		do buttonOptions.set("value", "register")
+		do ..addContent(##class(EasyCSP.Web.CHTML).tag("li",htmlOptions,"<strong>Need to start over?</strong><br />"_##class(EasyCSP.Web.CHTML).tag("button",buttonOptions,"I have a User ID")))
+	} else {
+		do buttonOptions.set("value", "login")
+		do ..addContent(##class(EasyCSP.Web.CHTML).tag("li",htmlOptions,"<strong>Need to register?</strong><br />"_##class(EasyCSP.Web.CHTML).tag("button",buttonOptions,"I need a User ID")))
+	}
+	
+	/* ********************************* help button ***************************************** */
+	// This help div can be found in the XData of this class. To embed help, write the text in
+	// a help div (shown below). The help script is in main.js.
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("class", "inline row stretched fleft")
+	
+	do buttonOptions.unsetAll()
+	do buttonOptions.set("onclick","helpwindow('wizard-help-wrapper'); return false;")
+	do buttonOptions.set("class", "blue")
+	
+	do ..addContent(##class(EasyCSP.Web.CHTML).tag("li",htmlOptions,"<strong>What do I do?</strong><br />"_##class(EasyCSP.Web.CHTML).tag("button", buttonOptions, "Help")))
+
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("ul"))
+	
+	do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div"))
+	
+	// close the inner containing div with the form in it
+    // do ..addContent(##class(EasyCSP.Web.CHTML).closeTag("div"))
+	
+	
+	quit 1
+]]></Implementation>
+</Method>
+
+<XData name="siteLoginHeader">
+<Description>
+Throw the greeting for the login page in one big XData since it's static content.</Description>
+<Data><![CDATA[
+<html>
+	<div class="help-overlay" id="wizard-help-wrapper">
+		<a href="#" onclick="helpwindow('wizard-help-wrapper');"></a>
+
+		<div class="help-window" id="home-graph-help">
+		
+			<div class="close-help">
+				<a href="#" onclick="helpwindow('wizard-help-wrapper'); $('#email').focus();"></a>
+			</div>
+
+
+			<div class="fleft" style="clear: both">
+				<h1 style="color: #ffffff;">Sign In or Register a New Account</h1>
+			</div>
+
+			<div class="fleft" style="clear: both; margin-top: 20px">
+				<p>If you have previously registered, please enter either your login name or your email address in the "Email Address" blank and then fill in
+				your password below that. If you don't have a user ID or you aren't registered, click the "I am a New User" button at the bottom of the page to
+				create an account.</p>
+			</div>
+			
+		</div>
+		
+	</div>
+	
+	<br />
+
+	<ul class="inline row stretched">
+		<li class="nine" style="list-style-type: none;">
+			<h2 id="formHeading">Log in or Register</h2>
+			<br />
+
+			<p>Welcome to the Easy CSP site builder! If you have registered already, enter your user name or email address and your password to sign in. If you
+			aren't registered yet, you can create a login by clicking the "I am a new user" button at the bottom of the page.</p>
+
+			<p style="color: red;text-align:center;">All fields marked with a red asterisk are required</p>
+			<br />
+		</li>
+	</ul>
+
+</html>
+]]></Data>
+</XData>
+</Class>
+</Export>

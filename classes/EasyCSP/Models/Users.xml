@@ -1,0 +1,357 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Models.Users">
+<Description><![CDATA[
+<p>
+User authentication table
+</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<CompileAfter>EasyCSP.MVModel.Base</CompileAfter>
+<Super>%Persistent,EasyCSP.MVModel.Base</Super>
+<TimeChanged>63763,37062.370959</TimeChanged>
+<TimeCreated>63532,37944.368648</TimeCreated>
+
+<Index name="indexemailAddress">
+<Data>emailAddress</Data>
+<Properties>emailAddress</Properties>
+</Index>
+
+<Index name="indexuserName">
+<IdKey>1</IdKey>
+<PrimaryKey>1</PrimaryKey>
+<Properties>userName</Properties>
+</Index>
+
+<Parameter name="MVFILENAME">
+<Default>USERS</Default>
+</Parameter>
+
+<Parameter name="MVGLOBAL">
+<Default>^USERS</Default>
+</Parameter>
+
+<Parameter name="MVAUTOLOCK">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCLEARDICT">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCREATE">
+<Type>BOOLEAN</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="MVREPOPULATE">
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="roleSiteAdministrator">
+<Description>
+A site administrator can adjust global settings and put the site in maintenance mode but can still log in.
+This is the all-powerful "root" level.
+This level can change anything in the system at any time.</Description>
+<Default>9999999999</Default>
+</Parameter>
+
+<Property name="userName">
+<Type>%String</Type>
+<Required>1</Required>
+<Parameter name="MVATTRIBUTE" value="0"/>
+<Parameter name="MVHEADING" value="Login Name"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="USER_NAME"/>
+<Parameter name="MVWIDTH" value="20"/>
+</Property>
+
+<Property name="emailAddress">
+<Type>%String</Type>
+<Required>1</Required>
+<SqlFieldName>email_address</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="1"/>
+<Parameter name="MVHEADING" value="Email Address"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="EMAIL_ADDRESS"/>
+<Parameter name="MVWIDTH" value="15"/>
+</Property>
+
+<Property name="creationDate">
+<Type>%BigInt</Type>
+<SqlFieldName>creation_date</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="2"/>
+<Parameter name="MVHEADING" value="Creation Date"/>
+<Parameter name="MVNAME" value="CREATION_DATE"/>
+</Property>
+
+<Property name="lastUpdateDate">
+<Type>%BigInt</Type>
+<SqlFieldName>last_update_date</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="3"/>
+<Parameter name="MVHEADING" value="Last Updated"/>
+<Parameter name="MVNAME" value="LAST_UPDATE_DATE"/>
+</Property>
+
+<Property name="firstName">
+<Type>%String</Type>
+<Required>1</Required>
+<SqlFieldName>first_name</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="4"/>
+<Parameter name="MVHEADING" value="First Name"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="FIRST_NAME"/>
+<Parameter name="MVWIDTH" value="5"/>
+</Property>
+
+<Property name="surname">
+<Type>%String</Type>
+<Required>1</Required>
+<SqlFieldName>surname</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="5"/>
+<Parameter name="MVHEADING" value="Surname"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="SURNAME"/>
+<Parameter name="MVWIDTH" value="15"/>
+</Property>
+
+<Property name="lastUpdate">
+<Type>%String</Type>
+<Calculated>1</Calculated>
+<SqlComputeCode>Set {lastUpdate}=##class(EasyCSP.Models.Users).calcLastUpdate({%%ID},{%RECORD})</SqlComputeCode>
+<SqlComputed>1</SqlComputed>
+<Parameter name="COLLATION" value="MVR"/>
+<Parameter name="MVITYPE" value="SUBR(&apos;SUBR.UDATE&apos;,LAST_UPDATE_DATE, &apos;D&apos;)"/>
+<Parameter name="MVNAME" value="LAST_UPDATE"/>
+<Parameter name="MVPROJECTED" value="1"/>
+<Parameter name="MVTYPE" value="I"/>
+</Property>
+
+<Property name="entityId">
+<Type>%String</Type>
+<Required>1</Required>
+<SqlFieldName>entity_id</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="6"/>
+<Parameter name="MVHEADING" value="Entity"/>
+<Parameter name="MVJUSTIFICATION" value="L"/>
+<Parameter name="MVNAME" value="ENTITY"/>
+<Parameter name="MVWIDTH" value="15"/>
+</Property>
+
+<Method name="calcLastUpdate">
+<Description>
+Dates are stored as an integer value in the standard POSIX epoch. This function
+converts the internal POSIX date to an external representation.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>ItemID:%String,Item:%String</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+	@ID =ItemID
+	@RECORD=Item
+	RETURN "EasyCSP.Conversions.UDate"->run(@RECORD<4>, "D")
+]]></Implementation>
+</Method>
+
+<Method name="isUser">
+<Description>
+Pass in either the the userName or the emailAddress. The user Id will be returned.
+A return value of 0 (zero) indicates the user was not located.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>identifier:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+	if $get(identifier) = "" then return 0
+	
+	result = 1
+	id = 0 ; * assume "No" unless proven otherwise
+	
+	model = "EasyCSP.Models.Users"->%OpenId(identifier)
+	if isobject(model) then return 1
+	
+	rec = trans("USERS", identifier, 1, "X") ; * use a trans() trick to find if there's a record with the identifier as an email address
+	if rec = "" then result = 0
+	
+	return result
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+*    Model event handlers
+*/
+]]></Content>
+</UDLText>
+
+<Method name="validationRules">
+<Description>
+This event is called by %OnNew() in the superclass to construct the validation rules.
+Note that "Required" is automatically set if the property definition includes a "Required" parameter.</Description>
+<Implementation><![CDATA[
+	set OK = $$$OK
+	
+	set:OK OK = ..addValidationRule("emailaddress", "Email") ; must be a valid format
+	
+	quit OK
+]]></Implementation>
+</Method>
+
+<Method name="beforeSave">
+<Description>
+This event, if it exists, is automatically called by save() in the superclass.
+It does not cause an error if it has not been coded in the model.</Description>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+	set ..Key = $mvoconv(..Key, "MCL") ; Always store the key as lower case. Login is case-insensitive.
+	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="afterSave">
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[	quit $$$OK
+]]></Implementation>
+</Method>
+
+<Method name="findByIdentifier">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>identifier:%String=""</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>EasyCSP.Models.Users</ReturnType>
+<Implementation><![CDATA[
+	if $get(identifier)="" then return ""
+	model = "EasyCSP.Models.Users"->findByPK(identifier)
+	if isobject(model) then 
+		return model
+	end
+	
+	execute "SELECT ":"EasyCSP.Models.Users"->%GetParameter("MVFILENAME"):" WITH EMAIL_ADDRESS = ":dQuote(identifier) CAPTURING dross RTNLIST keys
+	readNext result from keys else result = 0
+	
+	if result <> 0 then
+		model = "EasyCSP.Models.Users"->%New()
+		model->Read(result)
+	end
+	
+	return model
+]]></Implementation>
+</Method>
+
+<Method name="getPrivilegeLevels">
+<ReturnType>%ArrayOfDataTypes</ReturnType>
+<Implementation><![CDATA[
+	set allPams = ..getParameters($classname())
+	set idx = ""
+	
+	for  {
+		set idx = allPams.Next(idx)
+		quit:idx=""
+		if $e(idx,1,4)'="role" do allPams.RemoveAt(idx)
+	}
+	
+	quit allPams
+]]></Implementation>
+</Method>
+
+<Method name="search">
+<Description>
+Override the default (non-functioning) search() method. Each model should set the rules
+for who can access what in the database.</Description>
+<ClassMethod>1</ClassMethod>
+<FormalSpec>model:EasyCSP.Model.Base</FormalSpec>
+<ReturnType>%Integer</ReturnType>
+<Implementation><![CDATA[
+	if $get(model) = "" {
+		set model = ""
+		set factory = ##class(EasyCSP.Model.Factory).%New(.model,"Users")
+	}
+	
+	if $get(model)'["Users" quit 0
+	
+	set querant = %EasyCSPApp.getSession("uid")
+	if querant = "guest" quit -1 ; if you aren't logged in you can't search the user table. Buh-BYE!
+	
+	set myself = %EasyCSPApp.users ; my own user record
+	set myShadow = %EasyCSPApp.userShadow ; my own shadow record
+	
+	
+	set users = ""
+	set factory = ##class(EasyCSP.Model.Factory).%New(.compareModel,"Users")
+	if $get(compareModel)'["Users" quit -2 ; How did you manage that? Go away!
+	
+	// Nobody below a site DBA rank can see anything outside their own entity or company
+	set siteDBARole = myShadow.%GetParameter("roleSiteDBA")
+	if +myShadow.role < siteDBARole {
+		if +myShadow.role = 0 { // you're a nobody; you can only see yourself
+			do model.setAttribute("username", myself.getAttributeValue("username"))
+		} else {
+			do model.setAttribute("entityId", compareModel.entityId)
+		}
+	}
+	
+	if model.hasErrors() {
+		write "<pre>Error found before after entity"
+		write "</pre>"
+	}
+	
+	set userRole = myShadow.%GetParameter("roleUser")
+	if myShadow.role = userRole {
+		do model.setAttribute("userid",querant)
+	}
+	
+	
+	set queryId = model.findAllByAttributes("user_id")
+	//write "<pre>Query id: "_queryId
+	//write "</pre>"
+	quit queryId
+]]></Implementation>
+</Method>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^USERS</DataLocation>
+<DefaultData>UsersDefaultData</DefaultData>
+<IdLocation>^C.USERS</IdLocation>
+<IndexLocation>^I.USERS</IndexLocation>
+<StreamLocation>^S.USERS</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="UsersDefaultData">
+<Value name="1">
+<Value>emailAddress</Value>
+</Value>
+<Value name="2">
+<Value>creationDate</Value>
+</Value>
+<Value name="3">
+<Value>lastUpdateDate</Value>
+</Value>
+<Value name="4">
+<Value>firstName</Value>
+</Value>
+<Value name="5">
+<Value>surname</Value>
+</Value>
+<Value name="6">
+<Value>entityId</Value>
+</Value>
+<Value name="7">
+<Value>privateKey</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

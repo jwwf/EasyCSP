@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:30">
+<Class name="EasyCSP.Conversions.UDate">
+<Description><![CDATA[
+Convert between Pick and Unix Epoch dates</p>
+<p>Options can be in any order and consist of the following flags:</p>
+
+   <li>D - Return only the date part</li>
+   <li>T - Return only the time part</li>
+   <li>I - Return the requested value part in internal format (<b>NOTE: Dates are in the MV epoch, not Cache. Time is reckoned identially in both.</b>)</li>
+</ul>
+<P>if no options are specified, then an external date-and-time string
+is returned.</P>
+
+<p>if "I" is specified, then either "D" or "T" must be specified.</p>
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Language>mvbasic</Language>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63474,31469.038685</TimeChanged>
+<TimeCreated>63464,80329.102977</TimeCreated>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>UnixDate:%Integer=0,OptionFlags:%String=""</FormalSpec>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+    
+   if Abs( UnixDate ) = 0 then
+      return oConv( @date, "D4/" )
+   end
+
+   Time = rem( UnixDate, 86400 )
+   Days = int( ( UnixDate - Time ) / 86400 ) + 732
+
+   begin case
+
+      case OptionFlags = @ME->nil
+         Results = OCONV( Days, "D4/" ) : " " : OCONV( Time, "MTS" )
+
+      case ( index( OptionFlags, "D", 1 ) > 0 )
+
+         if index( OptionFlags, "I", 1 ) > 0 then
+            Results = Days
+         end else
+            Results = OCONV( Days, "D4/" )
+         end
+
+      case ( index( OptionFlags, "T", 1 ) > 0 )
+
+         if index( OptionFlags, "I", 1 ) > 0 then
+            Results = Time
+         end else
+            Results = OCONV( Time, "MTS" )
+         end
+
+   end case
+
+   return Results
+]]></Implementation>
+</Method>
+</Class>
+</Export>

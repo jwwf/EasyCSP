@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:32">
+<Class name="EasyCSP.Validator.Validators.Boolean">
+<Description>
+Use Cache rules to validate a boolean value. An empty string equates to 0/false and is valid.</Description>
+<Super>EasyCSP.Validator.Base</Super>
+<TimeChanged>63611,79506.107149</TimeChanged>
+<TimeCreated>63607,75410.091507</TimeCreated>
+
+<Parameter name="message">
+<Type>%String</Type>
+<Default>Value must be "true" or "false".</Default>
+</Parameter>
+
+<Method name="run">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>value:%String=""</FormalSpec>
+<ReturnType>%Boolean</ReturnType>
+<Implementation><![CDATA[
+		if $get(value) = "" set value = 0
+		set value = $mvoconv(value, "MCN")
+		if (value=0)!(value=1) quit 1
+		quit 0
+]]></Implementation>
+</Method>
+</Class>
+</Export>

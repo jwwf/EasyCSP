@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Models.UserEntityRole">
+<Description>
+Provides an index of roles per entity a user may have. A user may belong to more
+than one entity: a TMT employee may be DBA for several transportation companies. A
+common rider may purchase tickets in more than one zone (and hence pay a different
+company). This table allows flexible roles per company.</Description>
+<Super>%Persistent,EasyCSP.MVModel.Base</Super>
+<TimeChanged>63613,42841.804497</TimeChanged>
+<TimeCreated>63532,55876.950013</TimeCreated>
+
+<Parameter name="MVFILENAME">
+<Default>USER.ENTITY.ROLE</Default>
+</Parameter>
+
+<Parameter name="MVGLOBAL">
+<Type>%String</Type>
+<Default>USER.ENTITY.ROLE</Default>
+</Parameter>
+
+<Parameter name="MVAUTOLOCK">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCLEARDICT">
+<Default>0</Default>
+</Parameter>
+
+<Parameter name="MVCREATE">
+<Type>BOOLEAN</Type>
+<Default>1</Default>
+</Parameter>
+
+<Parameter name="MVREPOPULATE">
+<Default>1</Default>
+</Parameter>
+
+<Property name="userEntityRoleId">
+<Description>
+Autoincrementing arbitrary record ID</Description>
+<Type>%Integer</Type>
+<SqlFieldName>user_entity_role_id</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="0"/>
+<Parameter name="MVNAME" value="USER_ENTITY_ROLE_ID"/>
+</Property>
+
+<Property name="userId">
+<Description>
+User login name</Description>
+<Type>%Integer</Type>
+<SqlFieldName>user_id</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="1"/>
+<Parameter name="MVNAME" value="USER_ID"/>
+</Property>
+
+<Property name="entityId">
+<Description>
+The entity this role will be used in</Description>
+<Type>%Integer</Type>
+<SqlFieldName>entity_id</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="2"/>
+<Parameter name="MVNAME" value="ENTITY_ID"/>
+</Property>
+
+<Property name="roleId">
+<Description>
+The role the user will while acting within this entity</Description>
+<Type>%Integer</Type>
+<SqlFieldName>role_id</SqlFieldName>
+<Parameter name="MVATTRIBUTE" value="3"/>
+<Parameter name="MVNAME" value="ROLE_ID"/>
+</Property>
+
+<Index name="indexUserEntityRoleId">
+<IdKey>1</IdKey>
+<PrimaryKey>1</PrimaryKey>
+<Properties>userEntityRoleId</Properties>
+</Index>
+
+<Index name="indexUserId">
+<Properties>userId</Properties>
+</Index>
+
+<Index name="indexEntityId">
+<Properties>entityId</Properties>
+</Index>
+
+<Method name="getEntities">
+<ClassMethod>1</ClassMethod>
+<FormalSpec>userId:%Integer=0</FormalSpec>
+<Language>mvbasic</Language>
+<ReturnType>%List</ReturnType>
+<Implementation><![CDATA[
+	if $get(userId) = "" then return ""
+	if oconv(userId, "MCN") = "" then return ""
+	
+	returnList = ""
+	execute "SELECT USER.ENTITY.ROLE WITH USER_ID = ":dquote(userId) capturing reply rtnlist list
+	loop while readnext key do
+		
+	repeat
+]]></Implementation>
+</Method>
+
+<UDLText name="T">
+<Content><![CDATA[
+/*
+ClassMethod getRolesAtEntity(
+	userId As %Integer = 0,
+	entityId As %Integer = 0) As %List
+{
+	quit:+$get(userId)=0 ""
+	quit:+$get(entityId)=0 ""
+	
+	set result = "" ; assume "None" unless proven otherwise
+	
+	&SQL( DECLARE curRole CURSOR FOR
+		select role_id into :roleId from Models.TenantDB.UserEntityRole where user_id = :userId and entity_id = :entityId
+	)
+	
+	&SQL(OPEN curRole)
+	
+	for {
+		&SQL(FETCH curRole)
+		quit:SQLCODE'=0
+		if '$listValid(result) {
+			set result = $listBuild(roleId)
+		} else {
+			if '$listFind(roleId, result) {
+				set result = result_$listBuild(roleId)
+			}
+		}
+	}
+	
+	&SQL(CLOSE curRole)
+	
+	quit result
+}
+
+ClassMethod hasEntity(
+	userId As %Integer = 0,
+	entityId As %Integer = 0) As %Boolean
+{
+	quit:+$get(userId)=0 0
+	quit:+$get(entityId)=0 0
+	
+	set result = 0 ; assume "No" unless proven otherwise
+	
+	&SQL( DECLARE curUserEntity CURSOR FOR
+		select * from Models.TenantDB.UserEntityRole where user_id = :userId and entity_id = :entityId
+	)
+	
+	&SQL(OPEN curUserEntity)
+	
+	for {
+		&SQL(FETCH curUserEntity)
+		quit:SQLCODE'=0
+		set result = 1
+		quit ; only need one to be true
+	}
+	
+	&SQL(CLOSE curUserEntity)
+	
+	quit result
+}
+
+ClassMethod hasRoleInEntity(
+	userId As %Integer = 0,
+	entityId As %Integer = 0,
+	roleId As %Integer = 0) As %Boolean
+{
+	quit:+$get(userId)=0 0
+	quit:+$get(entityId)=0 0
+	quit:+$get(roleId)=0 0
+	
+	set result = 0 ; assume "No" unless proven otherwise
+	
+	&SQL( DECLARE curHasEntity CURSOR FOR
+		select * from Models.TenantDB.UserEntityRole where user_id = :userId and entity_id = :entityId and role_id = :roleId
+	)
+	
+	&SQL(OPEN curHasEntity)
+	
+	for {
+		&SQL(FETCH curHasEntity)
+		quit:SQLCODE'=0
+		set result = 1
+		quit ; only need one to be true
+	}
+	
+	&SQL(CLOSE curHasEntity)
+	
+	quit result
+}
+*/
+]]></Content>
+</UDLText>
+
+<Storage name="Default">
+<Type>%Library.CacheStorage</Type>
+<DataLocation>^USER.ENTITY.ROLE</DataLocation>
+<DefaultData>UserEntityRoleDefaultData</DefaultData>
+<IdLocation>^C.USER.ENTITY.ROLE</IdLocation>
+<IndexLocation>^I.USER.ENTITY.ROLE</IndexLocation>
+<StreamLocation>^S.USER.ENTITY.ROLE</StreamLocation>
+<ExtentSize>100000</ExtentSize>
+<Data name="UserEntityRoleDefaultData">
+<Structure>listnode</Structure>
+<Subscript/>
+<Value name="1">
+<Value>userId</Value>
+</Value>
+<Value name="2">
+<Value>entityId</Value>
+</Value>
+<Value name="3">
+<Value>roleId</Value>
+</Value>
+</Data>
+</Storage>
+</Class>
+</Export>

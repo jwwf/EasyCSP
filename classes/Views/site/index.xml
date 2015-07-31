@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:34">
+<Class name="Views.site.index">
+<Description>
+placeholder</Description>
+<Super>%RegisteredObject</Super>
+<TimeChanged>63567,27959.95008</TimeChanged>
+<TimeCreated>63482,34893.129124</TimeCreated>
+
+<Method name="run">
+<FormalSpec>controller,params:EasyCSP.Core.ParameterList</FormalSpec>
+</Method>
+</Class>
+</Export>

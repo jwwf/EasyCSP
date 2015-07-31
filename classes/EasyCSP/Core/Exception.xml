@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:31">
+<Class name="EasyCSP.Core.Exception">
+<Description><![CDATA[
+<p>Catches and normalizes exception data.  This helps prevents phantoms from dying
+and to log pertinent information so programmers can go directly to offending code
+to fix problems immediately.  It partly depends on the MVBLogger class.  If that class
+hasn't been instantiated, it will create the object for use here.</p>
+
+  <p>Copyright (c) 2011 James W "Bill" Westley-Farrell</p>
+
+  <p>Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at</p>
+
+      <p><a href=http://www.apache.org/licenses/LICENSE-2.0">Apache License 2.0</a>
+
+  <p>Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.</p>]]></Description>
+<Language>mvbasic</Language>
+<Super>%RegisteredObject,%Exception.General</Super>
+<TimeChanged>63591,30497.345943</TimeChanged>
+<TimeCreated>63352,46815.298885</TimeCreated>
+
+<Property name="ExceptionCode">
+<Description>
+MVB-Specific error code associated with this exception</Description>
+<Type>%Integer</Type>
+<Final>1</Final>
+<InitialExpression>0</InitialExpression>
+</Property>
+
+<Property name="Description">
+<Description>
+MVB-specific error description associated with this exception</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="ExceptionName">
+<Description>
+MVB-specific error name associated with this exception</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="ProgramData">
+<Description>
+MVB-specific program error data</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="ProgramLocation">
+<Description>
+Program location</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="Traceback">
+<Description>
+Traceback</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="HasInnerException">
+<Description>
+Has an inner exception will be @true if this is being rethrown from an underlying exception</Description>
+<Type>%Boolean</Type>
+<Final>1</Final>
+<InitialExpression>0</InitialExpression>
+</Property>
+
+<Property name="InnerExceptionCode">
+<Description>
+Inner Exception Code - available only if this exception was rethrown because an underlying exception was caught</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="InnerExceptionLocation">
+<Description>
+Inner Exception Location - available only if this exception was rethrown because an underlying exception was caught</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="InnerExceptionName">
+<Description>
+Inner Exception Name - available only if this exception was rethrown because an underlying exception was caught</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Property name="InnerExceptionProgramData">
+<Description>
+Inner Exception Program Data - available only if this exception was rethrown because an underlying exception was caught</Description>
+<Type>%String</Type>
+<Final>1</Final>
+</Property>
+
+<Method name="%OnNew">
+<FormalSpec>Name:%String="",Code:%String="",Location:%String="",Description:%String="",InnerException:%Exception.AbstractException</FormalSpec>
+<ReturnType>%Status</ReturnType>
+<Implementation><![CDATA[
+    
+    If Name = "" Then Name = "MVB generalized exception."
+    @ME->ExceptionName = Name
+    
+    Traceback = @ME->getSnap()
+    
+    @ME->Traceback = Traceback
+    @ME->ProgramLocation = Traceback<dcount(Traceback,@fm) - 3>
+    
+    CompleteDescription = "Framework Exception " : Name : " occurred in " : field( @ME->ProgramLocation, ":", 1)
+    
+    If Description <> "" Then
+        CompleteDescription< -1 > = "Description: " : Description
+    End
+    
+* Depending on how the exception occurred, the following information may not be
+* entirely accurate -- but it WILL be close!  You may have to open alternate code
+* using <ctrl>+<alt>+V in Studio to find the right routine and line.  Due to the way
+* Cache MVBasic compiles, the line numbers may be off by a bit.
+    
+    If $Get( InnerException ) <> "" Then
+    
+        @ME->HasInnerException = @true
+    
+        CompleteDescription< -1 > = "An inner exception also occurred:"
+        
+        CompleteDescription< -1 > = "Name: " : InnerException->Name
+        @ME->InnerExceptionName = InnerException->Name
+        
+        CompleteDescription< -1 > = "Code: " : InnerException->Code
+        @ME->InnerExceptionCode = InnerException->Code
+        
+        CompleteDescription< -1 > = "Loc:  " : InnerException->Location
+        @ME->InnerExceptionLocation = InnerException->Location
+        
+        If $Get( InnerException->Data ) <> "" Then
+            CompleteDescription< -1 > = EReplace( InnerException->Data, char(13):char(10), @fm )
+        End
+        
+    End Else
+    
+        @ME->HasInnerException = @false
+        
+    End
+    
+    @ME->Description = CompleteDescription
+    
+* If logging, a Traceback will be sent to the log.  If not, the Traceback will be crammed into the error description.
+   * %MVBErrorDescription = CompleteDescription ; * for now. 
+        
+    ErrorCode = ABS( Code ) ; * in case it's non-numeric, since Cache uses a string and MVB uses in integer
+    If ErrorCode = 0 Then ErrorCode = 1
+    
+    ErrorCode += 10000 ; * A large number will be recognizable as "not mine"
+        
+    *%MVBErrorNumber = ABS( ErrorCode )
+    @ME->ExceptionCode = Code
+    
+    *%MVBErrorRaisedBy = Location
+    *@ME->ProgramLocation = %MVBErrorRaisedBy
+        
+    Traceback = ""
+            
+*    CallStack = system(33)
+*    D = DCOUNT( CallStack, @fm ) - 1 ; * ignore the fact that we're here
+*    
+*    @ME->ProgramLocation = CallStack< D >
+*
+*    For Idx = D TO 1 Step -1 ; * flip the stack because it's in FIFO order
+*
+*        Line = EREPLACE( CallStack< Idx >, @vm, char(9) )
+*    
+*        If Index( Upcase( Line ), "MVBException", 1 ) > 0 Then Continue ; * don't log calls within this routine
+*            
+*        Traceback< -1 > = Line
+*            
+*    Next
+        
+    Return "%SYSTEM.Status"->OK()
+]]></Implementation>
+</Method>
+
+<Method name="getSnap">
+<Language>cache</Language>
+<ReturnType>%String</ReturnType>
+<Implementation><![CDATA[
+
+    set Traceback = ""
+    set start = $STACK(-1) - 2
+    FOR loop=start:-1:0 {
+        set Traceback = Traceback _ $lb( $STACK(loop,"PLACE") _ ": " _ $STACK(loop,"MCODE"))
+	}
+	
+	q $listtostring(Traceback,$mvfm)
+]]></Implementation>
+</Method>
+</Class>
+</Export>
