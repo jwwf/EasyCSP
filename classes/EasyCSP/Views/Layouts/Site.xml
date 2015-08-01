@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 19:40:02">
 <Class name="EasyCSP.Views.Layouts.Site">
 <Description><![CDATA[
 <p>
@@ -26,7 +26,7 @@ minimally containing an image of the controller object and as many table models 
   See the License for the specific language governing permissions and
   limitations under the License.</p>]]></Description>
 <Super>EasyCSP.Web.Layouts.Base</Super>
-<TimeChanged>63763,60454.920469</TimeChanged>
+<TimeChanged>63764,70801.526277</TimeChanged>
 <TimeCreated>63481,36812.042056</TimeCreated>
 
 <Method name="run">
@@ -136,7 +136,18 @@ minimally containing an image of the controller object and as many table models 
     do ..addBodyContent("               <table width=""100%""><tr>")
     do ..addBodyContent("               <td><img src=""images/EasyCSP-sm.jpg"" style=""text-align: left;"" alt=""Easy CSP"" /></td>")
 	do ..addBodyContent("               <td style=""text-align: right;""><h1>Easy CSP Framework</h1></td>")
+	do ..addBodyContent("               </tr>")
+	do ..addBodyContent("               <tr>")
+	do ..addBodyContent("               <td></td>")
+	do ..addBodyContent("               <td style=""text-align: right;"">")
+	do ..addBodyContent(##class(EasyCSP.Web.CHTML).routeLink("Log Out", "site/logout"))
+	do ..addBodyContent("               </td>")
 	do ..addBodyContent("               </tr></table>")
+	
+	do htmlOptions.unsetAll()
+	do htmlOptions.set("class", "fright")
+	do htmlOptions.set("width", "100%")
+	//do ..addBodyContent(##class(EasyCSP.Web.CHTML).tag("p", htmlOptions, ##class(EasyCSP.Web.CHTML).routeLink("Log Out", "site/logout"), 1))
     do ..addBodyContent("            </div>")
     
     // The content divs are set up. The endpoint view class will put the content here.

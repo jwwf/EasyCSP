@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 11:56:33">
+<Export generator="Cache" version="25" zv="Cache for Windows (x86-64) 2015.1 (Build 429U)" ts="2015-07-31 18:09:39">
 <Class name="EasyCSP.Web.ActiveTable">
 <Description><![CDATA[
 <p>
@@ -38,7 +38,7 @@ Core.ParameterList. Options recognized include:
   See the License for the specific language governing permissions and
   limitations under the License.</p>]]></Description>
 <Super>%RegisteredObject</Super>
-<TimeChanged>63763,36919.011097</TimeChanged>
+<TimeChanged>63764,65376.119812</TimeChanged>
 <TimeCreated>63752,62447.598514</TimeCreated>
 
 <Parameter name="evenColClass">
@@ -116,13 +116,17 @@ Create an active table with "pagesize" rows. Paging is done with a script that</
 	
 	set pageNumber = +options.get("pageNumber")
 	do options.unset("pageNumber")
-	set:pageNumber=0 pageNumber = +##class(EasyCSP.Configuration.Settings).getSetting("gridPageSize")
 	set:pageNumber=0 pageNumber = 1
 	
+	// Look in the options array first for the page size, then the system configuration, then if all else fails use the class default.
 	set pageSize = +options.get("pageSize")
 	do options.unset("pageSize")
 	set:pageSize=0 pageSize = +##class(EasyCSP.Configuration.Settings).getSetting("gridPageSize")
 	set:pageSize=0 pageSize = ..#pageSize
+		
+	set startRow = ((pageNumber - 1) * pageSize) + 1
+	
+	set totalPages = (rowCount # pageSize)
 		
 	set allOptions = ..parseOptions(options)
 	set tableOptions = allOptions.get("tableOptions")
@@ -131,13 +135,16 @@ Create an active table with "pagesize" rows. Paging is done with a script that</
 	set columnOptions = allOptions.get("columnOptions")
 	set buttonOptions = allOptions.get("buttonOptions")
 	
+	set imageUrl = %EasyCSPApp.getImageUrl(1)_"gridview/"
+	do stream.WriteLine("<div id=""activeTable-loading""><p>Loading...</p>"_##class(EasyCSP.Web.CHTML).image(imageUrl_"loading.gif", "Loading...")_"</div>")
+	
 	// Open the table tag. Affix the id to the table id so the query can be located on paging.
 	set tableId = tableOptions.get("id")
 	if tableId = "" set tableId = "activeTable"
 	set tableId = tableId_"_"_processId
 	do tableOptions.set("id", tableId)
 	
-    do stream.Write(##class(EasyCSP.Web.CHTML).tag("table", tableOptions, "", 0))
+    do stream.WriteLine(##class(EasyCSP.Web.CHTML).tag("table", tableOptions, "", 0))
         
     // Blort out a row of column headings
     set colHeaders = $get(^queryOut(processId, "labels"))
@@ -202,6 +209,11 @@ Create an active table with "pagesize" rows. Paging is done with a script that</
     
     do stream.WriteLine(##class(EasyCSP.Web.CHTML).closeTag("table"))
     
+    do options.unsetAll()
+    do options.set("class","fright")
+    set nav = "Page "_pageNumber_" of "_totalPages
+    if totalPages > 1 set nav = nav_".<br />Rows "_startRow_" to "_nextRow_" of "_rowCount
+    do stream.WriteLine(##class(EasyCSP.Web.CHTML).tag("p", options, nav, 1))
     
 	set xDataDef = ##class(%Dictionary.CompiledXData).%OpenId($classname()_"||buttonScript")
 	set outputStream = xDataDef.Data
